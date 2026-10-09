@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<!-- ==========================================================================
+     index.html - Bản chơi web của Match-3 RPG
+     --------------------------------------------------------------------------
+     Trang này KHÔNG chứa luật chơi. Luật nằm ở Source/Match3Core (C++) đã được
+     biên dịch sang WebAssembly (m3core.mjs + m3core.wasm). Nhờ vậy bản web và bản
+     Unreal dùng CHUNG một nguồn luật, sửa một chỗ là cả hai thay đổi theo.
+     ========================================================================== -->
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Match-3 RPG - bản chơi trên web</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark"></span>
+    <div>
+      <h1>Match-3 RPG</h1>
+      <p class="brand-sub">Lõi luật chơi C++ biên dịch sang WebAssembly - dùng chung với bản Unreal Engine 5.6</p>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <label class="select-wrap">
+      <span>Map</span>
+      <select id="stageSelect"></select>
+    </label>
+    <button id="btnHint" class="btn btn-ghost" type="button">Gợi ý nước đi <kbd>H</kbd></button>
+    <button id="btnRestart" class="btn btn-ghost" type="button">Chơi lại <kbd>R</kbd></button>
+  </div>
+</header>
+
+<main class="layout">
+
+  <!-- ================= Boss ================= -->
+  <section class="panel boss-panel">
+    <div class="panel-head">
+      <h2 id="bossName">Boss</h2>
+      <span id="breakBadge" class="badge badge-break" hidden>STAGGER VỠ - BREAK</span>
+    </div>
+
+    <div class="stat">
+      <div class="stat-row">
+        <span>HP</span>
+        <strong id="bossHpText">0 / 0</strong>
+      </div>
+      <div class="bar bar-hp"><i id="bossHpBar"></i></div>
+    </div>
+
+    <div class="stat">
+      <div class="stat-row">
+        <span>Thanh stagger</span>
+        <strong id="staggerText">0 / 0</strong>
+      </div>
+      <div class="bar bar-stagger"><i id="staggerBar"></i></div>
+      <p class="hint">Sát thương lên boss làm giảm stagger. Vỡ stagger = boss ngất, nhận thêm sát thương và Counter được ra tay.</p>
+    </div>
+
+    <div class="turn-strip">
+      <div class="turn-cell"><span>Turn</span><strong id="turnText">1</strong></div>
+      <div class="turn-cell"><span>Lượt nối</span><strong id="movesText">0 / 4</strong></div>
+      <div class="turn-cell"><span>Vật cản</span><strong id="obstacleText">0</strong></div>
+      <div class="turn-cell"><span>Sao</span><strong id="starText">0</strong></div>
+    </div>
+
+    <div class="stat">
+      <div class="stat-row"><span>Máu đội</span><strong id="teamHpText">0%</strong></div>
+      <div class="bar bar-team"><i id="teamHpBar"></i></div>
+    </div>
+  </section>
+
+  <!-- ================= Bàn nối ================= -->
+  <section class="panel board-panel">
+    <div class="panel-head">
+      <h2>Bàn nối</h2>
+      <span class="legend">
+        <i class="dot c1"></i><i class="dot c2"></i><i class="dot c3"></i>
+        <i class="dot c4"></i><i class="dot c5"></i><i class="dot c6"></i>
+        <em>ô vuông 2x2 = phá chướng ngại · 4 ô thẳng = nổ hàng/cột · 5 ô = cầu vồng</em>
+      </span>
+    </div>
+
+    <div id="boardWrap" class="board-wrap">
+      <div id="board" class="board" role="grid" aria-label="Bàn nối 8x8"></div>
+    </div>
+
+
+    <p id="toast" class="toast" aria-live="polite">Click 2 ô kề nhau để đổi chỗ.</p>
+  </section>
+
+  <!-- ================= Đội hình ================= -->
+  <section class="panel team-panel">
+    <div class="panel-head"><h2>Đội hình</h2><span class="hint">1..6 = kỹ năng · NumPad 1..6 = ultimate</span></div>
+    <div id="team" class="team"></div>
+
+    <button id="btnEndTurn" class="btn btn-primary btn-wide" type="button">Kết thúc turn <kbd>Tab</kbd></button>
+
+    <div class="panel-head sub"><h2>Nhiệm vụ map</h2></div>
+    <ul id="challenges" class="challenges"></ul>
+
+    <div class="panel-head sub"><h2>Nhật ký trận</h2></div>
+    <ol id="log" class="log"></ol>
+  </section>
+</main>
+
+<footer class="footer">
+  <span id="statsText">Sát thương đã gây: 0 · đã nhận: 0</span>
+  <span class="footer-sep"></span>
+  <span id="engineText">WebAssembly: đang nạp...</span>
+</footer>
+
+<div id="banner" class="banner" hidden>
+  <div class="banner-box">
+    <button id="btnCloseBanner" class="banner-close" type="button" title="Đóng (Esc)" aria-label="Đóng bảng kết quả">×</button>
+    <h2 id="bannerTitle">Kết quả</h2>
+    <p id="bannerText"></p>
+    <div class="banner-actions">
+      <button id="btnPlayAgain" class="btn btn-primary" type="button">Chơi lại map này</button>
+      <button id="btnNextMap" class="btn btn-ghost" type="button">Map kế tiếp</button>
+    </div>
+    <p class="hint">Bấm nút ×, bấm ra ngoài, hoặc nhấn Esc để đóng bảng này và xem lại bàn nối.</p>
+  </div>
+</div>
+
+<script type="module" src="m3ui.js"></script>
+</body>
+</html>

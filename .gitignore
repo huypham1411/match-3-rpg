@@ -1,0 +1,29 @@
+# Unreal Engine generated folders & files
+.vs/
+.orthex/
+Binaries/
+
+DerivedDataCache/
+Intermediate/
+Saved/
+Build/
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.user
+*.suo
+.idea/
+.vscode/
+
+# Web generated artifacts (buildable via Web/build_web.bat)
+Web/dist/
+
+# Scratch & temporary test binaries
+*.exe
+*.obj
+*.pdb
+*.ilk
+*.idb
+*.exp
+*.lib
+Tests/Core/*.exe
