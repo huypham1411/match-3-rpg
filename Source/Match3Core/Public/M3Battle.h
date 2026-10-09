@@ -32,20 +32,32 @@ struct FChallenge
 		ClearAllObstacles = 0,  // gỡ sạch vật cản
 		WinWithinTurns,         // thắng trong N turn
 		NoMemberDowned,         // không thành viên nào gục
-		TriggerManyInOneMove    // kích hoạt >= N block trong 1 nước đi
+		TriggerManyInOneMove,   // kích hoạt >= N block trong 1 nước đi
+		RequireRoleCount,       // đem theo ít nhất N thành viên có role chỉ định
+		RequireDistinctClasses  // đội hình gồm ít nhất N class (role) khác nhau
 	};
 
 	EKind       Kind = EKind::ClearAllObstacles;
 	std::string Id   = "challenge";
 	std::string Description = "";
 	int32       Value = 0;          // ngưỡng (N turn / N block...)
+	ERole       TargetRole = ERole::Mage; // Role yêu cầu nếu Kind == RequireRoleCount
 	bool        bCompleted = false;
 
 	static FChallenge Make(EKind InKind, const std::string& InId, const std::string& InDesc, int32 InValue)
 	{
 		FChallenge C; C.Kind = InKind; C.Id = InId; C.Description = InDesc; C.Value = InValue; return C;
 	}
+	static FChallenge MakeRequireRole(ERole InRole, const std::string& InId, const std::string& InDesc, int32 InMinCount = 1)
+	{
+		FChallenge C; C.Kind = EKind::RequireRoleCount; C.Id = InId; C.Description = InDesc; C.Value = InMinCount; C.TargetRole = InRole; return C;
+	}
+	static FChallenge MakeRequireDistinct(int32 InMinDistinct, const std::string& InId, const std::string& InDesc)
+	{
+		FChallenge C; C.Kind = EKind::RequireDistinctClasses; C.Id = InId; C.Description = InDesc; C.Value = InMinDistinct; return C;
+	}
 };
+
 
 // ---------------------------------------------------------------------------
 // Boss
@@ -235,7 +247,7 @@ private:
 	int32 MovesRemaining = 4;
 	int32 MovesUsedInTurn = 0;
 	int32 UltimatesUsedInTurn = 0;
-	bool  bBasicSkillUsedThisTurn[static_cast<int32>(ERole::Count)] = { false, false, false, false, false, false };
+	bool  bBasicSkillUsedThisTurn[static_cast<int32>(ERole::Count)] = { false };
 
 	// --- Thống kê ---
 	float DamageDealtTotal = 0.f;
@@ -248,11 +260,14 @@ private:
 	// Biến kết quả nối thành hiệu ứng cho từng nhân vật.
 	void  ApplyMatchEffects(const FResolveOutcome& Outcome);
 	float ComputeMatchDamage(int32 AttackerIndex, const FResolveOutcome& Outcome) const;
+	float ComputeMageDamage(int32 MageIndex, const FResolveOutcome& Outcome) const;
+	void  ApplyMageMatchDebuff(int32 MageIndex, const FResolveOutcome& Outcome);
 	float ComputeHealAmount(int32 HealerIndex, const FResolveOutcome& Outcome) const;
 	void  ApplySupportEffect(int32 SupporterIndex, const FResolveOutcome& Outcome);
 
-	// Gây sát thương lên boss (đã tính buff/break) + trừ stagger.
-	float DealDamageToBoss(float RawDamage, const std::string& SourceName);
+	// Gây sát thương lên boss (đã tính buff/break/kháng vật lý hoặc phép) + trừ stagger.
+	float DealDamageToBoss(float RawDamage, const std::string& SourceName, EDamageType DamageType = EDamageType::Physical);
+
 	void  ReduceStagger(float Amount, const std::string& SourceName);
 	void  CheckStaggerBreak();
 

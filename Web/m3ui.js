@@ -412,12 +412,16 @@ function renderTeam() {
     const color = M._m3_member_color(i);
     const isTargetedSingle = (intentAction === 1 && intentTarget === i && alive);
 
+    const dmgType = M._m3_member_damage_type ? M._m3_member_damage_type(i) : 0;
+    const dmgStr = (roleId === 0 || roleId === 6) ? (dmgType === 1 ? ' · Ma pháp' : ' · Vật lý') : '';
+
     card.classList.toggle('down', !alive);
     card.classList.toggle('boss-target-single', isTargetedSingle);
     card.style.borderLeftColor = color ? `var(--c${color})` : '#64748b';
     card.querySelector('.member-name').textContent = M.UTF8ToString(M._m3_member_name(i));
     card.querySelector('.member-role').textContent =
-      M.UTF8ToString(M._m3_member_role(i)) + (color ? ` · nối màu ${color}` : ' · không có block');
+      M.UTF8ToString(M._m3_member_role(i)) + dmgStr + (color ? ` · nối màu ${color}` : ' · không có block');
+
 
     card.querySelector('.mini-hp i').style.width = (Math.max(0, Math.min(1, M._m3_member_hp_pct(i))) * 100).toFixed(1) + '%';
     card.querySelector('.mini-ult i').style.width = Math.min(100, ultPct) + '%';

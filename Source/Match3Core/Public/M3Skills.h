@@ -22,11 +22,14 @@ enum class ESkillKind : std::uint8_t
 	Bulwark,            // Defender: khiên giảm sát thương AoE
 	CounterStrike,      // Counter: chỉ dùng được khi boss BREAK
 	DeflectSurge,       // Deflecter: tăng tốc tích stack / hạ stagger
+	MageBlast,          // Mage: sát thương Ma Pháp + gây Suy Yếu Ma Pháp lên boss
 	UltimateDamage,     // ultimate attacker
 	UltimateSupport,    // ultimate supporter
 	UltimateHeal,       // ultimate healer
-	UltimateGuard       // ultimate defender
+	UltimateGuard,      // ultimate defender
+	UltimateMage        // ultimate mage: bão thiên thạch ma pháp
 };
+
 
 struct FSkillDefinition
 {

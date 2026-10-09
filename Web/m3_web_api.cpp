@@ -260,6 +260,14 @@ M3WEB_API int m3_member_role_id(int index)
 	return Member ? static_cast<int>(Member->Def.Role) : -1;
 }
 
+M3WEB_API int m3_member_damage_type(int index)
+{
+	EnsureActive();
+	const M3::FCharacterState* Member = gBattle.Party().TryGet(index);
+	return Member ? static_cast<int>(Member->Def.DamageType) : 0;
+}
+
+
 M3WEB_API float m3_member_hp_pct(int index)
 {
 	EnsureActive();

@@ -119,6 +119,42 @@ std::vector<FCharacterDef> FContentLibrary::ExtraCharacters()
 		Out.push_back(Def);
 	}
 
+	// Mage - màu Tím - nối block Tím gây sát thương Ma Pháp + debuff Suy Yếu Ma Pháp lên boss.
+	{
+		FCharacterDef Def;
+		Def.Id = "char.mage.arcane";
+		Def.Name = "Ma Pháp Sĩ Cổ Đại";
+		Def.Role = ERole::Mage;
+		Def.DamageType = EDamageType::Magic;
+		Def.MatchColor = EColor::Purple;
+		Def.Element = EElement::Dark;
+		Def.BaseAtk = 330.f;
+		Def.BaseHp  = 2400.f;
+		Def.BasicSkillName = "Pháp thuật bùng nổ";
+		Def.BasicSkillDesc = "Sát thương Ma Pháp + gây debuff Suy Yếu Ma Pháp (+25% sát thương phép nhận vào).";
+		Def.UltimateName   = "Bão Thiên Thạch";
+		Def.UltimateDesc   = "Gây sát thương Ma Pháp cực lớn, giảm 30% kháng phép của boss.";
+		Out.push_back(Def);
+	}
+
+	// Mage 2 - màu Cyan - Ma Pháp Băng
+	{
+		FCharacterDef Def;
+		Def.Id = "char.mage.frost";
+		Def.Name = "Băng Chú Sĩ";
+		Def.Role = ERole::Mage;
+		Def.DamageType = EDamageType::Magic;
+		Def.MatchColor = EColor::Cyan;
+		Def.Element = EElement::Water;
+		Def.BaseAtk = 300.f;
+		Def.BaseHp  = 2500.f;
+		Def.BasicSkillName = "Pháp thuật bùng nổ";
+		Def.BasicSkillDesc = "Sát thương Ma Pháp + gây debuff Suy Yếu Ma Pháp.";
+		Def.UltimateName   = "Bão Thiên Thạch";
+		Def.UltimateDesc   = "Gây sát thương Ma Pháp cực lớn, giảm 30% kháng phép của boss.";
+		Out.push_back(Def);
+	}
+
 	return Out;
 }
 
@@ -179,7 +215,6 @@ FBattleSetup FContentLibrary::DefaultBattleSetup(int32 TeamSize, uint32 Seed)
 	Setup.Seed = Seed;
 	Setup.Balance = FBalance::Default();
 
-	// Đội hình: 4 role cơ bản, có thể thêm Counter / Deflecter.
 	for (const FCharacterDef& Def : StarterCharacters())
 	{
 		if (static_cast<int32>(Setup.Roster.size()) >= TeamSize) { break; }
@@ -238,7 +273,7 @@ std::vector<FBattleSetup> FContentLibrary::CampaignStages(uint32 Seed)
 		Stages.push_back(S);
 	}
 
-	// Map 4: Ma Vương Hư Không (2 Phase, bẫy đếm ngược, kháng 30% sát thương vật lý)
+	// Map 4: Ma Vương Hư Không (Giảm 50% sát thương Vật Lý - cần Mage / sát thương Ma Pháp)
 	{
 		FBattleSetup S = DefaultBattleSetup(6, Seed + 3u);
 		S.BossName = "Ma Vương Hư Không";
@@ -248,10 +283,15 @@ std::vector<FBattleSetup> FContentLibrary::CampaignStages(uint32 Seed)
 		S.StartObstacles = 4;
 		S.Balance.MovesPerTurn = 4;
 		S.Balance.BossObstaclesPerAction = 2;
+		S.Challenges.clear();
+		S.Challenges.push_back(FChallenge::MakeRequireRole(ERole::Mage, "challenge.mage_req", "Chiến thắng với ít nhất 1 Mage trong đội", 1));
+		S.Challenges.push_back(FChallenge::MakeRequireDistinct(4, "challenge.variety", "Đội hình gồm ít nhất 4 class khác nhau"));
+		S.Challenges.push_back(FChallenge::Make(FChallenge::EKind::WinWithinTurns, "challenge.turns", "Thắng trong 15 turn", 15));
 		Stages.push_back(S);
 	}
 
 	return Stages;
 }
+
 
 } // namespace M3

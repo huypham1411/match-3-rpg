@@ -60,6 +60,14 @@ FSkillDefinition FSkillCatalog::BasicForRole(ERole Role)
 		S.Cooldown = 3;
 		break;
 
+	case ERole::Mage:
+		S.Kind = ESkillKind::MageBlast;
+		S.Id = "skill.mage.blast";
+		S.Name = "Pháp thuật bùng nổ";
+		S.Desc = "Gây sát thương Ma Pháp và đặt debuff Suy Yếu Ma Pháp (+25% sát thương phép nhận vào) lên boss.";
+		S.Cooldown = 3;
+		break;
+
 	default: break;
 	}
 	return S;
@@ -114,6 +122,14 @@ FSkillDefinition FSkillCatalog::UltimateForRole(ERole Role)
 		S.Name = "Bộc phá - Vỡ thiên địa";
 		S.Desc = "Phá ngay một phần lớn thanh stagger của boss (mở cửa sổ BREAK).";
 		break;
+
+	case ERole::Mage:
+		S.Kind = ESkillKind::UltimateMage;
+		S.Id = "ult.mage";
+		S.Name = "Bộc phá - Bão Thiên Thạch";
+		S.Desc = "Gây sát thương Ma Pháp cực lớn, phá 30% kháng phép của boss và gỡ 1 vật cản.";
+		break;
+
 
 	default: break;
 	}

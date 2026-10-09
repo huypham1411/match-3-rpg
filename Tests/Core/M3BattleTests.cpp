@@ -303,10 +303,14 @@ M3TEST(DoiHinh_ToiDa6Nguoi_3TrangBi_1Pet)
 	FParty Party;
 	for (const FCharacterDef& Def : FContentLibrary::AllCharacters())
 	{
-		M3REQUIRE(Party.AddCharacter(Def));
+		if (Party.MemberCount() < FParty::kMaxMembers)
+		{
+			M3REQUIRE(Party.AddCharacter(Def));
+		}
 	}
 	M3REQUIRE_EQ(Party.MemberCount(), 6);
 	M3REQUIRE(!Party.AddCharacter(FContentLibrary::AllCharacters()[0]));   // người thứ 7 -> từ chối
+
 
 	const std::vector<FEquipment> Equips = FContentLibrary::StarterEquipment();
 	M3REQUIRE(Party.Equip(0, Equips[0]));
@@ -513,4 +517,68 @@ M3TEST(HoiSinhNhanVat_HoiMauVaKhoiPhucLuatMatch)
 	M3REQUIRE_GT(Battle.Party().Members()[0].Hp, 0.f);
 	M3REQUIRE(LogContains(Battle, "HỒI SINH"));
 }
+
+// =============================================================================
+//  Class Mage: Sát thương Ma Pháp & Debuff Suy Yếu Ma Pháp lên Boss Kháng Vật Lý
+// =============================================================================
+M3TEST(Mage_SatThuongMaPhap_VaDebuffSuyYeuMaPhap)
+{
+	FBattle Battle;
+	FBattleSetup Setup = MakeTestSetup(4, 7777u);
+
+	// Thêm 1 Mage (màu Tím, Ma Pháp)
+	FCharacterDef MageDef;
+	MageDef.Id = "char.mage.test";
+	MageDef.Name = "Ma Pháp Sĩ Test";
+	MageDef.Role = ERole::Mage;
+	MageDef.DamageType = EDamageType::Magic;
+	MageDef.MatchColor = EColor::Purple;
+	MageDef.BaseAtk = 300.f;
+	Setup.Roster.push_back(MageDef);
+
+	// Boss kháng 80% vật lý, 0% phép
+	Setup.BossHp = 10000.f;
+	Battle.Setup(Setup);
+	Battle.Boss().PhysResist = 0.80f;
+	Battle.Boss().MagResist = 0.0f;
+
+	// Dùng Mage Basic Skill
+	const int32 MageIdx = Battle.Party().MemberCount() - 1;
+	M3REQUIRE(Battle.UseBasicSkill(MageIdx).IsOk());
+	M3REQUIRE(LogContains(Battle, "Ma pháp"));
+	M3REQUIRE(LogContains(Battle, "Suy Yếu Ma Pháp"));
+}
+
+// =============================================================================
+//  Đội hình tự do 6 người & Nhiệm vụ Class (RequireRoleCount / RequireDistinctClasses)
+// =============================================================================
+M3TEST(DoiHinh_TuDo6Nguoi_VaNhiemVuClassMap)
+{
+	FBattle Battle;
+	FBattleSetup Setup = MakeTestSetup(6, 6666u);
+	Setup.Challenges.clear();
+	Setup.Challenges.push_back(FChallenge::MakeRequireRole(ERole::Mage, "ch.mage", "Cần có Mage", 1));
+	Setup.Challenges.push_back(FChallenge::MakeRequireDistinct(4, "ch.variety", "Cần 4 class khác nhau"));
+
+	// Đưa 1 Mage vào danh sách
+	FCharacterDef MageDef;
+	MageDef.Id = "char.mage.test2";
+	MageDef.Name = "Băng Chú Sĩ";
+	MageDef.Role = ERole::Mage;
+	MageDef.DamageType = EDamageType::Magic;
+	MageDef.MatchColor = EColor::Cyan;
+	Setup.Roster[5] = MageDef;
+
+	Setup.BossHp = 1.f; // Ép boss 1 HP để thắng ngay khi nối
+	Battle.Setup(Setup);
+
+	FCell A, B;
+	M3REQUIRE(Battle.Board().FindAnyPossibleMove(A, B));
+	Battle.PlayerSwap(A, B);
+
+	M3REQUIRE(Battle.IsVictory());
+	M3REQUIRE(Battle.EvaluateStars() >= 2);
+}
+
+
 

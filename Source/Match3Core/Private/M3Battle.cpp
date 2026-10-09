@@ -181,7 +181,14 @@ void FBattle::ApplyMatchEffects(const FResolveOutcome& Outcome)
 		case ERole::Attacker:
 		{
 			const float Damage = ComputeMatchDamage(i, Outcome);
-			DealDamageToBoss(Damage, M->Def.Name);
+			DealDamageToBoss(Damage, M->Def.Name, M->Def.DamageType);
+			break;
+		}
+		case ERole::Mage:
+		{
+			const float Damage = ComputeMageDamage(i, Outcome);
+			DealDamageToBoss(Damage, M->Def.Name, EDamageType::Magic);
+			ApplyMageMatchDebuff(i, Outcome);
 			break;
 		}
 		case ERole::Supporter:
@@ -236,6 +243,46 @@ float FBattle::ComputeMatchDamage(int32 AttackerIndex, const FResolveOutcome& Ou
 	return Damage;
 }
 
+float FBattle::ComputeMageDamage(int32 MageIndex, const FResolveOutcome& Outcome) const
+{
+	const FCharacterState* M = Team.TryGet(MageIndex);
+	if (!M) { return 0.f; }
+
+	const int32 Blocks = Outcome.BlocksOfColor(M->Def.MatchColor);
+	if (Blocks <= 0) { return 0.f; }
+
+	const float ComboMul = std::min(Cfg.MaxComboMultiplier,
+		1.f + Cfg.ComboBonusPerCascade * static_cast<float>(std::max(0, Outcome.CascadeCount - 1)));
+
+	float Damage = M->Atk * Cfg.DamagePerBlock * static_cast<float>(Blocks) * ComboMul;
+
+	float ElementBonus = 0.f;
+	for (const FEquipment& E : M->Equipment) { ElementBonus += E.ElementDamageBonus; }
+	Damage *= (1.f + ElementBonus);
+
+	Damage *= EffectsState.AtkMultiplier();
+	return Damage;
+}
+
+void FBattle::ApplyMageMatchDebuff(int32 MageIndex, const FResolveOutcome& Outcome)
+{
+	const FCharacterState* M = Team.TryGet(MageIndex);
+	if (!M) { return; }
+
+	const int32 Blocks = Outcome.BlocksOfColor(M->Def.MatchColor);
+	if (Blocks < 3) { return; }
+
+	FTeamBuff Debuff;
+	Debuff.Id = "debuff.boss.magic_vuln";
+	Debuff.Source = M->Def.Name;
+	Debuff.Stacks = 1;
+	Debuff.TurnsLeft = 2;
+	Debuff.bDebuffOnBoss = true;
+	EffectsState.AddStack(Debuff, 3);
+	AddLog(M->Def.Name + " yểm debuff Suy Yếu Ma Pháp lên " + BossState.Name + " (+25% sát thương ma pháp nhận vào).");
+}
+
+
 float FBattle::ComputeHealAmount(int32 HealerIndex, const FResolveOutcome& Outcome) const
 {
 	const FCharacterState* M = Team.TryGet(HealerIndex);
@@ -279,17 +326,30 @@ void FBattle::ApplySupportEffect(int32 SupporterIndex, const FResolveOutcome& Ou
 		+ ToText(Blocks) + " block " + ColorName(M->Def.MatchColor) + ".");
 }
 
-float FBattle::DealDamageToBoss(float RawDamage, const std::string& SourceName)
+float FBattle::DealDamageToBoss(float RawDamage, const std::string& SourceName, EDamageType DamageType)
 {
 	if (RawDamage <= 0.f || BossState.Hp <= 0.f) { return 0.f; }
 
-	// Tính toán kháng vật lý / kháng hệ của Boss
+	// Tính toán kháng vật lý / kháng phép của Boss
 	float Resist = 0.f;
-	if (SourceName.find("Attacker") != std::string::npos || SourceName.find("Counter") != std::string::npos)
+	if (DamageType == EDamageType::Physical)
 	{
 		Resist += BossState.PhysResist;
 	}
-	const float FinalResist = std::min(0.9f, std::max(0.f, Resist));
+	else if (DamageType == EDamageType::Magic)
+	{
+		Resist += BossState.MagResist;
+		// Debuff Suy Yếu Ma Pháp do Mage gây ra
+		for (const FTeamBuff& Buff : EffectsState.Buffs)
+		{
+			if (Buff.Id == "debuff.boss.magic_vuln")
+			{
+				Resist -= 0.25f * static_cast<float>(Buff.Stacks);
+			}
+		}
+	}
+
+	const float FinalResist = std::min(0.9f, std::max(-0.5f, Resist));
 
 	// Khi boss BREAK (thanh stagger vỡ) -> nhận thêm sát thương.
 	const float Final = RawDamage * (1.f - FinalResist) * (BossState.bBroken ? Cfg.BreakDamageMultiplier : 1.f);
@@ -297,10 +357,11 @@ float FBattle::DealDamageToBoss(float RawDamage, const std::string& SourceName)
 	BossState.Hp = std::max(0.f, BossState.Hp - Final);
 	DamageDealtTotal += Final;
 
-	AddLog(SourceName + " gây " + ToText(Final) + " sát thương lên " + BossState.Name
+	AddLog(SourceName + " gây " + ToText(Final) + " sát thương " + DamageTypeName(DamageType) + " lên " + BossState.Name
 		+ " (HP boss: " + ToText(BossState.Hp) + "/" + ToText(BossState.HpMax) + ").");
 
 	// Sát thương lên boss làm giảm thanh stagger.
+
 	ReduceStagger(Final * Cfg.StaggerPerDamage * EffectsState.StaggerMultiplier() * BossState.StaggerRate, SourceName);
 
 	if (BossState.Hp <= 0.f) { CheckBattleEnd(); }
@@ -485,17 +546,33 @@ FActionResult FBattle::UseBasicSkill(int32 MemberIndex, const FCell& TargetCell)
 	}
 
 	case ESkillKind::DeflectSurge:
-	{
-		// Deflecter: nạp nhanh stack match-4.
-		M->DeflectStacks = std::min(Cfg.DeflectStacksRequired, M->DeflectStacks + 1);
-		AddLog(M->Def.Name + " dùng " + Skill.Name + ": match-4 stack " + ToText(M->DeflectStacks)
-			+ "/" + ToText(Cfg.DeflectStacksRequired) + ".");
-		break;
-	}
+		{
+			// Deflecter: nạp nhanh stack match-4.
+			M->DeflectStacks = std::min(Cfg.DeflectStacksRequired, M->DeflectStacks + 1);
+			AddLog(M->Def.Name + " dùng " + Skill.Name + ": match-4 stack " + ToText(M->DeflectStacks)
+				+ "/" + ToText(Cfg.DeflectStacksRequired) + ".");
+			break;
+		}
+
+	case ESkillKind::MageBlast:
+		{
+			const float Damage = M->Atk * 1.6f;
+			DealDamageToBoss(Damage, M->Def.Name + " [Bão Phép]", EDamageType::Magic);
+			FTeamBuff Debuff;
+			Debuff.Id = "debuff.boss.magic_vuln";
+			Debuff.Source = M->Def.Name;
+			Debuff.Stacks = 1;
+			Debuff.TurnsLeft = 2;
+			Debuff.bDebuffOnBoss = true;
+			EffectsState.AddStack(Debuff, 3);
+			AddLog(M->Def.Name + " dùng " + Skill.Name + ": gây sát thương Ma Pháp và yểm debuff Suy Yếu Ma Pháp.");
+			break;
+		}
 
 	default:
 		break;
 	}
+
 
 	M->BasicCooldown = Skill.Cooldown;
 	bBasicSkillUsedThisTurn[RoleIdx] = true;
@@ -587,9 +664,21 @@ FActionResult FBattle::UseUltimate(int32 MemberIndex)
 		break;
 	}
 
+	case ESkillKind::UltimateMage:
+	{
+		const int32 Blocks = std::max(3, LastOutcome.MaxBlocksInStep);
+		const float Damage = M->Atk * Cfg.UltimateAttackerPower * ChainMul * (1.f + 0.06f * Blocks);
+		BossState.MagResist = std::max(0.f, BossState.MagResist - 0.30f);
+		const int32 Cleared = BoardState.ClearRandomObstacles(1);
+		DealDamageToBoss(Damage, M->Def.Name + " [Ultimate Mage]", EDamageType::Magic);
+		AddLog(M->Def.Name + " giáng Bão Thiên Thạch, giảm 30% kháng phép boss và gỡ " + ToText(Cleared) + " vật cản.");
+		break;
+	}
+
 	default:
 		break;
 	}
+
 
 	// FULL BURST: cả đội đều đã tung ultimate trong cùng 1 turn.
 	if (UltimatesUsedInTurn >= Team.AliveCount() && Team.AliveCount() > 1)
@@ -946,9 +1035,43 @@ void FBattle::UpdateChallenges()
 				AddLog("[Challenge] Hoàn thành: " + Challenge.Description);
 			}
 			break;
+
+		case FChallenge::EKind::RequireRoleCount:
+		{
+			int32 Count = 0;
+			for (const FCharacterState& M : Team.Members())
+			{
+				if (M.Def.Role == Challenge.TargetRole) { ++Count; }
+			}
+			if (bVictory && Count >= Challenge.Value)
+			{
+				Challenge.bCompleted = true;
+				AddLog("[Challenge] Hoàn thành: " + Challenge.Description);
+			}
+			break;
+		}
+
+		case FChallenge::EKind::RequireDistinctClasses:
+		{
+			std::vector<ERole> Roles;
+			for (const FCharacterState& M : Team.Members())
+			{
+				if (std::find(Roles.begin(), Roles.end(), M.Def.Role) == Roles.end())
+				{
+					Roles.push_back(M.Def.Role);
+				}
+			}
+			if (bVictory && static_cast<int32>(Roles.size()) >= Challenge.Value)
+			{
+				Challenge.bCompleted = true;
+				AddLog("[Challenge] Hoàn thành: " + Challenge.Description);
+			}
+			break;
+		}
 		}
 	}
 }
+
 
 void FBattle::CheckBattleEnd()
 {

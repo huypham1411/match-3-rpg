@@ -148,16 +148,37 @@ inline const char* BlockKindName(EBlockKind K)
 }
 
 // -----------------------------------------------------------------------------
+// Loại sát thương
+// -----------------------------------------------------------------------------
+enum class EDamageType : std::uint8_t
+{
+	Physical = 0, // Sát thương vật lý
+	Magic,        // Sát thương ma pháp
+	Count
+};
+
+inline const char* DamageTypeName(EDamageType T)
+{
+	switch (T)
+	{
+	case EDamageType::Physical: return "Vật lý";
+	case EDamageType::Magic:    return "Ma pháp";
+	default:                    return "Chuẩn";
+	}
+}
+
+// -----------------------------------------------------------------------------
 // Vai trò nhân vật
 // -----------------------------------------------------------------------------
 enum class ERole : std::uint8_t
 {
-	Attacker = 0,  // nối màu của Attacker -> sát thương boss
+	Attacker = 0,  // nối màu của Attacker -> sát thương boss (vật lý hoặc ma pháp)
 	Supporter,     // -> buff cho đội / debuff boss (tăng stagger nhận vào)
 	Healer,        // -> hồi máu (tăng theo cấp số nhân khi nhiều block)
 	Defender,      // không có block: nếu bạn kết thúc turn mà không làm gì -> giảm sát thương boss gây ra
 	Counter,       // không có block: chỉ kích hoạt khi thanh stagger của boss VỠ (BREAK)
 	Deflecter,     // không có block: tích 4 lần "match-4" -> cuối turn làm vỡ stagger nhanh hơn
+	Mage,          // Ma pháp sĩ: nối màu Mage -> sát thương Ma Pháp + đặt debuff Suy Yếu Ma Pháp lên boss
 	Count
 };
 
@@ -173,9 +194,11 @@ inline const char* RoleName(ERole R)
 	case ERole::Defender:  return "Defender";
 	case ERole::Counter:   return "Counter";
 	case ERole::Deflecter: return "Deflecter";
+	case ERole::Mage:      return "Mage";
 	default:               return "?";
 	}
 }
+
 
 // -----------------------------------------------------------------------------
 // Hệ / thuộc tính (dùng cho trang bị: gây thêm sát thương theo hệ)

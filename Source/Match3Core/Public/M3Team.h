@@ -38,6 +38,7 @@ struct FCharacterDef
 	std::string Id   = "char.unknown";
 	std::string Name = "Nhân vật";
 	ERole       Role  = ERole::Attacker;
+	EDamageType DamageType = EDamageType::Physical; // Sát thương Vật lý hoặc Ma pháp
 	EColor      MatchColor = EColor::Red;   // màu block kích hoạt; role không có block thì để None
 	EElement    Element = EElement::None;
 
@@ -49,6 +50,7 @@ struct FCharacterDef
 	std::string UltimateName   = "Ultimate";
 	std::string UltimateDesc   = "";
 };
+
 
 // ---------------------------------------------------------------------------
 // Trạng thái động của nhân vật trong trận
@@ -85,7 +87,12 @@ struct FCharacterState
 		return false;
 	}
 
-	bool HasBlock() const { return Def.MatchColor != EColor::None && Def.Role != ERole::Defender; }
+	bool HasBlock() const
+	{
+		return Def.MatchColor != EColor::None && Def.Role != ERole::Defender
+			&& Def.Role != ERole::Counter && Def.Role != ERole::Deflecter;
+	}
+
 	float HpPercent() const { return HpMax > 0.f ? Hp / HpMax : 0.f; }
 	bool IsUltimateReady() const { return UltimateCharge >= FBalance().UltimateMaxCharge; }
 	bool CanUseBasic(int32 BalanceCooldown) const { return bAlive && BasicCooldown <= 0; }
