@@ -15,8 +15,9 @@ Build/
 .idea/
 .vscode/
 
-# Web generated artifacts (buildable via Web/build_web.bat)
-Web/dist/
+# Web generated artifacts (commit để host Vercel / GitHub Pages)
+# Web/dist/
+
 
 # Scratch & temporary test binaries
 *.exe
