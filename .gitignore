@@ -14,6 +14,8 @@ Build/
 *.suo
 .idea/
 .vscode/
+*.code-workspace
+.ignore
 
 # Web generated artifacts (commit để host Vercel / GitHub Pages)
 # Web/dist/

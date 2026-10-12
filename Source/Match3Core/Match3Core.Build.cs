@@ -13,7 +13,7 @@ public class Match3Core : ModuleRules
 	{
 		// Không dùng shared PCH: mỗi file tự include những gì nó cần -> biên dịch
 		// được cả bên ngoài UE.
-		PCHUsage = PCHUsageMode.NoSharedPCHs;
+		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 		CppStandard = CppStandardVersion.Cpp20;
 
 		// Chỉ cần Core cho hạ tầng module; code trong này không dùng API nào của nó.

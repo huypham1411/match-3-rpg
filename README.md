@@ -9,46 +9,48 @@ nhờ vậy bạn thay model/asset thoải mái mà không phải động vào g
 | Hạng mục | Kết quả |
 |---|---|
 | Build Unreal Engine 5.6 (Editor, Win64, Development) | Thành công (`Result: Succeeded`) |
-| Bộ test luật chơi chạy độc lập (không cần UE) | 24/24 PASS |
-| Bản chơi trên web (WebAssembly, dùng chung lõi luật chơi) | Thành công — 22/22 test WASM PASS |
+| Bộ test luật chơi chạy độc lập (không cần UE) | 39/39 PASS |
+| Bản chơi trên web (WebAssembly, dùng chung lõi luật chơi) | Thành công — 27/27 test WASM PASS |
 | Chơi được trong level trống | Có (GameMode tự dựng sàn, đèn, bàn nối, boss, đội hình) |
 | Asset 3D | Dùng hình cơ bản của engine, thay thế được qua Data Asset |
 | Đã kiểm chứng bằng mắt (hình ảnh trong Editor) | Chưa — cần bạn mở Editor và bấm Play |
 
 ## 2. Yêu cầu môi trường
 
-- Unreal Engine 5.6 (đã cài sẵn tại `C:\Program Files\Epic Games\UE_5.6`)
-- Visual Studio 2022 kèm C++ toolset (MSVC) — đang dùng bản Build Tools 2022
-- Không cần plugin hay asset ngoài nào
+- **Unreal Engine 5.6** (mặc định tại `C:\Program Files\Epic Games\UE_5.6`)
+- **Visual Studio 2022** (hoặc VS Build Tools 2022) kèm gói C++ Game Development
+- Không cần plugin hay asset trả phí nào
 
-## 3. Cách chạy
+## 3. Cách mở và phát triển (Dành cho học source code & làm game)
 
-### 3.1. Mở Editor và chơi
+### 3.1. Cách 1 — Mở trực tiếp bằng Unreal Editor (Nhanh nhất)
+1. Double-click file `Match3RPG.uproject`.
+2. Nếu xuất hiện hộp thoại:
+   > *"The following modules are missing or built with a different engine version: Match3Core, Match3RPG. Would you like to rebuild them now?"*
+   → Bấm **Yes**. Engine sẽ tự động biên dịch các module C++ và khởi động Editor.
+3. Khi Editor mở lên: Tạo level trống (`File > New Level > Empty Level`) hoặc mở bất kỳ level nào, rồi bấm **Play** (PIE).
+   - GameMode (`AM3GameMode`) sẽ tự dựng bàn chơi 8x8, ánh sáng, boss, camera và đội hình mà không cần sắp xếp thủ công.
 
-1. Mở file `Match3RPG.uproject` bằng Unreal Editor 5.6 (lần đầu Editor sẽ hỏi build lại C++ → chọn **Yes**).
-2. Tạo một level trống (`File > New Level > Empty Level`) hoặc mở level bất kỳ, rồi bấm **Play**.
-   GameMode mặc định (`AM3GameMode`) sẽ tự sinh: sàn, đèn, bàn nối 8x8, boss và 4 nhân vật.
+### 3.2. Cách 2 — Đọc code và Debug bằng Visual Studio 2022
+1. Chạy file `GenerateProjectFiles.bat` ở thư mục gốc (hoặc click chuột phải vào `Match3RPG.uproject` chọn **Generate Visual Studio project files**).
+2. Mở file `Match3RPG.sln` vừa sinh ra bằng **Visual Studio 2022**.
+3. Chọn configuration **Development Editor** và platform **Win64**.
+4. Nhấn **F5** (hoặc Debug > Start Debugging) để vừa đọc code C++, vừa đặt breakpoint debug trực tiếp khi game chạy.
 
-Không cần đặt gì trong level: mọi thứ đều được sinh từ code.
-
-### 3.2. Build bằng dòng lệnh
-
-```bash
-"C:\Program Files\Epic Games\UE_5.6\Engine\Build\BatchFiles\Build.bat" ^
-  Match3RPGEditor Win64 Development -Project="D:\self\match-3-rpg\Match3RPG.uproject" -WaitMutex
+### 3.3. Cách 3 — 1-Click Build Editor bằng Script
+Nếu bạn muốn build lại toàn bộ C++ module từ terminal mà không cần mở Visual Studio:
+```cmd
+BuildEditor.bat
 ```
+Script này tự động gọi UnrealBuildTool biên dịch target `Match3RPGEditor Win64 Development`.
 
-### 3.3. Chạy bộ test luật chơi (không cần mở UE)
-
-```bash
+### 3.4. Chạy bộ test luật chơi độc lập (1 giây, không cần mở UE)
+```cmd
 Tests\Core\build_and_run.bat
 ```
+Script này biên dịch module lõi bằng `cl.exe` và chạy toàn bộ **39 test** luật chơi (dò match, bom vùng, bom hàng/cột, combo cascade, đổi chỗ block tự do, hồi sinh, phase boss, WuWa skill tree...). Bạn có thể chỉnh sửa luật ở `Source/Match3Core` và chạy test này để kiểm tra kết quả ngay trong 1-2 giây!
 
-Script này biên dịch module lõi bằng `cl.exe` và chạy 24 test (dò match, special,
-rơi block, vật cản, sát thương, hồi máu, buff, stagger/BREAK, counter, deflecter,
-defender, ultimate chain, challenge, mô phỏng 300 nước đi liên tục...).
-
-### 3.4. Bản chơi trên web (WebAssembly)
+### 3.5. Bản chơi trên web (WebAssembly)
 
 Unreal Engine 5.6 **không có nền tảng web**: trong bản cài này `Engine/Platforms` chỉ có
 `Android, IOS, VisionOS, Windows`, UnrealBuildTool cũng không có platform HTML5/Web —
