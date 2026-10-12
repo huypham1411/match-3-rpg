@@ -278,25 +278,7 @@ void BuildMatchClear(const FBoard& Board, const FMatchResult& Match, std::vector
 
 		if (G.SpecialKind == EBlockKind::LineClear)
 		{
-			// Hướng của run dài nhất quyết định LineClear nổ hàng hay cột.
-			int32 HS = 0, HE = 0, VS = 0, VE = 0;
-			// Tự đếm lại độ dài run quanh ô special để chọn hướng.
-			int32 RunH = 0, RunV = 0;
-			{
-				const EColor C = G.Color;
-				int32 X = G.SpecialCell.X;
-				while (X - 1 >= 0 && Board.At(X - 1, G.SpecialCell.Y).Color == C && Board.At(X - 1, G.SpecialCell.Y).IsMatchable()) { --X; }
-				RunH = 1;
-				while (X + 1 < Board.Width() && Board.At(X + 1, G.SpecialCell.Y).Color == C && Board.At(X + 1, G.SpecialCell.Y).IsMatchable()) { ++X; ++RunH; }
-				(void)HS; (void)HE;
-
-				int32 Y = G.SpecialCell.Y;
-				while (Y - 1 >= 0 && Board.At(G.SpecialCell.X, Y - 1).Color == C && Board.At(G.SpecialCell.X, Y - 1).IsMatchable()) { --Y; }
-				RunV = 1;
-				while (Y + 1 < Board.Height() && Board.At(G.SpecialCell.X, Y + 1).Color == C && Board.At(G.SpecialCell.X, Y + 1).IsMatchable()) { ++Y; ++RunV; }
-				(void)VS; (void)VE;
-			}
-			S.Variant = (RunH >= RunV) ? 0 : 1;
+			S.Variant = G.SpecialVariant;
 		}
 
 		OutSpawns.push_back(S);
@@ -368,6 +350,12 @@ FResolveOutcome FResolver::ResolveLoopInternal(const FCell* PreferredCell, bool 
 			{
 				if (Board.InBounds(C)) { AddUnique(ToClear, C); }
 			}
+			// Đồng thời gom cả các match thông thường khác nếu nước đi vừa tạo ra match!
+			const FMatchResult Match = FMatcher::FindMatches(Board);
+			if (Match.bHasMatch)
+			{
+				BuildMatchClear(Board, Match, ToClear, Spawns, Outcome);
+			}
 		}
 		else
 		{
@@ -438,38 +426,31 @@ FResolveOutcome FResolver::ResolveSwap(const FCell& A, const FCell& B)
 	const bool bASpecial = BeforeA.IsSpecial();
 	const bool bBSpecial = BeforeB.IsSpecial();
 
-	// --- Nước đi thường: phải tạo ra match thì mới hợp lệ (trừ khi có block đặc biệt được swap) ---
-	const FMatchResult Probe = FMatcher::FindMatches(Board);
-	if (!Probe.bHasMatch && !bASpecial && !bBSpecial)
-	{
-		Board.SwapCells(A, B);   // trả bàn về như cũ
-		Outcome.bValid = false;
-		Outcome.InvalidReason = "Nước đi không tạo được đường nối nào.";
-		return Outcome;
-	}
-
-	if (!Probe.bHasMatch && (bASpecial || bBSpecial))
+	// --- Đổi chỗ có chứa block đặc biệt (LineClear, SquareBomb, AreaBomb) ---
+	if (bASpecial || bBSpecial)
 	{
 		// Người chơi di chuyển tự do block đặc biệt để kích hoạt hiệu ứng ngay!
 		// Sau swap: BeforeA giờ ở B, BeforeB giờ ở A.
 		std::vector<FCell> TriggerCells;
 		if (bASpecial)
 		{
-			if (BeforeA.Kind == EBlockKind::LineClear)
-			{
-				Board.At(B).Variant = (A.Y == B.Y) ? 0 : 1;
-			}
 			TriggerCells.push_back(B);
 		}
 		if (bBSpecial)
 		{
-			if (BeforeB.Kind == EBlockKind::LineClear)
-			{
-				Board.At(A).Variant = (A.Y == B.Y) ? 0 : 1;
-			}
 			TriggerCells.push_back(A);
 		}
 		return ResolveLoopInternal(nullptr, false, FCell(), FCell(), &TriggerCells);
+	}
+
+	// --- Nước đi thường: phải tạo ra match thì mới hợp lệ ---
+	const FMatchResult Probe = FMatcher::FindMatches(Board);
+	if (!Probe.bHasMatch)
+	{
+		Board.SwapCells(A, B);   // trả bàn về như cũ
+		Outcome.bValid = false;
+		Outcome.InvalidReason = "Nước đi không tạo được đường nối nào.";
+		return Outcome;
 	}
 
 	// Ưu tiên đặt special ở ô mà block vừa "đi tới" (cảm giác giống Candy Crush).

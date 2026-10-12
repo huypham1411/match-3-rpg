@@ -9,7 +9,7 @@ nhờ vậy bạn thay model/asset thoải mái mà không phải động vào g
 | Hạng mục | Kết quả |
 |---|---|
 | Build Unreal Engine 5.6 (Editor, Win64, Development) | Thành công (`Result: Succeeded`) |
-| Bộ test luật chơi chạy độc lập (không cần UE) | 39/39 PASS |
+| Bộ test luật chơi chạy độc lập (không cần UE) | 41/41 PASS |
 | Bản chơi trên web (WebAssembly, dùng chung lõi luật chơi) | Thành công — 27/27 test WASM PASS |
 | Chơi được trong level trống | Có (GameMode tự dựng sàn, đèn, bàn nối, boss, đội hình) |
 | Asset 3D | Dùng hình cơ bản của engine, thay thế được qua Data Asset |
@@ -48,7 +48,7 @@ Script này tự động gọi UnrealBuildTool biên dịch target `Match3RPGEdi
 ```cmd
 Tests\Core\build_and_run.bat
 ```
-Script này biên dịch module lõi bằng `cl.exe` và chạy toàn bộ **39 test** luật chơi (dò match, bom vùng, bom hàng/cột, combo cascade, đổi chỗ block tự do, hồi sinh, phase boss, WuWa skill tree...). Bạn có thể chỉnh sửa luật ở `Source/Match3Core` và chạy test này để kiểm tra kết quả ngay trong 1-2 giây!
+Script này biên dịch module lõi bằng `cl.exe` và chạy toàn bộ **41 test** luật chơi (dò match, bom vùng, bom hàng/cột, combo cascade, đổi chỗ block tự do, hồi sinh, phase boss, WuWa skill tree...). Bạn có thể chỉnh sửa luật ở `Source/Match3Core` và chạy test này để kiểm tra kết quả ngay trong 1-2 giây!
 
 ### 3.5. Bản chơi trên web (WebAssembly)
 

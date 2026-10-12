@@ -362,3 +362,77 @@ M3TEST(Match5KhongThangHang_TaoBomPheTa_GiaoNhauHinhChuL)
 	}
 	M3REQUIRE(bSpawnedAreaBomb);
 }
+
+// -----------------------------------------------------------------------------
+M3TEST(Match4Doc_SinhTiaSetHang_VaMatch4Ngang_SinhTiaSetCot)
+{
+	// 1. Kiểm tra 4 dọc -> sinh LineClear Variant 0 (clear HÀNG)
+	{
+		FBoard Board = FBoard::FromAscii({
+			"R.......",
+			"R.......",
+			"R.......",
+			"R.......",
+			"........"
+		});
+		const FMatchResult Result = FMatcher::FindMatches(Board);
+		M3REQUIRE(Result.bHasMatch);
+		M3REQUIRE_EQ(Result.Groups[0].SpecialKind, EBlockKind::LineClear);
+		M3REQUIRE_EQ(Result.Groups[0].SpecialVariant, 0); // 4 dọc -> clear HÀNG (Variant 0)
+	}
+
+	// 2. Kiểm tra 4 ngang -> sinh LineClear Variant 1 (clear CỘT)
+	{
+		FBoard Board = FBoard::FromAscii({
+			"RRRR....",
+			"........",
+			"........",
+			"........"
+		});
+		const FMatchResult Result = FMatcher::FindMatches(Board);
+		M3REQUIRE(Result.bHasMatch);
+		M3REQUIRE_EQ(Result.Groups[0].SpecialKind, EBlockKind::LineClear);
+		M3REQUIRE_EQ(Result.Groups[0].SpecialVariant, 1); // 4 ngang -> clear CỘT (Variant 1)
+	}
+}
+
+// -----------------------------------------------------------------------------
+M3TEST(MoveLineClear_ClearHangVaCotTuDo)
+{
+	// 1. Di chuyển LineClear HÀNG (Variant 0) -> kích nổ sạch toàn bộ hàng
+	{
+		FBoard Board(8, 8, 5555u, 6);
+		FillCleanBoard(Board);
+
+		// Đặt 1 block LineClear hàng (Variant 0) tại (3, 3)
+		Board.SetCell(MakeCell(3, 3), FBlock::MakeSpecial(EColor::Purple, EBlockKind::LineClear, 0));
+
+		FResolver Resolver(Board);
+		// Đổi chỗ (3, 3) sang (4, 3) không có match 3 màu
+		const FResolveOutcome Outcome = Resolver.ResolveSwap(MakeCell(3, 3), MakeCell(4, 3));
+
+		M3REQUIRE(Outcome.bValid);
+		M3REQUIRE(Outcome.TotalBlocksCleared >= 8); // Quét cả hàng 8 ô
+		M3REQUIRE(Outcome.Steps.size() >= 1);
+		M3REQUIRE_GT(static_cast<int32>(Outcome.Steps[0].SpecialsActivated.size()), 0);
+	}
+
+	// 2. Di chuyển LineClear CỘT (Variant 1) -> kích nổ sạch toàn bộ cột
+	{
+		FBoard Board(8, 8, 6666u, 6);
+		FillCleanBoard(Board);
+
+		// Đặt 1 block LineClear cột (Variant 1) tại (2, 2)
+		Board.SetCell(MakeCell(2, 2), FBlock::MakeSpecial(EColor::Purple, EBlockKind::LineClear, 1));
+
+		FResolver Resolver(Board);
+		// Đổi chỗ (2, 2) sang (2, 3) không có match 3 màu
+		const FResolveOutcome Outcome = Resolver.ResolveSwap(MakeCell(2, 2), MakeCell(2, 3));
+
+		M3REQUIRE(Outcome.bValid);
+		M3REQUIRE(Outcome.TotalBlocksCleared >= 8); // Quét cả cột 8 ô
+		M3REQUIRE(Outcome.Steps.size() >= 1);
+		M3REQUIRE_GT(static_cast<int32>(Outcome.Steps[0].SpecialsActivated.size()), 0);
+	}
+}
+

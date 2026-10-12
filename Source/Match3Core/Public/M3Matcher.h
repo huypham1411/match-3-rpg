@@ -26,6 +26,7 @@ struct FMatchGroup
 	bool         bSquare = false;             // nhóm này chứa ô vuông 2x2
 	int32        MaxRunLength = 0;            // độ dài run thẳng dài nhất trong nhóm
 	EBlockKind   SpecialKind = EBlockKind::Normal;  // special sẽ sinh ra (Normal = không)
+	int32        SpecialVariant = 0;          // LineClear: 0 = clear HÀNG, 1 = clear CỘT
 	FCell        SpecialCell;                 // vị trí đặt special
 };
 

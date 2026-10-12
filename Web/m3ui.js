@@ -179,7 +179,8 @@ function onCellClick(x, y) {
   const ok = M._m3_try_swap(selected.x, selected.y, x, y);
   selected = null;
   if (!ok) {
-    toast('Nước đi không tạo được đường nối nào - thử chỗ khác.', false);
+    const err = M._m3_last_error ? M.UTF8ToString(M._m3_last_error()) : '';
+    toast(err || 'Nước đi không tạo được đường nối nào - thử chỗ khác.', false);
   } else {
     const cascadeCount = M._m3_last_cascade_count ? M._m3_last_cascade_count() : 1;
     if (cascadeCount > 1) {
@@ -385,13 +386,14 @@ function renderBoard() {
       const color = M._m3_cell_color(x, y);
       const kind = M._m3_cell_kind(x, y);
       const charges = M._m3_cell_charges(x, y);
+      const variant = M._m3_cell_variant ? M._m3_cell_variant(x, y) : 0;
 
       // Lớp CSS theo màu
       const colorClass = COLOR_CLASS[color] || '';
       let classes = 'cell';
       if (colorClass) { classes += ' ' + colorClass; }
       if (kind === KIND_OBSTACLE) { classes += ' obstacle'; }
-      if (kind === KIND_LINE) { classes += ' special-line'; }
+      if (kind === KIND_LINE) { classes += variant === 0 ? ' special-line special-line-row' : ' special-line special-line-col'; }
       if (kind === KIND_SQUARE) { classes += ' special-square'; }
       if (kind === KIND_RAINBOW) { classes += ' special-rainbow'; }
       if (kind === KIND_TRAP) { classes += ' obstacle trap'; }
@@ -399,7 +401,7 @@ function renderBoard() {
       if (selected && selected.x === x && selected.y === y) { classes += ' sel'; }
       if (showHint && ((x === hintAX && y === hintAY) || (x === hintBX && y === hintBY))) { classes += ' hintA'; }
 
-      const signature = `${color}-${kind}-${charges}`;
+      const signature = `${color}-${kind}-${charges}-${variant}`;
       if (prevCells[index] !== signature) {
         classes += (prevCells[index] && color > 0) ? ' drop' : ' pop';
         prevCells[index] = signature;
@@ -415,8 +417,13 @@ function renderBoard() {
         glyph = '▨';
         cellTitle = `[CHƯỚNG NGẠI BOSS] Khối đá phong ấn (còn ${charges} lớp phá). Cần kỹ năng Supporter hoặc nổ bom kề bên để phá hủy.`;
       } else if (kind === KIND_LINE) {
-        glyph = '═';
-        cellTitle = '[PHE TA - TIA SÉT XUYÊN PHÁ] Sinh từ match-4 thẳng hàng. Di chuyển tự do để quét sạch cả hàng hoặc cột!';
+        if (variant === 0) {
+          glyph = '═';
+          cellTitle = '[PHE TA - TIA SÉT XUYÊN HÀNG] Sinh từ match-4 dọc. Di chuyển tự do để quét sạch toàn bộ hàng ngang!';
+        } else {
+          glyph = '║';
+          cellTitle = '[PHE TA - TIA SÉT XUYÊN CỘT] Sinh từ match-4 ngang. Di chuyển tự do để quét sạch toàn bộ cột dọc!';
+        }
       } else if (kind === KIND_SQUARE) {
         glyph = '✸';
         cellTitle = '[PHE TA - TÊN LỬA TẦM NHIỆT] Sinh từ match-4 vuông (2x2). Di chuyển tự do để bay đến phá hủy chướng ngại/bẫy của Boss!';

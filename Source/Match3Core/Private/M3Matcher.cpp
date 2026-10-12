@@ -248,6 +248,8 @@ FMatchResult FMatcher::FindMatches(const FBoard& Board, const FCell* PreferredCe
 		else if (G.MaxRunLength == 4)
 		{
 			G.SpecialKind = EBlockKind::LineClear;
+			// Quy tắc: 4 dọc -> clear HÀNG (Variant 0); 4 ngang -> clear CỘT (Variant 1)
+			G.SpecialVariant = bBestHorizontal ? 1 : 0;
 		}
 		else
 		{

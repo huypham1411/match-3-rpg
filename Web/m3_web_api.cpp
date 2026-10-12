@@ -30,6 +30,7 @@ namespace
 
 	// Buffer cho chuỗi UTF-8 trả về JS (chỉ dùng 1 chuỗi một lúc).
 	std::string gText;
+	std::string gLastError;
 
 	// Ô gợi ý nước đi hợp lệ.
 	int   gHintAX = -1, gHintAY = -1, gHintBX = -1, gHintBY = -1;
@@ -124,6 +125,18 @@ M3WEB_API int m3_cell_charges(int x, int y)
 	return Block ? Block->Charges : 0;
 }
 
+M3WEB_API int m3_cell_variant(int x, int y)
+{
+	EnsureActive();
+	const M3::FBlock* Block = gBattle.Board().TryGet(x, y);
+	return Block ? Block->Variant : 0;
+}
+
+M3WEB_API const char* m3_last_error()
+{
+	return Keep(gLastError);
+}
+
 // -----------------------------------------------------------------------------
 // Hành động
 // -----------------------------------------------------------------------------
@@ -131,6 +144,8 @@ M3WEB_API int m3_try_swap(int x1, int y1, int x2, int y2)
 {
 	EnsureActive();
 	const M3::FActionResult Result = gBattle.PlayerSwap(M3::MakeCell(x1, y1), M3::MakeCell(x2, y2));
+	if (!Result.IsOk()) { gLastError = Result.Message; }
+	else { gLastError.clear(); }
 	RefreshHint();
 	return Result.IsOk() ? 1 : 0;
 }
