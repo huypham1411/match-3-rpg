@@ -280,12 +280,28 @@ kbd {
   color: #10151f;
 }
 .cell.special-area {
-  border: 2px dashed #f59e0b;
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.7), inset 0 0 8px rgba(255, 255, 255, 0.5);
-  animation: areaGlow 1.4s ease-in-out infinite;
+  border: 2px solid #fbbf24 !important;
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.85), inset 0 0 10px rgba(255, 255, 255, 0.6);
+  animation: areaGlow 1.3s ease-in-out infinite;
+}
+.cell.special-area::after {
+  content: "★";
+  position: absolute;
+  top: 1px;
+  right: 4px;
+  font-size: 10px;
+  color: #fde047;
+  text-shadow: 0 0 4px #000;
+  pointer-events: none;
 }
 @keyframes areaGlow {
-  50% { box-shadow: 0 0 16px rgba(239, 68, 68, 0.9), inset 0 0 12px rgba(255, 255, 255, 0.8); }
+  50% { box-shadow: 0 0 20px rgba(251, 191, 36, 1), inset 0 0 14px rgba(255, 255, 255, 0.9); }
+}
+
+.cell .charges.danger {
+  color: #fca5a5;
+  font-weight: 800;
+  text-shadow: 0 0 5px #ef4444;
 }
 .cell.pop { animation: pop .22s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 @keyframes pop { 0% { transform: scale(.7); opacity: .7; } 100% { transform: scale(1); opacity: 1; } }

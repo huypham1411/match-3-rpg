@@ -408,19 +408,36 @@ function renderBoard() {
 
       cell.className = classes;
 
-      // Ký hiệu cho block đặc biệt
+      // Ký hiệu và tooltip phân biệt rõ ràng bom phe ta vs bẫy địch
       let glyph = '';
-      if (kind === KIND_OBSTACLE) { glyph = '▨'; }
-      else if (kind === KIND_LINE) { glyph = '═'; }
-      else if (kind === KIND_SQUARE) { glyph = '✸'; }
-      else if (kind === KIND_RAINBOW) { glyph = '✷'; }
-      else if (kind === KIND_TRAP) { glyph = '💣'; }
-      else if (kind === KIND_AREA_BOMB) { glyph = '💥'; }
+      let cellTitle = '';
+      if (kind === KIND_OBSTACLE) {
+        glyph = '▨';
+        cellTitle = `[CHƯỚNG NGẠI BOSS] Khối đá phong ấn (còn ${charges} lớp phá). Cần kỹ năng Supporter hoặc nổ bom kề bên để phá hủy.`;
+      } else if (kind === KIND_LINE) {
+        glyph = '═';
+        cellTitle = '[PHE TA - TIA SÉT XUYÊN PHÁ] Sinh từ match-4 thẳng hàng. Di chuyển tự do để quét sạch cả hàng hoặc cột!';
+      } else if (kind === KIND_SQUARE) {
+        glyph = '✸';
+        cellTitle = '[PHE TA - TÊN LỬA TẦM NHIỆT] Sinh từ match-4 vuông (2x2). Di chuyển tự do để bay đến phá hủy chướng ngại/bẫy của Boss!';
+      } else if (kind === KIND_RAINBOW) {
+        glyph = '✷';
+        cellTitle = '[PHE TA - CẦU VỒNG TOÀN NĂNG] Sinh từ match-5 thẳng hàng. Đổi chỗ với màu bất kỳ để nổ toàn bộ block cùng màu trên bàn!';
+      } else if (kind === KIND_TRAP) {
+        glyph = '☠️';
+        cellTitle = `[ĐỊCH - BẪY ĐẾM NGƯỢC] Bẫy nổ của Boss (còn ${charges} lượt)! Hết giờ sẽ nổ gây sát thương cho toàn đội. Hãy match kề bên hoặc dùng kỹ năng Supporter để gỡ!`;
+      } else if (kind === KIND_AREA_BOMB) {
+        glyph = '💣';
+        cellTitle = '[PHE TA - BOM KHỐI NĂNG LƯỢNG] Bom nổ 3x3 của phe ta (sinh từ combo 5 góc L/T)! Nhấn 2 lần (double-click) hoặc di chuyển tự do để kích nổ vùng 3x3, gây sát thương khủng lên Boss!';
+      } else if (color > 0) {
+        cellTitle = `Block màu ${color}`;
+      }
 
       const extraText = (kind === KIND_OBSTACLE && charges > 1) ? `<span class="charges">x${charges}</span>`
-                      : (kind === KIND_TRAP) ? `<span class="charges">${charges}t</span>` : '';
+                      : (kind === KIND_TRAP) ? `<span class="charges danger">${charges}t</span>` : '';
       cell.innerHTML = glyph + extraText;
-      cell.setAttribute('aria-label', `Ô ${x},${y}`);
+      cell.title = cellTitle;
+      cell.setAttribute('aria-label', `Ô ${x},${y} - ${cellTitle}`);
     }
   }
 }

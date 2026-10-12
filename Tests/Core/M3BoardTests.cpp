@@ -329,6 +329,36 @@ M3TEST(KichHoatTaiCho_DoubleTap_BomKhoiAreaBomb)
 	M3REQUIRE_EQ(static_cast<int32>(Outcome.Steps[0].SpecialsActivated.size()), 1);
 }
 
+// -----------------------------------------------------------------------------
+M3TEST(Match5KhongThangHang_TaoBomPheTa_GiaoNhauHinhChuL)
+{
+	FBoard Board(8, 8, 12345u, 6);
+	FillCleanBoard(Board);
 
+	// Thiết lập các ô như trường hợp người chơi chụp:
+	Board.SetCell(MakeCell(1, 1), FBlock::MakeNormal(EColor::Cyan));
+	Board.SetCell(MakeCell(1, 2), FBlock::MakeNormal(EColor::Cyan));
+	Board.SetCell(MakeCell(1, 3), FBlock::MakeNormal(EColor::Yellow));
+	Board.SetCell(MakeCell(2, 3), FBlock::MakeNormal(EColor::Cyan));
+	Board.SetCell(MakeCell(3, 3), FBlock::MakeNormal(EColor::Cyan));
+	Board.SetCell(MakeCell(1, 4), FBlock::MakeNormal(EColor::Cyan));
 
+	// Di chuyển ô Cyan (1, 4) lên (1, 3) đổi chỗ với Yellow
+	FResolver Resolver(Board);
+	const FResolveOutcome Outcome = Resolver.ResolveSwap(MakeCell(1, 4), MakeCell(1, 3));
 
+	M3REQUIRE(Outcome.bValid);
+	M3REQUIRE(Outcome.Steps.size() >= 1);
+
+	// Ô giao nhau (1, 3) phải sinh ra Bom Khối (AreaBomb) của phe ta
+	bool bSpawnedAreaBomb = false;
+	for (size_t s = 0; s < Outcome.Steps[0].SpecialsSpawned.size(); ++s)
+	{
+		if (Outcome.Steps[0].SpecialsSpawned[s] == MakeCell(1, 3) &&
+		    Outcome.Steps[0].SpawnedKinds[s] == EBlockKind::AreaBomb)
+		{
+			bSpawnedAreaBomb = true;
+		}
+	}
+	M3REQUIRE(bSpawnedAreaBomb);
+}

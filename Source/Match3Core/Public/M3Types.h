@@ -139,12 +139,12 @@ inline const char* BlockKindName(EBlockKind K)
 	switch (K)
 	{
 	case EBlockKind::Normal:     return "Block thường";
-	case EBlockKind::Obstacle:   return "Vật cản";
-	case EBlockKind::LineClear:  return "Block nổ hàng/cột";
-	case EBlockKind::SquareBomb: return "Block nổ vuông";
-	case EBlockKind::ColorBomb:  return "Block cầu vồng";
-	case EBlockKind::CountTrap:  return "Bẫy đếm ngược";
-	case EBlockKind::AreaBomb:   return "Bom nổ khối";
+	case EBlockKind::Obstacle:   return "Vật cản (Boss)";
+	case EBlockKind::LineClear:  return "Tia sét hàng/cột (Phe ta)";
+	case EBlockKind::SquareBomb: return "Tên lửa tìm mục tiêu (Phe ta)";
+	case EBlockKind::ColorBomb:  return "Cầu vồng toàn năng (Phe ta)";
+	case EBlockKind::CountTrap:  return "Bẫy đếm ngược (Boss)";
+	case EBlockKind::AreaBomb:   return "Bom nổ khối 3x3 (Phe ta)";
 	default:                     return "?";
 	}
 }

@@ -160,8 +160,8 @@ FActionResult FBattle::ActivateSpecialCell(const FCell& Cell)
 	MovesRemaining  -= 1;
 	MaxBlocksInSingleMove = std::max(MaxBlocksInSingleMove, Outcome.MaxBlocksInStep);
 
-	AddLog("Kích hoạt block đặc biệt: nổ " + ToText(Outcome.TotalBlocksCleared) + " block, " + ToText(Outcome.CascadeCount)
-		+ " tầng combo" + (Outcome.TotalObstaclesCleared > 0 ? (" , gỡ " + ToText(Outcome.TotalObstaclesCleared) + " vật cản") : "") + ".");
+	AddLog("[PHE TA] Kích hoạt Bom Khối năng lượng: nổ " + ToText(Outcome.TotalBlocksCleared) + " block vùng 3x3, " + ToText(Outcome.CascadeCount)
+		+ " tầng combo" + (Outcome.TotalObstaclesCleared > 0 ? (" , gỡ " + ToText(Outcome.TotalObstaclesCleared) + " vật cản/bẫy") : "") + ".");
 
 	ApplyMatchEffects(Outcome);
 
@@ -802,7 +802,7 @@ void FBattle::AdvanceTurn(bool bExplicitEarlyEnd)
 		const float TrapDamage = 130.f * static_cast<float>(ExplodedTraps.size());
 		const float Done = Team.DamageAll(TrapDamage);
 		DamageTakenTotal += Done;
-		AddLog("BẪY ĐẾM NGƯỢC NỔ! Gây " + ToText(Done) + " sát thương lên toàn đội!");
+		AddLog("[ĐỊCH] BẪY ĐẾM NGƯỢC NỔ! Bẫy của Boss phát nổ gây " + ToText(Done) + " sát thương lên toàn đội!");
 	}
 
 	// ---------------------------------------------------------------------
