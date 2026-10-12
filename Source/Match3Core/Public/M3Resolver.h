@@ -76,6 +76,9 @@ public:
 	// Xoá thủ công một danh sách ô (kỹ năng / skill của nhân vật).
 	FResolveOutcome ResolveManualClear(const std::vector<FCell>& CellsToClear, const std::string& Reason);
 
+	// Kích hoạt tại chỗ một block đặc biệt (nhấn 2 lần vào bom / special).
+	FResolveOutcome ResolveActivateSpecial(const FCell& C);
+
 private:
 	// Đổi chỗ có liên quan tới block cầu vồng: kích hoạt toàn bộ block cùng màu
 	// với block bị đổi chỗ (không cần tạo thành đường nối 3).
@@ -83,9 +86,11 @@ private:
 
 	// Vòng lặp chính: xoá -> rơi -> lặp cho đến khi bàn hết match.
 	FResolveOutcome ResolveLoopInternal(const FCell* PreferredCell, bool bKickWithColorBomb,
-	                                    const FCell& BombCell, const FCell& TargetCell);
+	                                    const FCell& BombCell, const FCell& TargetCell,
+	                                    const std::vector<FCell>* KickSpecialCells = nullptr);
 
 	FBoard& Board;
 };
+
 
 } // namespace M3

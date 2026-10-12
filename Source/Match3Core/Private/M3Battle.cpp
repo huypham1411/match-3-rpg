@@ -139,6 +139,50 @@ FActionResult FBattle::PlayerSwap(const FCell& A, const FCell& B)
 	return FActionResult::Ok("Nước đi hợp lệ.");
 }
 
+FActionResult FBattle::ActivateSpecialCell(const FCell& Cell)
+{
+	if (!bSetup)      { return FActionResult::Fail(EActionResult::Invalid, "Chưa thiết lập trận."); }
+	if (IsFinished()) { return FActionResult::Fail(EActionResult::Finished, "Trận đã kết thúc."); }
+	if (MovesRemaining <= 0)
+	{
+		return FActionResult::Fail(EActionResult::NoActions, "Hết lượt nối trong turn này.");
+	}
+
+	FResolver Resolver(BoardState);
+	const FResolveOutcome Outcome = Resolver.ResolveActivateSpecial(Cell);
+	if (!Outcome.bValid)
+	{
+		return FActionResult::Fail(EActionResult::NoMatch, Outcome.InvalidReason);
+	}
+
+	LastOutcome = Outcome;
+	MovesUsedInTurn += 1;
+	MovesRemaining  -= 1;
+	MaxBlocksInSingleMove = std::max(MaxBlocksInSingleMove, Outcome.MaxBlocksInStep);
+
+	AddLog("Kích hoạt block đặc biệt: nổ " + ToText(Outcome.TotalBlocksCleared) + " block, " + ToText(Outcome.CascadeCount)
+		+ " tầng combo" + (Outcome.TotalObstaclesCleared > 0 ? (" , gỡ " + ToText(Outcome.TotalObstaclesCleared) + " vật cản") : "") + ".");
+
+	ApplyMatchEffects(Outcome);
+
+	if (!BoardState.HasAnyPossibleMove())
+	{
+		BoardState.Shuffle();
+		BoardState.EnsurePlayable();
+		AddLog("Bàn không còn nước đi hợp lệ -> tự trộn lại.");
+	}
+
+	UpdateChallenges();
+	CheckBattleEnd();
+
+	if (!IsFinished() && MovesRemaining <= 0)
+	{
+		AdvanceTurn(false);
+	}
+
+	return FActionResult::Ok("Kích hoạt đặc biệt thành công.");
+}
+
 // -----------------------------------------------------------------------------
 // Biến kết quả nối thành hiệu ứng cho từng nhân vật
 // -----------------------------------------------------------------------------

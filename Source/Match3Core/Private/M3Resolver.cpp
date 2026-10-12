@@ -87,6 +87,24 @@ void ExpandWithSpecials(const FBoard& Board, std::vector<FCell>& InOutCells, std
 			break;
 
 		case EBlockKind::SquareBomb:
+		{
+			// Tự động tìm 1 vật cản / bẫy ngẫu nhiên trên bàn để nhắm bắn phá hủy!
+			std::vector<FCell> Targets;
+			for (int32 Y = 0; Y < Board.Height(); ++Y)
+			{
+				for (int32 X = 0; X < Board.Width(); ++X)
+				{
+					if (Board.At(X, Y).IsObstacle() || Board.At(X, Y).IsCountTrap())
+					{
+						Targets.push_back(MakeCell(X, Y));
+					}
+				}
+			}
+			if (!Targets.empty())
+			{
+				AddUnique(InOutCells, Targets[0]);
+			}
+			// Nổ xung quanh vị trí xuất phát
 			for (int32 dy = -1; dy <= 1; ++dy)
 			{
 				for (int32 dx = -1; dx <= 1; ++dx)
@@ -96,6 +114,22 @@ void ExpandWithSpecials(const FBoard& Board, std::vector<FCell>& InOutCells, std
 				}
 			}
 			break;
+		}
+
+		case EBlockKind::AreaBomb:
+		{
+			// Bom nổ diện rộng 3x3 xung quanh tâm bom
+			for (int32 dy = -1; dy <= 1; ++dy)
+			{
+				for (int32 dx = -1; dx <= 1; ++dx)
+				{
+					const FCell N = MakeCell(C.X + dx, C.Y + dy);
+					if (Board.InBounds(N)) { AddUnique(InOutCells, N); }
+				}
+			}
+			break;
+		}
+
 
 		case EBlockKind::ColorBomb:
 		{
@@ -140,7 +174,19 @@ void RunClearStep(FBoard& Board, FResolveOutcome& Outcome, int32 CascadeIndex,
 	ExpandWithSpecials(Board, ToClear, Step.SpecialsActivated, 0);
 
 	// 2) Ô đặt special mới KHÔNG bị xoá (giống Candy Crush: block biến thành special).
-	for (const FSpawnRequest& S : Spawns) { RemoveCell(ToClear, S.Cell); }
+	// Nhưng block đó thuộc tổ hợp match vừa tạo, nên vẫn tính điểm/màu cho combo đó.
+	int32 ColorCount[kNumColors] = { 0, 0, 0, 0, 0, 0 };
+	for (const FSpawnRequest& S : Spawns)
+	{
+		const int32 Idx = ColorIndex(S.Color);
+		if (Idx >= 0)
+		{
+			ColorCount[Idx] += 1;
+			Outcome.ClearedByColor[Idx] += 1;
+		}
+		Step.BlocksInStep += 1;
+		RemoveCell(ToClear, S.Cell);
+	}
 
 	// 3) Tách: block thì xoá, vật cản thì chỉ mất 1 lớp.
 	std::vector<FCell> BlockCells;
@@ -154,7 +200,6 @@ void RunClearStep(FBoard& Board, FResolveOutcome& Outcome, int32 CascadeIndex,
 	}
 
 	// 4) Xoá block + đếm theo màu (đây là "số block trigger" của từng nhân vật).
-	int32 ColorCount[kNumColors] = { 0, 0, 0, 0, 0, 0 };
 	for (const FCell& C : BlockCells)
 	{
 		const FBlock B = Board.At(C);
@@ -277,7 +322,8 @@ FResolveOutcome FResolver::ResolveSwap_ColorBombKick(const FCell& A, const FCell
 }
 
 FResolveOutcome FResolver::ResolveLoopInternal(const FCell* PreferredCell, bool bKickWithColorBomb,
-                                               const FCell& BombCell, const FCell& TargetCell)
+                                               const FCell& BombCell, const FCell& TargetCell,
+                                               const std::vector<FCell>* KickSpecialCells)
 {
 	FResolveOutcome Outcome;
 	Outcome.bValid = true;
@@ -313,6 +359,14 @@ FResolveOutcome FResolver::ResolveLoopInternal(const FCell* PreferredCell, bool 
 					const bool bHit = bBothBombs || (Target != EColor::None && Bl.Color == Target);
 					if (bHit) { AddUnique(ToClear, MakeCell(X, Y)); }
 				}
+			}
+		}
+		else if (Cascade == 1 && KickSpecialCells && !KickSpecialCells->empty())
+		{
+			// --- Kích hoạt tự do block đặc biệt (Line/Square/Area bomb) ---
+			for (const FCell& C : *KickSpecialCells)
+			{
+				if (Board.InBounds(C)) { AddUnique(ToClear, C); }
 			}
 		}
 		else
@@ -381,14 +435,41 @@ FResolveOutcome FResolver::ResolveSwap(const FCell& A, const FCell& B)
 		return ResolveSwap_ColorBombKick(A, B, BeforeA, BeforeB);
 	}
 
-	// --- Nước đi thường: phải tạo ra match thì mới hợp lệ ---
+	const bool bASpecial = BeforeA.IsSpecial();
+	const bool bBSpecial = BeforeB.IsSpecial();
+
+	// --- Nước đi thường: phải tạo ra match thì mới hợp lệ (trừ khi có block đặc biệt được swap) ---
 	const FMatchResult Probe = FMatcher::FindMatches(Board);
-	if (!Probe.bHasMatch)
+	if (!Probe.bHasMatch && !bASpecial && !bBSpecial)
 	{
 		Board.SwapCells(A, B);   // trả bàn về như cũ
 		Outcome.bValid = false;
 		Outcome.InvalidReason = "Nước đi không tạo được đường nối nào.";
 		return Outcome;
+	}
+
+	if (!Probe.bHasMatch && (bASpecial || bBSpecial))
+	{
+		// Người chơi di chuyển tự do block đặc biệt để kích hoạt hiệu ứng ngay!
+		// Sau swap: BeforeA giờ ở B, BeforeB giờ ở A.
+		std::vector<FCell> TriggerCells;
+		if (bASpecial)
+		{
+			if (BeforeA.Kind == EBlockKind::LineClear)
+			{
+				Board.At(B).Variant = (A.Y == B.Y) ? 0 : 1;
+			}
+			TriggerCells.push_back(B);
+		}
+		if (bBSpecial)
+		{
+			if (BeforeB.Kind == EBlockKind::LineClear)
+			{
+				Board.At(A).Variant = (A.Y == B.Y) ? 0 : 1;
+			}
+			TriggerCells.push_back(A);
+		}
+		return ResolveLoopInternal(nullptr, false, FCell(), FCell(), &TriggerCells);
 	}
 
 	// Ưu tiên đặt special ở ô mà block vừa "đi tới" (cảm giác giống Candy Crush).
@@ -398,10 +479,25 @@ FResolveOutcome FResolver::ResolveSwap(const FCell& A, const FCell& B)
 	return ResolveLoopInternal(Preferred, false, A, B);
 }
 
+FResolveOutcome FResolver::ResolveActivateSpecial(const FCell& C)
+{
+	FResolveOutcome Outcome;
+	if (!Board.InBounds(C) || !Board.At(C).IsSpecial())
+	{
+		Outcome.bValid = false;
+		Outcome.InvalidReason = "Ô này không phải là block đặc biệt để kích hoạt.";
+		return Outcome;
+	}
+
+	std::vector<FCell> KickCells = { C };
+	return ResolveLoopInternal(nullptr, false, FCell(), FCell(), &KickCells);
+}
+
 FResolveOutcome FResolver::ResolveExisting()
 {
 	return ResolveLoopInternal(nullptr, false, FCell(), FCell());
 }
+
 
 FResolveOutcome FResolver::ResolveManualClear(const std::vector<FCell>& CellsToClear, const std::string& Reason)
 {

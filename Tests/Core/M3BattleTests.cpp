@@ -580,5 +580,26 @@ M3TEST(DoiHinh_TuDo6Nguoi_VaNhiemVuClassMap)
 	M3REQUIRE(Battle.EvaluateStars() >= 2);
 }
 
+// =============================================================================
+//  Kích hoạt Special Cell trong trận (Double-click Bom / Special)
+// =============================================================================
+M3TEST(KichHoatBom_TrongTranDau_GiamLuotVaGiaTangCombo)
+{
+	FBattle Battle;
+	FBattleSetup Setup = MakeTestSetup(4, 7777u);
+	Battle.Setup(Setup);
 
+	// Đặt 1 AreaBomb tại (3, 3)
+	Battle.Board().SetCell(MakeCell(3, 3), FBlock::MakeSpecial(EColor::Red, EBlockKind::AreaBomb));
 
+	const int32 MovesBefore = Battle.MovesLeft();
+	const float DamageBefore = Battle.TotalDamageDealt();
+
+	// Gọi ActivateSpecialCell
+	const FActionResult Res = Battle.ActivateSpecialCell(MakeCell(3, 3));
+	M3REQUIRE(Res.IsOk());
+	M3REQUIRE_EQ(Battle.MovesLeft(), MovesBefore - 1);
+	M3REQUIRE_GT(Battle.TotalDamageDealt(), DamageBefore);
+	M3REQUIRE(Battle.LastResolve().bValid);
+	M3REQUIRE_GT(Battle.LastResolve().TotalBlocksCleared, 0);
+}

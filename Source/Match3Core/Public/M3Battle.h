@@ -182,6 +182,8 @@ public:
 	// ---------- Hành động của người chơi ----------
 	// 1 nước đi = 1 lần đổi chỗ hợp lệ (cascade trong cùng nước đi vẫn là 1 lượt).
 	FActionResult PlayerSwap(const FCell& A, const FCell& B);
+	// Kích hoạt trực tiếp 1 ô đặc biệt tại chỗ (ví dụ double-click bom)
+	FActionResult ActivateSpecialCell(const FCell& Cell);
 	// Kỹ năng chủ động của 1 nhân vật (hồi chiêu tính theo turn, hỗ trợ chỉ định ô gỡ block/bẫy).
 	FActionResult UseBasicSkill(int32 MemberIndex, const FCell& TargetCell = MakeCell(-1, -1));
 	// Ultimate: cần đầy thanh; dùng liên tiếp trong cùng turn để chain.

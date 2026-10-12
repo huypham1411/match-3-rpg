@@ -29,8 +29,8 @@ const logEl = $('log');
 // Tên lớp CSS theo màu block (1..6 = Đỏ, Xanh dương, Xanh lá, Vàng, Tím, Cyan)
 const COLOR_CLASS = ['', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
 
-// Loại block: 1 vật cản, 2 nổ hàng/cột, 3 nổ vuông, 4 cầu vồng, 5 bẫy đếm ngược
-const KIND_OBSTACLE = 1, KIND_LINE = 2, KIND_SQUARE = 3, KIND_RAINBOW = 4, KIND_TRAP = 5;
+// Loại block: 1 vật cản, 2 nổ hàng/cột, 3 nổ vuông, 4 cầu vồng, 5 bẫy đếm ngược, 6 bom diện rộng
+const KIND_OBSTACLE = 1, KIND_LINE = 2, KIND_SQUARE = 3, KIND_RAINBOW = 4, KIND_TRAP = 5, KIND_AREA_BOMB = 6;
 
 // ---------------------------------------------------------------------------
 // Nạp WebAssembly rồi khởi động
@@ -78,6 +78,7 @@ function buildBoardDom() {
       cell.dataset.y = String(y);
       cell.setAttribute('role', 'gridcell');
       cell.addEventListener('click', () => onCellClick(x, y));
+      cell.addEventListener('dblclick', () => onCellDoubleClick(x, y));
       boardEl.appendChild(cell);
     }
   }
@@ -150,8 +151,27 @@ function onCellClick(x, y) {
     return;
   }
 
+  // Click vào chính ô đang chọn: nếu là block đặc biệt -> kích hoạt trực tiếp tại chỗ (double tap / double click)
+  if (selected && selected.x === x && selected.y === y) {
+    const kind = M._m3_cell_kind(x, y);
+    if (kind === KIND_LINE || kind === KIND_SQUARE || kind === KIND_RAINBOW || kind === KIND_AREA_BOMB) {
+      selected = null;
+      const ok = M._m3_activate_cell ? M._m3_activate_cell(x, y) : 0;
+      if (!ok) {
+        toast('Không kích hoạt được ô đặc biệt này.', false);
+      } else {
+        const cascadeCount = M._m3_last_cascade_count ? M._m3_last_cascade_count() : 1;
+        if (cascadeCount > 1) { showComboBadge(cascadeCount); }
+      }
+      render();
+      return;
+    }
+    selected = null;
+    render();
+    return;
+  }
+
   if (!selected) { selected = { x, y }; render(); return; }
-  if (selected.x === x && selected.y === y) { selected = null; render(); return; }
 
   const adjacent = Math.abs(selected.x - x) + Math.abs(selected.y - y) === 1;
   if (!adjacent) { selected = { x, y }; render(); return; }
@@ -167,6 +187,20 @@ function onCellClick(x, y) {
     }
   }
   render();
+}
+
+function onCellDoubleClick(x, y) {
+  if (M._m3_finished()) { return; }
+  const kind = M._m3_cell_kind(x, y);
+  if (kind === KIND_LINE || kind === KIND_SQUARE || kind === KIND_RAINBOW || kind === KIND_AREA_BOMB) {
+    selected = null;
+    const ok = M._m3_activate_cell ? M._m3_activate_cell(x, y) : 0;
+    if (ok) {
+      const cascadeCount = M._m3_last_cascade_count ? M._m3_last_cascade_count() : 1;
+      if (cascadeCount > 1) { showComboBadge(cascadeCount); }
+    }
+    render();
+  }
 }
 
 function showComboBadge(count) {
@@ -249,12 +283,82 @@ function currentStage() {
 }
 
 // ---------------------------------------------------------------------------
+// Trích xuất danh sách Buff / Debuff đang kích hoạt
+// ---------------------------------------------------------------------------
+function getActiveEffects() {
+  const bossBuffs = [];
+  const memberCount = M._m3_member_count ? M._m3_member_count() : 4;
+  const memberBuffs = Array.from({ length: memberCount }, () => []);
+
+  const count = M._m3_effect_count ? M._m3_effect_count() : 0;
+  for (let k = 0; k < count; k++) {
+    const id = M.UTF8ToString(M._m3_effect_id(k));
+    const source = M.UTF8ToString(M._m3_effect_source(k));
+    const stacks = M._m3_effect_stacks(k);
+    const turns = M._m3_effect_turns(k);
+    const isBoss = M._m3_effect_is_boss(k) === 1;
+    const targetMember = M._m3_effect_target_member(k);
+    const desc = M.UTF8ToString(M._m3_effect_description(k));
+
+    let icon = '🔸';
+    let label = id;
+    let cssClass = '';
+
+    if (id === 'buff.supporter.rally') {
+      icon = '⚔️'; label = `Cổ Vũ x${stacks}`; cssClass = 'buff-atk';
+    } else if (id === 'buff.attacker.focus') {
+      icon = '⚡'; label = 'Tập Trung'; cssClass = 'buff-atk';
+    } else if (id.startsWith('buff.defender.')) {
+      icon = '🛡️'; label = 'Thủ Hộ'; cssClass = 'buff-def';
+    } else if (id === 'buff.healer.aegis') {
+      icon = '🔰'; label = 'Bảo Hộ'; cssClass = 'buff-def';
+    } else if (id === 'buff.chain.fullburst') {
+      icon = '🌟'; label = 'Full Burst'; cssClass = 'buff-burst';
+    } else if (id === 'debuff.boss.magic_vuln') {
+      icon = '🔮'; label = `Suy Yếu Phép x${stacks}`; cssClass = 'buff-debuff';
+    }
+
+    const item = {
+      icon,
+      label,
+      cssClass,
+      tooltip: `${desc} [Nguồn: ${source}] (còn ${turns} turn)`
+    };
+
+    if (isBoss) {
+      bossBuffs.push(item);
+    } else {
+      if (targetMember >= 0 && targetMember < memberCount) {
+        memberBuffs[targetMember].push(item);
+      } else {
+        for (let m = 0; m < memberCount; m++) {
+          memberBuffs[m].push(item);
+        }
+      }
+    }
+  }
+
+  const selfBuffs = M._m3_boss_self_buffs ? M._m3_boss_self_buffs() : 0;
+  if (selfBuffs > 0) {
+    bossBuffs.push({
+      icon: '💥',
+      label: `Cuồng Nộ x${selfBuffs}`,
+      cssClass: 'buff-atk',
+      tooltip: `Tăng ${selfBuffs * 10}% sát thương cho Boss`
+    });
+  }
+
+  return { bossBuffs, memberBuffs };
+}
+
+// ---------------------------------------------------------------------------
 // Vẽ trạng thái
 // ---------------------------------------------------------------------------
 function render() {
+  const effects = getActiveEffects();
   renderBoard();
-  renderBoss();
-  renderTeam();
+  renderBoss(effects.bossBuffs);
+  renderTeam(effects.memberBuffs);
   renderChallenges();
   renderLog();
   renderBanner();
@@ -291,6 +395,7 @@ function renderBoard() {
       if (kind === KIND_SQUARE) { classes += ' special-square'; }
       if (kind === KIND_RAINBOW) { classes += ' special-rainbow'; }
       if (kind === KIND_TRAP) { classes += ' obstacle trap'; }
+      if (kind === KIND_AREA_BOMB) { classes += ' special-area'; }
       if (selected && selected.x === x && selected.y === y) { classes += ' sel'; }
       if (showHint && ((x === hintAX && y === hintAY) || (x === hintBX && y === hintBY))) { classes += ' hintA'; }
 
@@ -310,6 +415,7 @@ function renderBoard() {
       else if (kind === KIND_SQUARE) { glyph = '✸'; }
       else if (kind === KIND_RAINBOW) { glyph = '✷'; }
       else if (kind === KIND_TRAP) { glyph = '💣'; }
+      else if (kind === KIND_AREA_BOMB) { glyph = '💥'; }
 
       const extraText = (kind === KIND_OBSTACLE && charges > 1) ? `<span class="charges">x${charges}</span>`
                       : (kind === KIND_TRAP) ? `<span class="charges">${charges}t</span>` : '';
@@ -319,7 +425,7 @@ function renderBoard() {
   }
 }
 
-function renderBoss() {
+function renderBoss(bossBuffs) {
   const broken = M._m3_boss_broken() === 1;
   const hpPct = Math.max(0, Math.min(1, M._m3_boss_hp_pct()));
   const stagPct = Math.max(0, Math.min(1, M._m3_stagger_pct()));
@@ -350,6 +456,17 @@ function renderBoss() {
     $('breakBadge').className = 'badge badge-break';
   }
 
+  const bossBuffsEl = $('bossBuffs');
+  if (bossBuffsEl) {
+    bossBuffsEl.innerHTML = '';
+    (bossBuffs || []).forEach(b => {
+      const badge = document.createElement('span');
+      badge.className = `buff-badge ${b.cssClass}`;
+      badge.innerHTML = `${b.icon} ${b.label} <span class="tooltip">${b.tooltip}</span>`;
+      bossBuffsEl.appendChild(badge);
+    });
+  }
+
   $('turnText').textContent = String(M._m3_turn());
   const movesLeft = M._m3_moves_left();
   const movesMax = M._m3_moves_per_turn();
@@ -364,7 +481,7 @@ function renderBoss() {
   $('teamHpBar').style.width = (teamPct * 100).toFixed(1) + '%';
 }
 
-function renderTeam() {
+function renderTeam(memberBuffs) {
   const count = M._m3_member_count();
   const intentAction = M._m3_boss_intent_action ? M._m3_boss_intent_action() : -1;
   const intentTarget = M._m3_boss_intent_target ? M._m3_boss_intent_target() : -1;
@@ -387,6 +504,7 @@ function renderTeam() {
           <div class="mini-bar mini-hp"><i></i></div>
           <div class="mini-bar mini-ult"><i></i></div>
         </div>
+        <div class="member-buffs buff-list"></div>
         <div class="member-actions">
           <button type="button" class="btn btn-skill" data-skill="${i}">
             <span class="label"></span> <kbd>${i + 1}</kbd>
@@ -410,6 +528,7 @@ function renderTeam() {
     const cool = M._m3_member_cooldown(i);
     const ultPct = M._m3_member_ultimate_pct(i);
     const color = M._m3_member_color(i);
+    const roleId = M._m3_member_role_id ? M._m3_member_role_id(i) : -1;
     const isTargetedSingle = (intentAction === 1 && intentTarget === i && alive);
 
     const dmgType = M._m3_member_damage_type ? M._m3_member_damage_type(i) : 0;
@@ -425,6 +544,19 @@ function renderTeam() {
 
     card.querySelector('.mini-hp i').style.width = (Math.max(0, Math.min(1, M._m3_member_hp_pct(i))) * 100).toFixed(1) + '%';
     card.querySelector('.mini-ult i').style.width = Math.min(100, ultPct) + '%';
+
+    const buffsEl = card.querySelector('.member-buffs');
+    if (buffsEl) {
+      buffsEl.innerHTML = '';
+      if (alive && memberBuffs && memberBuffs[i]) {
+        memberBuffs[i].forEach(b => {
+          const badge = document.createElement('span');
+          badge.className = `buff-badge ${b.cssClass}`;
+          badge.innerHTML = `${b.icon} ${b.label} <span class="tooltip">${b.tooltip}</span>`;
+          buffsEl.appendChild(badge);
+        });
+      }
+    }
 
     const skillBtn = card.querySelector('[data-skill]');
     const ultBtn = card.querySelector('[data-ult]');

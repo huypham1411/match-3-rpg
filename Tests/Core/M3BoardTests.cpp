@@ -277,5 +277,58 @@ M3TEST(CascadeCombo_KhiBlockRoiTaoMatchMoi_TangCascadeCountVaMultiplier)
 	M3REQUIRE(Outcome.bAnyMatch);
 }
 
+// -----------------------------------------------------------------------------
+M3TEST(Match5KhongThangHang_SinhBomKhoiAreaBomb)
+{
+	FBoard Board = FBoard::FromAscii({
+		"RRR.....",
+		"R.......",
+		"R.......",
+		"........"
+	});
+	const FMatchResult Result = FMatcher::FindMatches(Board);
+	M3REQUIRE(Result.bHasMatch);
+	M3REQUIRE_EQ(static_cast<int32>(Result.Groups.size()), 1);
+	M3REQUIRE_EQ(static_cast<int32>(Result.Groups[0].Cells.size()), 5);
+	M3REQUIRE_EQ(Result.Groups[0].SpecialKind, EBlockKind::AreaBomb);
+}
+
+// -----------------------------------------------------------------------------
+M3TEST(BlockDacBiet_DiChuyenTuDoKhongCanMatchMau)
+{
+	FBoard Board(8, 8, 9999u, 6);
+	FillCleanBoard(Board);
+
+	// Đặt 1 block LineClear tại (2, 2)
+	Board.SetCell(MakeCell(2, 2), FBlock::MakeSpecial(EColor::Red, EBlockKind::LineClear, 0));
+
+	FResolver Resolver(Board);
+	const FResolveOutcome Outcome = Resolver.ResolveSwap(MakeCell(2, 2), MakeCell(2, 3));
+
+	M3REQUIRE(Outcome.bValid);
+	M3REQUIRE_GT(Outcome.TotalBlocksCleared, 0);
+	M3REQUIRE(Outcome.Steps.size() >= 1);
+	M3REQUIRE_GT(static_cast<int32>(Outcome.Steps[0].SpecialsActivated.size()), 0);
+}
+
+// -----------------------------------------------------------------------------
+M3TEST(KichHoatTaiCho_DoubleTap_BomKhoiAreaBomb)
+{
+	FBoard Board(8, 8, 8888u, 6);
+	FillCleanBoard(Board);
+
+	// Đặt 1 AreaBomb tại (3, 3)
+	Board.SetCell(MakeCell(3, 3), FBlock::MakeSpecial(EColor::Blue, EBlockKind::AreaBomb));
+
+	FResolver Resolver(Board);
+	const FResolveOutcome Outcome = Resolver.ResolveActivateSpecial(MakeCell(3, 3));
+
+	M3REQUIRE(Outcome.bValid);
+	M3REQUIRE(Outcome.TotalBlocksCleared >= 9);
+	M3REQUIRE(Outcome.Steps.size() >= 1);
+	M3REQUIRE_EQ(static_cast<int32>(Outcome.Steps[0].SpecialsActivated.size()), 1);
+}
+
+
 
 

@@ -135,6 +135,14 @@ M3WEB_API int m3_try_swap(int x1, int y1, int x2, int y2)
 	return Result.IsOk() ? 1 : 0;
 }
 
+M3WEB_API int m3_activate_cell(int x, int y)
+{
+	EnsureActive();
+	const M3::FActionResult Result = gBattle.ActivateSpecialCell(M3::MakeCell(x, y));
+	RefreshHint();
+	return Result.IsOk() ? 1 : 0;
+}
+
 M3WEB_API int m3_use_skill(int memberIndex)
 {
 	EnsureActive();
@@ -303,6 +311,105 @@ M3WEB_API int m3_member_deflect_stacks(int index)
 	EnsureActive();
 	const M3::FCharacterState* Member = gBattle.Party().TryGet(index);
 	return Member ? Member->DeflectStacks : 0;
+}
+
+// -----------------------------------------------------------------------------
+// Hiệu ứng đội & debuff (Buffs / Debuffs)
+// -----------------------------------------------------------------------------
+M3WEB_API int m3_effect_count()
+{
+	EnsureActive();
+	return static_cast<int>(gBattle.Effects().Buffs.size());
+}
+
+M3WEB_API const char* m3_effect_id(int index)
+{
+	EnsureActive();
+	const auto& Buffs = gBattle.Effects().Buffs;
+	if (index < 0 || index >= static_cast<int>(Buffs.size())) { return Keep(""); }
+	return Keep(Buffs[static_cast<size_t>(index)].Id);
+}
+
+M3WEB_API const char* m3_effect_source(int index)
+{
+	EnsureActive();
+	const auto& Buffs = gBattle.Effects().Buffs;
+	if (index < 0 || index >= static_cast<int>(Buffs.size())) { return Keep(""); }
+	return Keep(Buffs[static_cast<size_t>(index)].Source);
+}
+
+M3WEB_API int m3_effect_stacks(int index)
+{
+	EnsureActive();
+	const auto& Buffs = gBattle.Effects().Buffs;
+	if (index < 0 || index >= static_cast<int>(Buffs.size())) { return 0; }
+	return Buffs[static_cast<size_t>(index)].Stacks;
+}
+
+M3WEB_API int m3_effect_turns(int index)
+{
+	EnsureActive();
+	const auto& Buffs = gBattle.Effects().Buffs;
+	if (index < 0 || index >= static_cast<int>(Buffs.size())) { return 0; }
+	return Buffs[static_cast<size_t>(index)].TurnsLeft;
+}
+
+M3WEB_API int m3_effect_is_boss(int index)
+{
+	EnsureActive();
+	const auto& Buffs = gBattle.Effects().Buffs;
+	if (index < 0 || index >= static_cast<int>(Buffs.size())) { return 0; }
+	return Buffs[static_cast<size_t>(index)].bDebuffOnBoss ? 1 : 0;
+}
+
+M3WEB_API int m3_effect_target_member(int index)
+{
+	EnsureActive();
+	const auto& Buffs = gBattle.Effects().Buffs;
+	if (index < 0 || index >= static_cast<int>(Buffs.size())) { return -1; }
+	return Buffs[static_cast<size_t>(index)].CoveredMemberIndex;
+}
+
+M3WEB_API const char* m3_effect_description(int index)
+{
+	EnsureActive();
+	const auto& Buffs = gBattle.Effects().Buffs;
+	if (index < 0 || index >= static_cast<int>(Buffs.size())) { return Keep(""); }
+	const auto& B = Buffs[static_cast<size_t>(index)];
+	std::string Desc;
+	if (B.Id == "buff.supporter.rally")
+	{
+		Desc = "Cổ Vũ: +" + M3::ToText(B.Stacks * 15) + "% sát thương & +" + M3::ToText(B.Stacks * 25) + "% stagger";
+	}
+	else if (B.Id == "buff.defender.bulwark" || B.Id == "buff.defender.stance")
+	{
+		Desc = "Khiên Chắn: Giảm " + M3::ToText(B.DamageTakenPerStack * 100.f) + "% sát thương nhận vào";
+	}
+	else if (B.Id == "buff.defender.fortress")
+	{
+		Desc = "Thành Lũy Kiên Cố: Giảm 65% sát thương toàn đội";
+	}
+	else if (B.Id == "buff.healer.aegis")
+	{
+		Desc = "Bảo Hộ: Chặn boss sinh vật cản / bẫy";
+	}
+	else if (B.Id == "buff.attacker.focus")
+	{
+		Desc = "Tập Trung: +40% sát thương match";
+	}
+	else if (B.Id == "debuff.boss.magic_vuln")
+	{
+		Desc = "Suy Yếu Ma Pháp: Nhận thêm " + M3::ToText(B.Stacks * 25) + "% sát thương phép";
+	}
+	else if (B.Id == "buff.chain.fullburst")
+	{
+		Desc = "Full Burst: +35% sát thương và stagger toàn đội";
+	}
+	else
+	{
+		Desc = B.Id + " (" + M3::ToText(B.Stacks) + " stack, " + M3::ToText(B.TurnsLeft) + " turn)";
+	}
+	return Keep(Desc);
 }
 
 // -----------------------------------------------------------------------------

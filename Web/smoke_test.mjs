@@ -66,12 +66,18 @@ check(M.UTF8ToString(M._m3_last_message()).length > 0, 'nhật ký có nội dun
 
 
 // ---------------------------------------------------------------------------
-// 4. Kỹ năng / ultimate
+// 4. Kỹ năng / ultimate / Buff & Kích hoạt cell
 // ---------------------------------------------------------------------------
 const skillOk = M._m3_use_skill(1);         // Supporter: gỡ vật cản
 check(skillOk === 1, 'dùng được kỹ năng của Supporter');
 check(M._m3_use_skill(1) === 0, 'kỹ năng đang hồi chiêu thì bị từ chối');
 check(M._m3_use_ultimate(0) === 0, 'ultimate chưa đầy thì bị từ chối');
+
+check(typeof M._m3_activate_cell === 'function', 'có hàm m3_activate_cell');
+check(typeof M._m3_effect_count === 'function', 'có hàm m3_effect_count');
+const actNormal = M._m3_activate_cell(0, 0);
+check(actNormal === 0, 'kích hoạt ô thường thất bại an toàn');
+check(M._m3_effect_count() >= 0, 'đọc được số lượng hiệu ứng buff/debuff');
 
 // ---------------------------------------------------------------------------
 // 5. Chuỗi tiếng Việt qua WASM

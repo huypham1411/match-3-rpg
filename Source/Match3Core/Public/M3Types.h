@@ -127,9 +127,10 @@ enum class EBlockKind : std::uint8_t
 	Normal = 0,   // block thường (màu + nối được)
 	Obstacle,     // vật cản do boss tạo: KHÔNG nối được, cần kỹ năng / match-4 vuông để gỡ
 	LineClear,    // special từ match-4 hàng/cột: nổ cả hàng (Variant 0) hoặc cả cột (Variant 1)
-	SquareBomb,   // special từ match-4 VUÔNG: nổ vùng 3x3 + phá vật cản trong vùng
-	ColorBomb,    // special từ match-5: đổi chỗ với 1 block -> kích hoạt TOÀN BỘ block cùng màu
+	SquareBomb,   // special từ match-4 VUÔNG: tự động bay tìm vật cản/bẫy để phá hủy
+	ColorBomb,    // special từ match-5 thẳng hàng: đổi chỗ với 1 block -> kích hoạt TOÀN BỘ block cùng màu
 	CountTrap,    // bẫy đếm ngược do boss đặt: mỗi turn giảm 1 số, về 0 nổ gây sát thương/debuff
+	AreaBomb,     // special từ combo 5 KHÔNG thẳng hàng (L/T-shape): nổ diện rộng 2x2/3x3
 	Count
 };
 
@@ -143,9 +144,11 @@ inline const char* BlockKindName(EBlockKind K)
 	case EBlockKind::SquareBomb: return "Block nổ vuông";
 	case EBlockKind::ColorBomb:  return "Block cầu vồng";
 	case EBlockKind::CountTrap:  return "Bẫy đếm ngược";
+	case EBlockKind::AreaBomb:   return "Bom nổ khối";
 	default:                     return "?";
 	}
 }
+
 
 // -----------------------------------------------------------------------------
 // Loại sát thương
@@ -253,8 +256,10 @@ struct FBlock
 	bool IsObstacle() const { return Kind == EBlockKind::Obstacle; }
 	bool IsSpecial() const
 	{
-		return Kind == EBlockKind::LineClear || Kind == EBlockKind::SquareBomb || Kind == EBlockKind::ColorBomb;
+		return Kind == EBlockKind::LineClear || Kind == EBlockKind::SquareBomb
+			|| Kind == EBlockKind::ColorBomb || Kind == EBlockKind::AreaBomb;
 	}
+
 	// Chỉ block "nối được" mới tham gia match / rơi tự do (obstacle đứng yên tại chỗ).
 	bool IsMatchable() const { return !IsEmpty() && !IsObstacle() && Color != EColor::None; }
 

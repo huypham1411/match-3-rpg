@@ -236,6 +236,11 @@ FMatchResult FMatcher::FindMatches(const FBoard& Board, const FCell* PreferredCe
 		{
 			G.SpecialKind = EBlockKind::ColorBomb;
 		}
+		else if (G.Cells.size() >= 5)
+		{
+			// Combo 5 không thẳng hàng (L-shape / T-shape / góc) -> Bom khối nổ diện rộng!
+			G.SpecialKind = EBlockKind::AreaBomb;
+		}
 		else if (G.bSquare)
 		{
 			G.SpecialKind = EBlockKind::SquareBomb;
@@ -248,6 +253,7 @@ FMatchResult FMatcher::FindMatches(const FBoard& Board, const FCell* PreferredCe
 		{
 			G.SpecialKind = EBlockKind::Normal;
 		}
+
 
 		// Vị trí đặt special:
 		//  - Ưu tiên ô người chơi vừa swap tới (giống cảm giác Candy Crush).
