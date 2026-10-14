@@ -204,6 +204,66 @@ inline const char* RoleName(ERole R)
 
 
 // -----------------------------------------------------------------------------
+// Cấp bậc kẻ địch (dùng cho story, cân bằng và bố cục UI)
+// -----------------------------------------------------------------------------
+//   Normal   : quái thường, xuất hiện theo nhóm đông
+//   Elite    : quái tinh anh, chỉ số cao hơn + có thêm chiêu tác động bàn
+//   MidBoss  : trùm giữa màn, nhiều phase, khoá ô / đảo bàn
+//   Boss     : trùm cuối màn, đủ bộ chiêu + nạp tuyệt kĩ
+enum class EEnemyTier : std::uint8_t
+{
+	Normal = 0,
+	Elite,
+	MidBoss,
+	Boss,
+	Count
+};
+
+inline const char* EnemyTierName(EEnemyTier Tier)
+{
+	switch (Tier)
+	{
+	case EEnemyTier::Normal:  return "Quái thường";
+	case EEnemyTier::Elite:   return "Quái tinh anh";
+	case EEnemyTier::MidBoss: return "Trùm giữa màn";
+	case EEnemyTier::Boss:    return "Trùm cuối màn";
+	default:                  return "?";
+	}
+}
+
+inline const char* EnemyTierKey(EEnemyTier Tier)
+{
+	switch (Tier)
+	{
+	case EEnemyTier::Normal:  return "normal";
+	case EEnemyTier::Elite:   return "elite";
+	case EEnemyTier::MidBoss: return "midboss";
+	case EEnemyTier::Boss:    return "boss";
+	default:                  return "normal";
+	}
+}
+
+// Hệ số chỉ số theo cấp bậc: Normal = 1.0, càng cao càng trâu.
+inline float EnemyTierStatMultiplier(EEnemyTier Tier)
+{
+	switch (Tier)
+	{
+	case EEnemyTier::Normal:  return 1.00f;
+	case EEnemyTier::Elite:   return 1.55f;
+	case EEnemyTier::MidBoss: return 2.40f;
+	case EEnemyTier::Boss:    return 3.50f;
+	default:                  return 1.00f;
+	}
+}
+
+// Địch cấp cao có thanh stagger (dễ "phá chiêu"); quái thường thì không.
+inline bool EnemyTierHasStagger(EEnemyTier Tier)
+{
+	return Tier == EEnemyTier::MidBoss || Tier == EEnemyTier::Boss;
+}
+
+
+// -----------------------------------------------------------------------------
 // Hệ / thuộc tính (dùng cho trang bị: gây thêm sát thương theo hệ)
 // -----------------------------------------------------------------------------
 enum class EElement : std::uint8_t
@@ -250,7 +310,8 @@ struct FBlock
 	EBlockKind  Kind    = EBlockKind::Normal;
 	int32       Charges = 1;    // Obstacle: số lần phải phá; special: số ô nó phá được
 	int32       Variant = 0;    // LineClear: 0 = hàng ngang, 1 = cột dọc
-	bool        bLocked = false;// block bị khoá: không swap được (boss có thể khoá)
+	bool        bLocked = false;// block bị khoá: không swap được (địch có thể khoá)
+	int32       LockTurns = 0;  // số turn còn bị khoá (0 = không khoá); giảm mỗi turn
 
 	bool IsEmpty() const { return Kind == EBlockKind::Normal && Color == EColor::None; }
 	bool IsObstacle() const { return Kind == EBlockKind::Obstacle; }

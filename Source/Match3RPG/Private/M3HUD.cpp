@@ -54,6 +54,7 @@ void AM3HUD::DrawHUD()
 
 	DrawBossPanel(ScreenW);
 	DrawTeamPanel(Cast<AM3PlayerController>(PlayerOwner));
+	DrawStoryPanel(ScreenW);
 	DrawLogPanel(ScreenW);
 	DrawInfoPanel(ScreenW, ScreenH);
 
@@ -120,33 +121,122 @@ void AM3HUD::DrawButton(AM3PlayerController* PC, const FName& Action, int32 Memb
 }
 
 // -----------------------------------------------------------------------------
-// Panel boss: HP + thanh stagger + BREAK
+// Panel hàng địch: vẽ TỪNG địch (quái thường / tinh anh / trùm giữa màn / trùm)
+// kèm HP, thanh stagger, hành động sắp dùng và nút chọn mục tiêu.
 // -----------------------------------------------------------------------------
 void AM3HUD::DrawBossPanel(float ScreenW)
 {
 	UM3CombatSubsystem* Combat = GetCombat();
-	if (!Combat) { return; }
+	if (!Combat || !Combat->IsBattleActive()) { return; }
 
 	const M3::FBattle& Battle = Combat->GetBattle();
-	const M3::FBossState& Boss = Battle.Boss();
+	const int32 Count = FMath::Max(1, Combat->GetEnemyCount());
 
-	const float W = 620.f;
-	const float X = ScreenW * 0.5f - W * 0.5f;
-	const float Y = 20.f;
-	DrawPanel(X, Y, W, 108.f, PanelColor);
+	const float CardW = 214.f;
+	const float Gap = 10.f;
+	const float TotalW = Count * CardW + (Count - 1) * Gap;
+	const float X0 = FMath::Max(16.f, ScreenW * 0.5f - TotalW * 0.5f);
+	const float Y = 16.f;
 
-	const FString Header = FString::Printf(TEXT("%s   |   Turn %d   |   Lượt nối còn %d/%d"),
-		*Combat->GetBossName(), Battle.Turn(), Battle.MovesLeft(), Battle.Balance().MovesPerTurn);
-	DrawLabel(Header, X + 14.f, Y + 10.f, TextColor, 15, true);
+	// Thanh tiêu đề: số địch còn sống + turn + lượt nối
+	DrawPanel(X0, Y, TotalW, 26.f, PanelColor);
+	DrawLabel(FString::Printf(TEXT("HÀNG ĐỊCH %d/%d   |   Turn %d   |   Lượt nối còn %d/%d"),
+		Combat->GetEnemyAliveCount(), Count, Battle.Turn(), Battle.MovesLeft(), Battle.Balance().MovesPerTurn),
+		X0 + 12.f, Y + 5.f, TextColor, 13, true);
 
-	DrawLabel(FString::Printf(TEXT("HP  %.0f / %.0f"), Boss.Hp, Boss.HpMax), X + 14.f, Y + 36.f, DimColor, 13);
-	DrawBar(X + 14.f, Y + 54.f, W - 28.f, 18.f, Boss.HpPercent(), BossBar, FLinearColor(0.12f, 0.05f, 0.07f, 0.9f));
+	const int32 Target = Combat->GetTargetEnemy();
 
-	const FString StaggerLabel = Boss.bBroken
-		? FString::Printf(TEXT("STAGGER ĐÃ VỠ - BREAK (còn %d lượt boss)"), FMath::Max(0, Boss.BreakTurnsLeft))
-		: FString::Printf(TEXT("STAGGER %.0f / %.0f"), Boss.Stagger, Boss.StaggerMax);
-	DrawLabel(StaggerLabel, X + 14.f, Y + 76.f, Boss.bBroken ? FLinearColor(1.f, 0.9f, 0.3f) : DimColor, 13, Boss.bBroken);
-	DrawBar(X + 14.f, Y + 92.f, W - 28.f, 10.f, Boss.StaggerPercent(), StaggerBar, FLinearColor(0.10f, 0.09f, 0.05f, 0.9f));
+	for (int32 Index = 0; Index < Count; ++Index)
+	{
+		const float X = X0 + Index * (CardW + Gap);
+		const float CY = Y + 34.f;
+
+		const bool bAlive = Combat->IsEnemyAlive(Index);
+		const bool bTargeted = (Index == Target);
+		const bool bBroken = Combat->IsEnemyBroken(Index);
+
+		// Màu thẻ theo cấp bậc địch
+		const int32 Tier = Combat->GetEnemyTier(Index);
+		FLinearColor CardColor(0.05f, 0.06f, 0.09f, bAlive ? 0.85f : 0.45f);
+		if (Tier == 1) { CardColor = FLinearColor(0.06f, 0.12f, 0.22f, bAlive ? 0.85f : 0.45f); }
+		else if (Tier == 2) { CardColor = FLinearColor(0.20f, 0.12f, 0.04f, bAlive ? 0.85f : 0.45f); }
+		else if (Tier >= 3) { CardColor = FLinearColor(0.24f, 0.05f, 0.09f, bAlive ? 0.85f : 0.45f); }
+
+		DrawPanel(X, CY, CardW, 132.f, CardColor);
+		if (bTargeted) { DrawRect(FLinearColor(1.f, 0.72f, 0.18f, 0.95f), X, CY, CardW, 3.f); }
+
+		const FString Name = FString::Printf(TEXT("%s  [%s]%s"),
+			*Combat->GetEnemyName(Index),
+			*Combat->GetEnemyTierName(Index),
+			bAlive ? TEXT("") : TEXT("  (đã gục)"));
+		DrawLabel(Name, X + 8.f, CY + 8.f, bAlive ? TextColor : DimColor, 12, true);
+
+		// HP
+		DrawBar(X + 8.f, CY + 28.f, CardW - 16.f, 12.f, Combat->GetEnemyHpPercent(Index), BossBar,
+			FLinearColor(0.12f, 0.05f, 0.07f, 0.9f));
+
+		// Thanh stagger (quái thường không có -> bỏ trống)
+		const float StaggerPct = Combat->GetEnemyStaggerPercent(Index);
+		if (StaggerPct > 0.f || bBroken)
+		{
+			if (bBroken)
+			{
+				DrawLabel(TEXT("STAGGER ĐÃ VỠ (đang ngất)"), X + 8.f, CY + 44.f, FLinearColor(1.f, 0.9f, 0.3f), 12, true);
+				DrawBar(X + 8.f, CY + 60.f, CardW - 16.f, 8.f, 1.f, StaggerBar, FLinearColor(0.10f, 0.09f, 0.05f, 0.9f));
+			}
+			else
+			{
+				DrawLabel(TEXT("Thanh stagger"), X + 8.f, CY + 44.f, DimColor, 12);
+				DrawBar(X + 8.f, CY + 60.f, CardW - 16.f, 8.f, StaggerPct, StaggerBar, FLinearColor(0.10f, 0.09f, 0.05f, 0.9f));
+			}
+		}
+		else
+		{
+			DrawLabel(TEXT("Không có thanh stagger"), X + 8.f, CY + 44.f, DimColor, 11);
+		}
+
+		// Hành động sắp dùng (UI cảnh báo trước, giống thẻ địch bản web)
+		if (bAlive)
+		{
+			DrawLabel(FString::Printf(TEXT("Kế tiếp: %s"), *Combat->GetEnemyIntentName(Index)),
+				X + 8.f, CY + 76.f, FLinearColor(1.f, 0.85f, 0.55f), 11);
+		}
+
+		// Nút chọn mục tiêu (bấm vào thẻ để dồn sát thương vào địch này)
+		const bool bCanTarget = bAlive && !bTargeted;
+		DrawButton(nullptr, TEXT("target"), Index, X + 8.f, CY + 96.f, CardW - 16.f, 24.f,
+			bTargeted ? TEXT("ĐANG NGẮM") : TEXT("Chọn làm mục tiêu"), bCanTarget,
+			FLinearColor(0.20f, 0.30f, 0.48f));
+	}
+}
+
+// -----------------------------------------------------------------------------
+// Panel story: chương + tên màn + thoại mở màn
+// -----------------------------------------------------------------------------
+void AM3HUD::DrawStoryPanel(float ScreenW)
+{
+	UM3CombatSubsystem* Combat = GetCombat();
+	if (!Combat || !Combat->IsBattleActive()) { return; }
+
+	const FString Chapter = Combat->GetStoryChapterTitle();
+	const FString StageTitle = Combat->GetStoryStageTitle();
+	if (Chapter.IsEmpty() && StageTitle.IsEmpty()) { return; }
+
+	const int32 LineCount = Combat->GetStoryIntroCount();
+	const float W = 560.f;
+	const float H = 64.f + FMath::Min(3, LineCount) * 18.f;
+	const float X = 20.f;
+	const float Y = 700.f;
+	(void)ScreenW;
+
+	DrawPanel(X, Y, W, H, PanelColor);
+	DrawLabel(Chapter, X + 14.f, Y + 8.f, FLinearColor(0.72f, 0.62f, 1.f), 12, true);
+	DrawLabel(StageTitle, X + 14.f, Y + 26.f, TextColor, 14, true);
+
+	for (int32 i = 0; i < FMath::Min(3, LineCount); ++i)
+	{
+		DrawLabel(Combat->GetStoryIntroLine(i), X + 14.f, Y + 48.f + i * 18.f, DimColor, 12);
+	}
 }
 
 // -----------------------------------------------------------------------------
@@ -322,6 +412,14 @@ bool AM3HUD::HandleClickAt(const FVector2D& ScreenPosition, AM3PlayerController*
 		else if (Button.Action == TEXT("endturn"))  { PC->HandleEndTurn(); }
 		else if (Button.Action == TEXT("restart"))  { PC->HandleRestart(); }
 		else if (Button.Action == TEXT("nextstage")){ PC->HandleNextStage(); }
+		else if (Button.Action == TEXT("target"))
+		{
+			// Click thẻ địch -> dồn sát thương vào con đó.
+			if (UM3CombatSubsystem* Combat = GetCombat())
+			{
+				Combat->SetTargetEnemy(Button.MemberIndex);
+			}
+		}
 
 		return true;   // đã xử lý click, không chọn ô trên bàn nữa
 	}

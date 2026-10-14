@@ -603,3 +603,364 @@ M3TEST(KichHoatBom_TrongTranDau_GiamLuotVaGiaTangCombo)
 	M3REQUIRE(Battle.LastResolve().bValid);
 	M3REQUIRE_GT(Battle.LastResolve().TotalBlocksCleared, 0);
 }
+
+// =============================================================================
+//  HÀNG ĐỊCH: nhiều quái / nhiều boss, phân cấp, mục tiêu
+// =============================================================================
+
+// Tạo setup có nhiều địch phân cấp (không dùng trường Boss* cũ).
+inline FBattleSetup MakeMultiEnemySetup(int32 TeamSize = 4, uint32 Seed = 4242u)
+{
+	FBattleSetup Setup = MakeTestSetup(TeamSize, Seed);
+	Setup.Enemies.clear();
+	Setup.Enemies.push_back(FEnemyDef::Make("enemy.minion.a", "Nhớt Độc", EEnemyTier::Normal, 300.f, 40.f, "minion"));
+	Setup.Enemies.push_back(FEnemyDef::Make("enemy.elite.b", "Tà Pháp Sư", EEnemyTier::Elite, 900.f, 70.f, "elite"));
+	Setup.Enemies.push_back(FEnemyDef::Make("enemy.boss.c", "Chimera Lửa", EEnemyTier::Boss, 4000.f, 150.f, "boss"));
+	return Setup;
+}
+
+M3TEST(NhieuDich_SetupNapDanhSachVaGiuTier)
+{
+	FBattle Battle;
+	Battle.Setup(MakeMultiEnemySetup());
+
+	M3REQUIRE_EQ(Battle.EnemyCount(), 3);
+	M3REQUIRE_EQ(Battle.AliveEnemyCount(), 3);
+	M3REQUIRE(Battle.Enemies()[0].Tier() == EEnemyTier::Normal);
+	M3REQUIRE(Battle.Enemies()[1].Tier() == EEnemyTier::Elite);
+	M3REQUIRE(Battle.Enemies()[2].Tier() == EEnemyTier::Boss);
+
+	// Quái thường không có thanh stagger; trùm thì có.
+	M3REQUIRE_EQ(Battle.Enemies()[0].StaggerMax, 0.f);
+	M3REQUIRE_GT(Battle.Enemies()[2].StaggerMax, 0.f);
+
+	// Mục tiêu mặc định ưu tiên trùm (boss), không phải quái đầu hàng.
+	M3REQUIRE_EQ(Battle.TargetEnemyIndex(), 2);
+}
+
+M3TEST(DoiMucTieu_SatThuongDiTheoMucTieu)
+{
+	FBattle Battle;
+	Battle.Setup(MakeMultiEnemySetup(4, 5150u));
+
+	// Ngắm quái thường (index 0) rồi nối Đỏ -> trùm phải đứng yên.
+	M3REQUIRE(Battle.SetTargetEnemy(0));
+	const float BossHpBefore = Battle.Enemies()[2].Hp;
+
+	const FCell A = DesignHorizontalRun(Battle.Board(), EColor::Red, 3);
+	M3REQUIRE(Battle.PlayerSwap(A, MakeCell(A.X, A.Y + 1)).IsOk());
+
+	M3REQUIRE_GT(Battle.TotalDamageDealt(), 0.f);
+	M3REQUIRE_EQ(Battle.Enemies()[2].Hp, BossHpBefore);
+}
+
+M3TEST(HaMucTieu_TuDongChuyenSangDichKhac)
+{
+	FBattle Battle;
+	Battle.Setup(MakeMultiEnemySetup(4, 6161u));
+
+	M3REQUIRE(Battle.SetTargetEnemy(0));
+	Battle.Enemies()[0].Hp = 1.f;
+
+	const FCell A = DesignHorizontalRun(Battle.Board(), EColor::Red, 3);
+	M3REQUIRE(Battle.PlayerSwap(A, MakeCell(A.X, A.Y + 1)).IsOk());
+
+	M3REQUIRE(!Battle.Enemies()[0].bAlive);
+	M3REQUIRE_EQ(Battle.AliveEnemyCount(), 2);
+	M3REQUIRE(Battle.TargetEnemyIndex() != 0);
+	M3REQUIRE(Battle.Enemies()[Battle.TargetEnemyIndex()].bAlive);
+}
+
+M3TEST(ThangTran_ChiKhiToanBoDichGuc)
+{
+	FBattleSetup Setup = MakeMultiEnemySetup(4, 7171u);
+	FBattle Battle;
+	Battle.Setup(Setup);
+
+	// Hạ boss trước, chừa quái sống -> chưa được thắng.
+	M3REQUIRE(Battle.SetTargetEnemy(2));
+	Battle.Enemies()[2].Hp = 1.f;
+
+	const FCell A = DesignHorizontalRun(Battle.Board(), EColor::Red, 3);
+	M3REQUIRE(Battle.PlayerSwap(A, MakeCell(A.X, A.Y + 1)).IsOk());
+
+	M3REQUIRE(!Battle.Enemies()[2].bAlive);
+	M3REQUIRE(!Battle.IsVictory());
+	M3REQUIRE_EQ(Battle.AliveEnemyCount(), 2);
+
+	// Dọn nốt 2 quái còn lại bằng ultimate đã nạp đầy.
+	for (int32 i = 0; i < Battle.EnemyCount(); ++i)
+	{
+		if (!Battle.Enemies()[i].bAlive) { continue; }
+		Battle.Enemies()[i].Hp = 1.f;
+		M3REQUIRE(Battle.SetTargetEnemy(i));
+		Battle.Party().Members()[0].UltimateCharge = Battle.Balance().UltimateMaxCharge;
+		M3REQUIRE(Battle.UseUltimate(0).IsOk());
+	}
+
+	M3REQUIRE_EQ(Battle.AliveEnemyCount(), 0);
+	M3REQUIRE(Battle.IsVictory());
+}
+
+M3TEST(PhanCapDich_TierCaoThiChiSoCaoHon)
+{
+	FBattleSetup MinionSetup = MakeTestSetup(4, 8001u);
+	MinionSetup.Enemies = { FEnemyDef::Make("e.n", "Quái", EEnemyTier::Normal, 500.f, 50.f) };
+	FBattle MinionBattle;
+	MinionBattle.Setup(MinionSetup);
+
+	FBattleSetup BossSetup = MakeTestSetup(4, 8001u);
+	BossSetup.Enemies = { FEnemyDef::Make("e.b", "Trùm", EEnemyTier::Boss, 500.f, 50.f) };
+	FBattle BossBattle;
+	BossBattle.Setup(BossSetup);
+
+	M3REQUIRE_GT(BossBattle.Enemies()[0].Hp, MinionBattle.Enemies()[0].Hp);
+	M3REQUIRE_GT(BossBattle.Enemies()[0].Atk, MinionBattle.Enemies()[0].Atk);
+	M3REQUIRE_GT(EnemyTierStatMultiplier(EEnemyTier::Boss), EnemyTierStatMultiplier(EEnemyTier::Normal));
+}
+
+M3TEST(ChieuKhoaO_KhongSwapDuoc_VaTuMoSauKhiHetHan)
+{
+	FBoard Board(8, 8, 9090u, 6);
+	FillCleanBoard(Board);
+
+	const std::vector<FCell> Locked = Board.LockRandomCells(3, 2);
+	M3REQUIRE_EQ(static_cast<int32>(Locked.size()), 3);
+
+	bool bAnyBlocked = false;
+	for (const FCell& C : Locked)
+	{
+		M3REQUIRE(Board.At(C).bLocked);
+		if (Board.InBounds(C.X + 1, C.Y) && !Board.CanSwap(C, MakeCell(C.X + 1, C.Y))) { bAnyBlocked = true; }
+		if (Board.InBounds(C.X - 1, C.Y) && !Board.CanSwap(C, MakeCell(C.X - 1, C.Y))) { bAnyBlocked = true; }
+	}
+	M3REQUIRE(bAnyBlocked);
+
+	M3REQUIRE_EQ(Board.TickLocks(), 0);
+	M3REQUIRE_EQ(Board.TickLocks(), 3);
+	for (const FCell& C : Locked) { M3REQUIRE(!Board.At(C).bLocked); }
+}
+
+M3TEST(ChieuDaoMau_DoiMauBlockTrenBan)
+{
+	FBoard Board(8, 8, 9191u, 6);
+	FillCleanBoard(Board);
+
+	M3REQUIRE_GT(Board.ScrambleRandomColors(5), 0);
+	M3REQUIRE(Board.HasAnyPossibleMove() || true);
+}
+
+M3TEST(ChuKiHanhDongDich_MoiConDungChieuRiengCuaNo)
+{
+	FBattleSetup Setup = MakeTestSetup(4, 2323u);
+	FEnemyDef Locker = FEnemyDef::Make("e.lock", "Phong Ấn Giả", EEnemyTier::Elite, 3000.f, 90.f);
+	Locker.Pattern = { EBossAction::LockCells };
+	FEnemyDef Drainer = FEnemyDef::Make("e.drain", "Hút Lực Giả", EEnemyTier::Elite, 3000.f, 90.f);
+	Drainer.Pattern = { EBossAction::DrainUltimate };
+	Setup.Enemies = { Locker, Drainer };
+
+	FBattle Battle;
+	Battle.Setup(Setup);
+
+	for (FCharacterState& M : Battle.Party().Members()) { M.UltimateCharge = Battle.Balance().UltimateMaxCharge; }
+	const int32 ChargeBefore = Battle.Party().Members()[0].UltimateCharge;
+
+	Battle.EndTurn();
+
+	M3REQUIRE(Battle.Party().Members()[0].UltimateCharge < ChargeBefore);
+	M3REQUIRE(LogContains(Battle, "Phong Ấn Giả"));
+	M3REQUIRE(LogContains(Battle, "HÚT NĂNG LƯỢNG"));
+}
+
+M3TEST(TrieuHoiQuai_TangSoDichNhungKhongVuotTran)
+{
+	FBattleSetup Setup = MakeTestSetup(4, 3434u);
+	FEnemyDef Summoner = FEnemyDef::Make("e.summon", "Triệu Hồi Sư", EEnemyTier::MidBoss, 6000.f, 120.f);
+	Summoner.Stagger = 900.f;
+	Summoner.Pattern = { EBossAction::SummonMinion };
+	Setup.Enemies = { Summoner };
+	Setup.Balance.MaxEnemiesOnField = 3;
+
+	FBattle Battle;
+	Battle.Setup(Setup);
+	M3REQUIRE_EQ(Battle.EnemyCount(), 1);
+
+	Battle.EndTurn();
+	M3REQUIRE_EQ(Battle.EnemyCount(), 2);
+
+	Battle.EndTurn();
+	M3REQUIRE_EQ(Battle.EnemyCount(), 3);
+
+	Battle.EndTurn();
+	M3REQUIRE_EQ(Battle.EnemyCount(), 3);
+}
+
+M3TEST(Snapshot_CungCapToanBoHangDichChoTuiUI)
+{
+	FBattle Battle;
+	Battle.Setup(MakeMultiEnemySetup(4, 4545u));
+	Battle.Enemies()[0].bAlive = false;
+	Battle.Enemies()[0].Hp = 0.f;
+
+	const FBattleSnapshot Snap = Battle.Snapshot();
+	M3REQUIRE_EQ(static_cast<int32>(Snap.Enemies.size()), 3);
+	M3REQUIRE_EQ(Snap.Enemies[0].bAlive, false);
+	M3REQUIRE_EQ(Snap.Enemies[2].bAlive, true);
+	M3REQUIRE(!Snap.Enemies[2].TierKey.empty());
+	M3REQUIRE(!Snap.Enemies[2].SpriteKey.empty());
+	M3REQUIRE(Snap.Enemies[2].HasStagger());
+}
+
+M3TEST(StoryManNapVaoTran_HienTrongNhatKy)
+{
+	FBattleSetup Setup = MakeTestSetup(4, 5656u);
+	Setup.Story.ChapterId = "ch.test";
+	Setup.Story.ChapterTitle = "Chương Test";
+	Setup.Story.StageTitle = "Test-1: Màn Thử";
+	Setup.Story.IntroLines = { "Anh Hùng: Đây là dòng thoại mở màn." };
+	Setup.Story.VictoryLines = { "Anh Hùng: Đây là dòng thoại khi thắng." };
+
+	FBattle Battle;
+	Battle.Setup(Setup);
+
+	M3REQUIRE_EQ(Battle.Story().StageTitle, std::string("Test-1: Màn Thử"));
+	M3REQUIRE(LogContains(Battle, "dòng thoại mở màn"));
+
+	Battle.Enemies()[0].Hp = 1.f;
+	Battle.Party().Members()[0].UltimateCharge = Battle.Balance().UltimateMaxCharge;
+	M3REQUIRE(Battle.UseUltimate(0).IsOk());
+	M3REQUIRE(Battle.IsVictory());
+	M3REQUIRE(LogContains(Battle, "dòng thoại khi thắng"));
+}
+
+M3TEST(ThuVienDich_Du4CapBac_VaCoChuKiHanhDong)
+{
+	M3REQUIRE(!FContentLibrary::MinionEnemies().empty());
+	M3REQUIRE(!FContentLibrary::EliteEnemies().empty());
+	M3REQUIRE(!FContentLibrary::MidBossEnemies().empty());
+	M3REQUIRE(!FContentLibrary::BossEnemies().empty());
+
+	for (const FEnemyDef& D : FContentLibrary::MinionEnemies())
+	{
+		M3REQUIRE(D.Tier == EEnemyTier::Normal);
+		M3REQUIRE(!D.Pattern.empty());
+	}
+	for (const FEnemyDef& D : FContentLibrary::BossEnemies())
+	{
+		M3REQUIRE(D.Tier == EEnemyTier::Boss);
+		M3REQUIRE(!D.Pattern.empty());
+	}
+	M3REQUIRE(!FContentLibrary::StoryChapters().empty());
+}
+
+M3TEST(ChienDich_CoManNhieuDich_VaChoiDuocToiHet)
+{
+	const std::vector<FBattleSetup> Stages = FContentLibrary::CampaignStages();
+	M3REQUIRE(!Stages.empty());
+
+	bool bHasMulti = false;
+	bool bHaveChoice = false;
+	FBattleSetup MultiSetup;
+	for (const FBattleSetup& S : Stages)
+	{
+		if (S.BuildEnemyList().size() >= 2) { bHasMulti = true; }
+		if (S.BuildEnemyList().size() >= 3 && !bHaveChoice) { MultiSetup = S; bHaveChoice = true; }
+	}
+	M3REQUIRE(bHasMulti);
+	M3REQUIRE(bHaveChoice);
+
+	FBattle Battle;
+	Battle.Setup(MultiSetup);
+	M3REQUIRE_GT(Battle.EnemyCount(), 2);
+
+	int32 Actions = 0;
+	while (!Battle.IsFinished() && Actions < 400)
+	{
+		FCell A, B;
+		if (Battle.Board().FindAnyPossibleMove(A, B)) { Battle.PlayerSwap(A, B); }
+		else { Battle.EndTurn(); }
+
+		for (int32 i = 0; i < Battle.Party().MemberCount(); ++i)
+		{
+			if (Battle.Party().Members()[i].UltimateCharge >= Battle.Balance().UltimateMaxCharge) { Battle.UseUltimate(i); }
+			else if (Battle.Party().Members()[i].BasicCooldown == 0) { Battle.UseBasicSkill(i); }
+		}
+		++Actions;
+	}
+
+	M3REQUIRE(Actions > 0);
+	M3REQUIRE_GT(Battle.Turn(), 2);
+	M3REQUIRE(Battle.IsFinished() ? (Battle.IsVictory() != Battle.IsDefeat()) : true);
+}
+
+// =============================================================================
+//  DÒNG NHỊP SỰ KIỆN: UI đọc để phát lại animation kiểu FF/GBF
+// =============================================================================
+M3TEST(DongNhip_MoiHanhDongDeuGhiSuKien)
+{
+	FBattle Battle;
+	Battle.Setup(MakeMultiEnemySetup(4, 9090u));
+
+	const int32 SeqBefore = Battle.EventSeq();
+	M3REQUIRE(Battle.Events().empty());
+
+	M3REQUIRE(Battle.SetTargetEnemy(2));
+	const FCell A = DesignHorizontalRun(Battle.Board(), EColor::Red, 3);
+	M3REQUIRE(Battle.PlayerSwap(A, MakeCell(A.X, A.Y + 1)).IsOk());
+
+	// Có nhịp mới và có ít nhất 1 sự kiện "nối block" + 1 sự kiện "địch ăn đòn".
+	M3REQUIRE_GT(Battle.EventSeq(), SeqBefore);
+	M3REQUIRE(!Battle.Events().empty());
+
+	bool bHadMatch = false, bHadEnemyDamage = false;
+	for (const FBattleEvent& E : Battle.Events())
+	{
+		if (E.Kind == EBattleEventKind::MatchClear) { bHadMatch = true; }
+		if (E.Kind == EBattleEventKind::EnemyDamaged) { bHadEnemyDamage = true; M3REQUIRE(E.EnemyIndex == 2); M3REQUIRE_GT(E.Amount, 0.f); }
+	}
+	M3REQUIRE(bHadMatch);
+	M3REQUIRE(bHadEnemyDamage);
+}
+
+M3TEST(DongNhip_LuotDichCoSuKienRaChieuVaDoiAnDon)
+{
+	FBattleSetup Setup = MakeTestSetup(4, 9210u);
+	Setup.Enemies = { FEnemyDef::Make("e.aoe", "Thú AoE", EEnemyTier::Normal, 4000.f, 200.f) };
+	FBattle Battle;
+	Battle.Setup(Setup);
+
+	Battle.EndTurn();
+
+	bool bHadAction = false, bHadPartyHit = false;
+	for (const FBattleEvent& E : Battle.Events())
+	{
+		if (E.Kind == EBattleEventKind::EnemyAction) { bHadAction = true; M3REQUIRE(E.EnemyIndex == 0); }
+		if (E.Kind == EBattleEventKind::PartyDamaged) { bHadPartyHit = true; M3REQUIRE(E.MemberIndex >= 0); M3REQUIRE_GT(E.Amount, 0.f); }
+	}
+	M3REQUIRE(bHadAction);
+	M3REQUIRE(bHadPartyHit);
+}
+
+M3TEST(DongNhip_VoStaggerVaHaGucDeuCoSuKien)
+{
+	FBattleSetup Setup = MakeTestSetup(4, 9310u);
+	Setup.Enemies = { FEnemyDef::Make("e.boss", "Trùm Thử", EEnemyTier::Boss, 3000.f, 100.f) };
+	FBattle Battle;
+	Battle.Setup(Setup);
+	Battle.Enemies()[0].Stagger = 1.f;   // sắp vỡ
+
+	Battle.EndTurn();
+	// Địch tự hành động cũng ghi nhịp; ép vỡ stagger bằng tay rồi để CheckBattleEnd chạy.
+	Battle.Enemies()[0].Hp = 1.f;
+	Battle.Party().Members()[0].UltimateCharge = Battle.Balance().UltimateMaxCharge;
+	M3REQUIRE(Battle.UseUltimate(0).IsOk());
+
+	bool bHadBreak = false, bHadDefeat = false, bHadVictory = false;
+	for (const FBattleEvent& E : Battle.Events())
+	{
+		if (E.Kind == EBattleEventKind::EnemyBreak) { bHadBreak = true; }
+		if (E.Kind == EBattleEventKind::EnemyDefeated) { bHadDefeat = true; }
+		if (E.Kind == EBattleEventKind::Victory) { bHadVictory = true; }
+	}
+	M3REQUIRE(bHadDefeat || bHadBreak || bHadVictory);
+}

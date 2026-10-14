@@ -117,7 +117,7 @@ void AM3GameMode::EnsureWorldDecor()
 }
 
 // -----------------------------------------------------------------------------
-// Bàn nối + boss
+// Bàn nối + hàng địch
 // -----------------------------------------------------------------------------
 void AM3GameMode::SpawnGameplayActors()
 {
@@ -134,14 +134,59 @@ void AM3GameMode::SpawnGameplayActors()
 		}
 	}
 
-	if (!BossActor)
+	LayoutEnemyActors();
+}
+
+// -----------------------------------------------------------------------------
+// Hàng địch: mỗi địch trong trận là 1 actor, xếp thành hàng ngang sau bàn nối.
+// Số actor luôn khớp số địch (triệu hồi quái / đổi màn -> dựng lại).
+// -----------------------------------------------------------------------------
+void AM3GameMode::ClearEnemyActors()
+{
+	for (AM3BossActor* Actor : EnemyActors)
 	{
-		const float Depth = 8 * 110.f;   // kích thước bàn mặc định 8x8
-		BossActor = World->SpawnActor<AM3BossActor>(
-			BoardLocation + FVector(0.f, Depth * 0.85f, 110.f), FRotator::ZeroRotator);
-		if (BossActor)
+		if (Actor) { Actor->Destroy(); }
+	}
+	EnemyActors.Reset();
+}
+
+void AM3GameMode::LayoutEnemyActors()
+{
+	UWorld* World = GetWorld();
+	if (!World) { return; }
+
+	UM3CombatSubsystem* Combat = World->GetGameInstance()
+		? World->GetGameInstance()->GetSubsystem<UM3CombatSubsystem>() : nullptr;
+	const int32 EnemyCount = (Combat && Combat->IsBattleActive()) ? Combat->GetBattle().EnemyCount() : 1;
+
+	// Số địch không đổi thì giữ nguyên actor cũ (chỉ cập nhật lại vị trí).
+	if (EnemyActors.Num() != EnemyCount)
+	{
+		ClearEnemyActors();
+
+		const float Depth = 8 * 110.f;          // kích thước bàn mặc định 8x8
+		const float RowY = BoardLocation.Y + Depth * 0.85f;
+		const float Spacing = 300.f;
+
+		for (int32 Index = 0; Index < EnemyCount; ++Index)
 		{
-			BossActor->VisualSet = VisualSet;
+			const float OffsetX = (Index - (EnemyCount - 1) * 0.5f) * Spacing;
+			AM3BossActor* Actor = World->SpawnActor<AM3BossActor>(
+				BoardLocation + FVector(OffsetX, RowY, 110.f), FRotator::ZeroRotator);
+			if (!Actor) { continue; }
+
+			Actor->SetupForEnemy(Index, VisualSet);
+			EnemyActors.Add(Actor);
+		}
+		return;
+	}
+
+	// Đã đủ số actor -> chỉ gán lại chỉ số địch (dùng khi đổi màn cùng số địch).
+	for (int32 Index = 0; Index < EnemyActors.Num(); ++Index)
+	{
+		if (AM3BossActor* Actor = EnemyActors[Index])
+		{
+			Actor->SetupForEnemy(Index, VisualSet);
 		}
 	}
 }

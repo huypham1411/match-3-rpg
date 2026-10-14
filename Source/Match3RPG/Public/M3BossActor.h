@@ -31,6 +31,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match3")
 	UM3VisualSet* VisualSet = nullptr;
 
+	// Chỉ số của địch trong hàng địch (0..N-1). Mỗi địch trong trận là 1 actor riêng.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match3")
+	int32 EnemyIndex = 0;
+
+	// Gán actor này theo một địch cụ thể trong hàng địch của trận.
+	UFUNCTION(BlueprintCallable, Category = "Match3")
+	void SetupForEnemy(int32 InEnemyIndex, UM3VisualSet* InVisualSet);
+
 	// Skeletal mesh boss (nếu bạn có model nhân vật/ quái 3D). Bỏ trống thì dùng mesh tĩnh.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Match3")
 	class USkeletalMeshComponent* SkeletalMesh = nullptr;
@@ -40,6 +48,8 @@ private:
 	UPROPERTY() UMaterialInstanceDynamic* DynMat = nullptr;
 
 	UM3CombatSubsystem* GetCombat() const;
+	// Trạng thái động của đúng địch mà actor này thể hiện.
+	const M3::FEnemyState* GetOwnEnemy() const;
 	void RefreshFromBattle();
 	float SpinSpeed = 30.f;
 };

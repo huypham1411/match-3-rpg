@@ -36,7 +36,8 @@ py -3 "%EMSDK_DIR%\upstream\emscripten\em++.py" -O2 -std=c++20 ^
 	-o "%ROOT%\Web\dist\m3core.mjs" ^
 	-sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web,node ^
 	-sALLOW_MEMORY_GROWTH=1 -sSTACK_SIZE=2MB ^
-	-sEXPORTED_RUNTIME_METHODS=UTF8ToString
+	-sEXPORTED_RUNTIME_METHODS=UTF8ToString,allocateUTF8,stringToUTF8,lengthBytesUTF8 ^
+	-sEXPORTED_FUNCTIONS=_malloc,_free
 if errorlevel 1 (
 	echo [LOI] Bien dich WebAssembly that bai.
 	exit /b 1

@@ -48,11 +48,14 @@ public:
 
 private:
 	UPROPERTY() AM3BoardActor* BoardActor = nullptr;
-	UPROPERTY() AM3BossActor* BossActor = nullptr;
+	// Mỗi địch trong trận là một actor riêng (nhiều quái / nhiều boss cùng lúc).
+	UPROPERTY() TArray<AM3BossActor*> EnemyActors;
 	UPROPERTY() TArray<AM3PartyMemberActor*> PartyActors;
 
 	void EnsureWorldDecor();
 	void SpawnGameplayActors();
+	void LayoutEnemyActors();
+	void ClearEnemyActors();
 	void LayoutPartyActors();
 	void RefreshPartyVisuals();
 };

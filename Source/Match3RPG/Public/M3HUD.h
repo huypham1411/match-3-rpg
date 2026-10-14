@@ -62,5 +62,6 @@ private:
 	void DrawTeamPanel(AM3PlayerController* PC);
 	void DrawInfoPanel(float ScreenW, float ScreenH);
 	void DrawLogPanel(float ScreenW);
+	void DrawStoryPanel(float ScreenW);
 	void DrawGameOverBanner(float ScreenW, float ScreenH);
 };

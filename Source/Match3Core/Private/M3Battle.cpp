@@ -25,6 +25,29 @@ FBattleSetup FBattleSetup::DefaultStarter()
 	return Setup;
 }
 
+// -----------------------------------------------------------------------------
+// Danh sách địch hiệu dụng của màn.
+//   - Nếu Enemies có sẵn -> dùng luôn (màn nhiều quái / nhiều boss).
+//   - Nếu rỗng -> dựng 1 boss từ các trường Boss* (giữ tương thích code cũ).
+// -----------------------------------------------------------------------------
+std::vector<FEnemyDef> FBattleSetup::BuildEnemyList() const
+{
+	if (!Enemies.empty()) { return Enemies; }
+
+	FEnemyDef Boss = FEnemyDef::Make("enemy.boss." + BossName, BossName, EEnemyTier::Boss, BossHp, BossAtk, "boss");
+	Boss.Stagger = BossStagger;
+	Boss.Pattern = { EBossAction::AoEAttack, EBossAction::SingleTargetAttack, EBossAction::SpawnObstacles,
+	                 EBossAction::WeakenTeam, EBossAction::SpawnTraps, EBossAction::SelfBuff };
+	return { Boss };
+}
+
+float FBattleSetup::TotalEnemyHp() const
+{
+	float Sum = 0.f;
+	for (const FEnemyDef& E : BuildEnemyList()) { Sum += E.Hp; }
+	return Sum;
+}
+
 // =============================================================================
 //  Setup
 // =============================================================================
@@ -47,18 +70,45 @@ void FBattle::Setup(const FBattleSetup& InSetup)
 	Team.RecomputeStats(Cfg);
 	for (FCharacterState& M : Team.Members()) { M.UltimateCharge = 0; }
 
-	// --- Boss ---
-	BossState = FBossState();
-	BossState.Name       = InSetup.BossName;
-	BossState.Hp         = InSetup.BossHp;
-	BossState.HpMax      = InSetup.BossHp;
-	BossState.Atk        = InSetup.BossAtk;
-	BossState.Stagger    = InSetup.BossStagger;
-	BossState.StaggerMax = InSetup.BossStagger;
-	BossState.StaggerRate = Cfg.BossStaggerRate;
-	BossState.bBroken = false;
-	BossState.BreakTurnsLeft = 0;
-	BossState.PatternIndex = 0;
+	// --- Hàng địch (nhiều quái / nhiều boss trong cùng trận) ---
+	EnemyList.clear();
+	TargetIndex = 0;
+	const std::vector<FEnemyDef> EnemyDefs = InSetup.BuildEnemyList();
+	for (size_t i = 0; i < EnemyDefs.size(); ++i)
+	{
+		const FEnemyDef& Def = EnemyDefs[i];
+
+		// Cấp bậc càng cao thì càng trâu: nhân chỉ số theo tier (Normal = x1.0 ... Boss = x3.5).
+		const float TierMul = EnemyTierStatMultiplier(Def.Tier);
+		const float ScaledHp  = Def.Hp * TierMul;
+		const float ScaledAtk = Def.Atk * TierMul;
+
+		// Trùm (MidBoss/Boss) bắt buộc có thanh stagger; quái thường thì không.
+		// Nếu người thiết kế không điền Stagger, tự suy ra theo % máu.
+		float Stagger = Def.Stagger;
+		if (Stagger <= 0.f && EnemyTierHasStagger(Def.Tier)) { Stagger = ScaledHp * 0.18f; }
+
+		FEnemyState Enemy;
+		Enemy.Def        = Def;
+		Enemy.Name       = Def.Name;
+		Enemy.Hp         = ScaledHp;
+		Enemy.HpMax      = ScaledHp;
+		Enemy.Atk        = ScaledAtk;
+		Enemy.Stagger    = Stagger;
+		Enemy.StaggerMax = Stagger;
+		Enemy.StaggerRate = Cfg.BossStaggerRate;
+		Enemy.PhysResist = Def.PhysResist;
+		Enemy.MagResist  = Def.MagResist;
+		Enemy.CurrentPhase = 1;
+		Enemy.TotalPhases  = std::max(1, Def.TotalPhases);
+		Enemy.bAlive = true;
+		Enemy.SlotIndex = static_cast<int32>(i);
+		EnemyList.push_back(Enemy);
+	}
+
+	// Mục tiêu mặc định: ưu tiên trùm (boss) để người chơi đánh đúng trọng tâm.
+	TargetIndex = PrimaryEnemyIndex();
+	StageStory = InSetup.Story;
 
 	EffectsState.Clear();
 	ChallengeList = InSetup.Challenges;
@@ -83,8 +133,14 @@ void FBattle::Setup(const FBattleSetup& InSetup)
 	// Vật cản ban đầu do boss đặt (map nào cũng có "chướng ngại" của trận).
 	if (InSetup.StartObstacles > 0) { BoardState.PlaceRandomObstacles(InSetup.StartObstacles, 1); }
 
-	AddLog("=== Trận đấu bắt đầu: " + BossState.Name + " ===");
+	AddLog("=== Trận đấu bắt đầu: " + EnemyLineupText() + " ===");
 	AddLog("Đội hình " + ToText(Team.MemberCount()) + " người, mỗi turn có " + ToText(Cfg.MovesPerTurn) + " lượt nối.");
+	if (!StageStory.StageTitle.empty())
+	{
+		AddLog("[Story] " + StageStory.ChapterTitle + " - " + StageStory.StageTitle);
+		for (const std::string& Line : StageStory.IntroLines) { AddLog("[Story] " + Line); }
+	}
+	for (FEnemyState& Enemy : EnemyList) { PlanEnemyIntent(Enemy.SlotIndex); }
 	UpdateChallenges();
 	CheckBattleEnd();
 }
@@ -101,6 +157,8 @@ FActionResult FBattle::PlayerSwap(const FCell& A, const FCell& B)
 		return FActionResult::Fail(EActionResult::NoActions, "Hết lượt nối trong turn này.");
 	}
 
+	BeginAction();
+
 	FResolver Resolver(BoardState);
 	const FResolveOutcome Outcome = Resolver.ResolveSwap(A, B);
 	if (!Outcome.bValid)
@@ -116,6 +174,10 @@ FActionResult FBattle::PlayerSwap(const FCell& A, const FCell& B)
 	AddLog("Nối " + ToText(Outcome.TotalBlocksCleared) + " block, " + ToText(Outcome.CascadeCount)
 		+ " tầng combo" + (Outcome.TotalObstaclesCleared > 0 ? (" , gỡ " + ToText(Outcome.TotalObstaclesCleared) + " vật cản") : "")
 		+ (Outcome.ColorBombSwaps > 0 ? " , kích hoạt block cầu vồng!" : "") + ".");
+
+	PushEvent(EBattleEventKind::MatchClear, -1, -1, static_cast<float>(Outcome.TotalBlocksCleared),
+		"Nối " + ToText(Outcome.TotalBlocksCleared) + " block", Outcome.MaxBlocksInStep >= 5,
+		Outcome.CascadeCount);
 
 	ApplyMatchEffects(Outcome);
 
@@ -155,6 +217,8 @@ FActionResult FBattle::ActivateSpecialCell(const FCell& Cell)
 		return FActionResult::Fail(EActionResult::NoMatch, Outcome.InvalidReason);
 	}
 
+	BeginAction();
+
 	LastOutcome = Outcome;
 	MovesUsedInTurn += 1;
 	MovesRemaining  -= 1;
@@ -162,6 +226,9 @@ FActionResult FBattle::ActivateSpecialCell(const FCell& Cell)
 
 	AddLog("[PHE TA] Kích hoạt Bom Khối năng lượng: nổ " + ToText(Outcome.TotalBlocksCleared) + " block vùng 3x3, " + ToText(Outcome.CascadeCount)
 		+ " tầng combo" + (Outcome.TotalObstaclesCleared > 0 ? (" , gỡ " + ToText(Outcome.TotalObstaclesCleared) + " vật cản/bẫy") : "") + ".");
+
+	PushEvent(EBattleEventKind::MatchClear, -1, -1, static_cast<float>(Outcome.TotalBlocksCleared),
+		"Nổ bom " + ToText(Outcome.TotalBlocksCleared) + " block", true, Outcome.CascadeCount);
 
 	ApplyMatchEffects(Outcome);
 
@@ -188,22 +255,24 @@ FActionResult FBattle::ActivateSpecialCell(const FCell& Cell)
 // -----------------------------------------------------------------------------
 void FBattle::ApplyMatchEffects(const FResolveOutcome& Outcome)
 {
-	// Kiểm tra điều kiện Phá Chiêu (Skill Break QTE) khi Boss đang nạp tuyệt kĩ
-	if (BossState.bCharging)
+	// Kiểm tra điều kiện Phá Chiêu (Skill Break QTE) cho MỌI địch đang nạp tuyệt kĩ.
+	for (FEnemyState& Enemy : EnemyList)
 	{
-		if (BossState.SkillBreakKind == ESkillBreakKind::ComboCount)
+		if (!Enemy.bAlive || !Enemy.bCharging) { continue; }
+
+		if (Enemy.SkillBreakKind == ESkillBreakKind::ComboCount)
 		{
-			BossState.SkillBreakCurrent = static_cast<int32>(Outcome.Steps.size());
+			Enemy.SkillBreakCurrent = static_cast<int32>(Outcome.Steps.size());
 		}
-		else if (BossState.SkillBreakKind == ESkillBreakKind::BlockCount)
+		else if (Enemy.SkillBreakKind == ESkillBreakKind::BlockCount)
 		{
-			BossState.SkillBreakCurrent += Outcome.TotalBlocksCleared;
+			Enemy.SkillBreakCurrent += Outcome.TotalBlocksCleared;
 		}
 
-		if (BossState.SkillBreakCurrent >= BossState.SkillBreakRequired)
+		if (Enemy.SkillBreakCurrent >= Enemy.SkillBreakRequired)
 		{
-			BossState.bCharging = false;
-			AddLog("PHÁ CHIÊU THÀNH CÔNG! Đã phá vỡ chiêu nạp của " + BossState.Name + "! Tuyệt kĩ của Boss bị ngắt!");
+			Enemy.bCharging = false;
+			AddLog("PHÁ CHIÊU THÀNH CÔNG! Đã phá vỡ chiêu nạp của " + Enemy.Name + "! Tuyệt kĩ của nó bị ngắt!");
 		}
 	}
 
@@ -242,7 +311,7 @@ void FBattle::ApplyMatchEffects(const FResolveOutcome& Outcome)
 		case ERole::Healer:
 		{
 			const float Heal = ComputeHealAmount(i, Outcome);
-			const float Done = Team.HealAll(Heal);
+			const float Done = HealPartyAllLogged(Heal, M->Def.Name + " [Healer]");
 			AddLog(M->Def.Name + " hồi " + ToText(Done) + " HP cho cả đội (" + ToText(Blocks) + " block "
 				+ ColorName(Color) + ").");
 			break;
@@ -323,7 +392,7 @@ void FBattle::ApplyMageMatchDebuff(int32 MageIndex, const FResolveOutcome& Outco
 	Debuff.TurnsLeft = 2;
 	Debuff.bDebuffOnBoss = true;
 	EffectsState.AddStack(Debuff, 3);
-	AddLog(M->Def.Name + " yểm debuff Suy Yếu Ma Pháp lên " + BossState.Name + " (+25% sát thương ma pháp nhận vào).");
+	AddLog(M->Def.Name + " yểm debuff Suy Yếu Ma Pháp lên " + Boss().Name + " (+25% sát thương ma pháp nhận vào).");
 }
 
 
@@ -370,19 +439,21 @@ void FBattle::ApplySupportEffect(int32 SupporterIndex, const FResolveOutcome& Ou
 		+ ToText(Blocks) + " block " + ColorName(M->Def.MatchColor) + ".");
 }
 
-float FBattle::DealDamageToBoss(float RawDamage, const std::string& SourceName, EDamageType DamageType)
+float FBattle::DealDamageToEnemy(int32 EnemyIndex, float RawDamage, const std::string& SourceName, EDamageType DamageType)
 {
-	if (RawDamage <= 0.f || BossState.Hp <= 0.f) { return 0.f; }
+	FEnemyState* Enemy = TryGetEnemy(EnemyIndex);
+	if (!Enemy || !Enemy->bAlive) { return 0.f; }
+	if (RawDamage <= 0.f || Enemy->Hp <= 0.f) { return 0.f; }
 
 	// Tính toán kháng vật lý / kháng phép của Boss
 	float Resist = 0.f;
 	if (DamageType == EDamageType::Physical)
 	{
-		Resist += BossState.PhysResist;
+		Resist += Enemy->PhysResist;
 	}
 	else if (DamageType == EDamageType::Magic)
 	{
-		Resist += BossState.MagResist;
+		Resist += Enemy->MagResist;
 		// Debuff Suy Yếu Ma Pháp do Mage gây ra
 		for (const FTeamBuff& Buff : EffectsState.Buffs)
 		{
@@ -395,53 +466,63 @@ float FBattle::DealDamageToBoss(float RawDamage, const std::string& SourceName, 
 
 	const float FinalResist = std::min(0.9f, std::max(-0.5f, Resist));
 
-	// Khi boss BREAK (thanh stagger vỡ) -> nhận thêm sát thương.
-	const float Final = RawDamage * (1.f - FinalResist) * (BossState.bBroken ? Cfg.BreakDamageMultiplier : 1.f);
+	// Khi địch BREAK (thanh stagger vỡ) -> nhận thêm sát thương.
+	const float Final = RawDamage * (1.f - FinalResist) * (Enemy->bBroken ? Cfg.BreakDamageMultiplier : 1.f);
 
-	BossState.Hp = std::max(0.f, BossState.Hp - Final);
+	Enemy->Hp = std::max(0.f, Enemy->Hp - Final);
 	DamageDealtTotal += Final;
 
-	AddLog(SourceName + " gây " + ToText(Final) + " sát thương " + DamageTypeName(DamageType) + " lên " + BossState.Name
-		+ " (HP boss: " + ToText(BossState.Hp) + "/" + ToText(BossState.HpMax) + ").");
+	// Nhịp cho UI: ai vừa ăn đòn, bao nhiêu, có phải đòn lớn không.
+	const bool bBigHit = (Final >= Enemy->HpMax * 0.08f) || Enemy->bBroken;
+	PushEvent(EBattleEventKind::EnemyDamaged, -1, EnemyIndex, Final, SourceName, bBigHit);
 
-	// Sát thương lên boss làm giảm thanh stagger.
+	AddLog(SourceName + " gây " + ToText(Final) + " sát thương " + DamageTypeName(DamageType) + " lên " + Enemy->Name
+		+ " (HP: " + ToText(Enemy->Hp) + "/" + ToText(Enemy->HpMax) + ").");
 
-	ReduceStagger(Final * Cfg.StaggerPerDamage * EffectsState.StaggerMultiplier() * BossState.StaggerRate, SourceName);
+	// Sát thương lên địch làm giảm thanh stagger.
+	ReduceStagger(EnemyIndex, Final * Cfg.StaggerPerDamage * EffectsState.StaggerMultiplier() * Enemy->StaggerRate, SourceName);
 
-	if (BossState.Hp <= 0.f) { CheckBattleEnd(); }
+	if (Enemy->Hp <= 0.f) { CheckBattleEnd(); }
 	return Final;
 }
 
-void FBattle::ReduceStagger(float Amount, const std::string& SourceName)
+void FBattle::ReduceStagger(int32 EnemyIndex, float Amount, const std::string& SourceName)
 {
-	if (BossState.StaggerMax <= 0.f) { return; }
+	FEnemyState* Enemy = TryGetEnemy(EnemyIndex);
+	if (!Enemy || !Enemy->bAlive) { return; }
+	if (Enemy->StaggerMax <= 0.f) { return; }
 
-	BossState.Stagger = std::max(0.f, BossState.Stagger - Amount);
-	AddLog("Stagger boss còn " + ToText(BossState.Stagger) + "/" + ToText(BossState.StaggerMax) + ".");
+	Enemy->Stagger = std::max(0.f, Enemy->Stagger - Amount);
+	AddLog("Stagger " + Enemy->Name + " còn " + ToText(Enemy->Stagger) + "/" + ToText(Enemy->StaggerMax) + ".");
 
-	if (BossState.Stagger <= 0.f) { CheckStaggerBreak(); }
+	if (Enemy->Stagger <= 0.f) { CheckStaggerBreak(EnemyIndex); }
 	(void)SourceName;
 }
 
-void FBattle::CheckStaggerBreak()
+void FBattle::CheckStaggerBreak(int32 EnemyIndex)
 {
-	if (BossState.bBroken) { return; }
+	FEnemyState* Enemy = TryGetEnemy(EnemyIndex);
+	if (!Enemy || !Enemy->bAlive) { return; }
+	if (Enemy->bBroken) { return; }
 
-	// Thanh stagger VỠ: boss ngất, nhận thêm sát thương, và Counter được phép ra tay.
-	BossState.bBroken = true;
-	BossState.BreakTurnsLeft = Cfg.BreakDurationTurns;
-	BossState.Stagger = 0.f;
-	AddLog("!! THANH STAGGER VỠ - " + BossState.Name + " bị BREAK trong " + ToText(Cfg.BreakDurationTurns) + " turn !!");
+	// Thanh stagger VỠ: địch ngất, nhận thêm sát thương, và Counter được phép ra tay.
+	Enemy->bBroken = true;
+	Enemy->BreakTurnsLeft = Cfg.BreakDurationTurns;
+	Enemy->Stagger = 0.f;
+	PushEvent(EBattleEventKind::EnemyBreak, -1, EnemyIndex, static_cast<float>(Enemy->BreakTurnsLeft),
+		"VỠ STAGGER - " + Enemy->Name, true);
+	AddLog("!! THANH STAGGER VỠ - " + Enemy->Name + " bị BREAK trong " + ToText(Cfg.BreakDurationTurns) + " turn !!");
 
 	// Counter: chỉ kích hoạt khi thanh stagger vỡ.
 	for (FCharacterState* C : Team.FindAllByRole(ERole::Counter))
 	{
 		const float Damage = C->Atk * Cfg.CounterDamageMultiplier;
-		AddLog(C->Def.Name + " (Counter) phản kích khi boss vỡ stagger!");
-		DealDamageToBoss(Damage, C->Def.Name + " [Counter]");
+		AddLog(C->Def.Name + " (Counter) phản kích khi " + Enemy->Name + " vỡ stagger!");
+		// Counter đánh thẳng vào địch vừa vỡ stagger (không dồn sang mục tiêu khác).
+		DealDamageToEnemy(EnemyIndex, Damage, C->Def.Name + " [Counter]");
 	}
 
-	// Deflecter giúp hạ stagger nhanh hơn -> giảm luôn thời gian ngất một chút nếu có nhiều deflecter.
+	if (!Enemy->bAlive) { CheckBattleEnd(); }
 	UpdateChallenges();
 	CheckBattleEnd();
 }
@@ -463,6 +544,8 @@ FActionResult FBattle::UseBasicSkill(int32 MemberIndex, const FCell& TargetCell)
 			"Kỹ năng của " + M->Def.Name + " còn hồi chiêu " + ToText(M->BasicCooldown) + " turn.");
 	}
 
+	BeginAction();
+
 	const int32 RoleIdx = static_cast<int32>(M->Def.Role);
 	if (bBasicSkillUsedThisTurn[RoleIdx])
 	{
@@ -470,7 +553,7 @@ FActionResult FBattle::UseBasicSkill(int32 MemberIndex, const FCell& TargetCell)
 	}
 
 	const FSkillDefinition Skill = FSkillCatalog::BasicForRole(M->Def.Role);
-	if (Skill.bRequiresBossBreak && !BossState.bBroken)
+	if (Skill.bRequiresBossBreak && !Boss().bBroken)
 	{
 		return FActionResult::Fail(EActionResult::NotReady, Skill.Name + ": chỉ dùng được khi boss đang BREAK.");
 	}
@@ -538,7 +621,7 @@ FActionResult FBattle::UseBasicSkill(int32 MemberIndex, const FCell& TargetCell)
 	case ESkillKind::Aegis:
 	{
 		// Healer: hồi máu + chặn boss đặt vật cản trong 1 turn.
-		const float Heal = Team.HealAll(Team.TotalHpMax() * 0.12f);
+		const float Heal = HealPartyAllLogged(Team.TotalHpMax() * 0.12f, M->Def.Name + " [Hộ thuẫn]");
 		FTeamBuff Buff;
 		Buff.Id = "buff.healer.aegis";
 		Buff.Source = M->Def.Name;
@@ -620,6 +703,7 @@ FActionResult FBattle::UseBasicSkill(int32 MemberIndex, const FCell& TargetCell)
 
 	M->BasicCooldown = Skill.Cooldown;
 	bBasicSkillUsedThisTurn[RoleIdx] = true;
+	PushEvent(EBattleEventKind::Skill, MemberIndex, TargetIndex, 0.f, Skill.Name);
 	return FActionResult::Ok("Đã dùng " + Skill.Name + ".");
 }
 
@@ -673,8 +757,8 @@ FActionResult FBattle::UseUltimate(int32 MemberIndex)
 		Debuff.bDebuffOnBoss = true;
 		EffectsState.AddStack(Debuff, 3);
 
-		const float StaggerDamage = BossState.StaggerMax * Cfg.UltimateStaggerPercent * ChainMul;
-		ReduceStagger(StaggerDamage, M->Def.Name + " [Ultimate]");
+		const float StaggerDamage = Boss().StaggerMax * Cfg.UltimateStaggerPercent * ChainMul;
+		ReduceStagger(TargetIndex, StaggerDamage, M->Def.Name + " [Ultimate]");
 		AddLog("Gỡ " + ToText(Removed) + " vật cản, phá " + ToText(StaggerDamage) + " stagger.");
 		break;
 	}
@@ -682,7 +766,7 @@ FActionResult FBattle::UseUltimate(int32 MemberIndex)
 	case ESkillKind::UltimateHeal:
 	{
 		// Hồi % máu tối đa cho cả đội + miễn nhiễm sát thương 1 turn.
-		const float Heal = Team.HealAll(Team.TotalHpMax() * Cfg.UltimateHealPercent);
+		const float Heal = HealPartyAllLogged(Team.TotalHpMax() * Cfg.UltimateHealPercent, M->Def.Name + " [Ultimate]");
 		FTeamBuff Buff;
 		Buff.Id = "buff.healer.invuln";
 		Buff.Source = M->Def.Name;
@@ -703,7 +787,7 @@ FActionResult FBattle::UseUltimate(int32 MemberIndex)
 		Buff.DamageTakenPerStack = 0.65f;
 		Buff.TurnsLeft = 2;
 		EffectsState.AddStack(Buff, 1);
-		const float Heal = Team.HealAll(Team.TotalHpMax() * 0.15f);
+		const float Heal = HealPartyAllLogged(Team.TotalHpMax() * 0.15f, M->Def.Name + " [Thành lũy]");
 		AddLog("Thành lũy: giảm 65% sát thương nhận vào trong 2 turn, hồi " + ToText(Heal) + " HP.");
 		break;
 	}
@@ -712,7 +796,7 @@ FActionResult FBattle::UseUltimate(int32 MemberIndex)
 	{
 		const int32 Blocks = std::max(3, LastOutcome.MaxBlocksInStep);
 		const float Damage = M->Atk * Cfg.UltimateAttackerPower * ChainMul * (1.f + 0.06f * Blocks);
-		BossState.MagResist = std::max(0.f, BossState.MagResist - 0.30f);
+		Boss().MagResist = std::max(0.f, Boss().MagResist - 0.30f);
 		const int32 Cleared = BoardState.ClearRandomObstacles(1);
 		DealDamageToBoss(Damage, M->Def.Name + " [Ultimate Mage]", EDamageType::Magic);
 		AddLog(M->Def.Name + " giáng Bão Thiên Thạch, giảm 30% kháng phép boss và gỡ " + ToText(Cleared) + " vật cản.");
@@ -739,6 +823,8 @@ FActionResult FBattle::UseUltimate(int32 MemberIndex)
 	}
 
 	CheckBattleEnd();
+	PushEvent(EBattleEventKind::Ultimate, MemberIndex, TargetIndex, 0.f, Skill.Name, true,
+		std::max(1, UltimatesUsedInTurn));
 	return FActionResult::Ok("Đã tung " + Skill.Name + ".");
 }
 
@@ -751,6 +837,7 @@ FActionResult FBattle::EndTurn()
 	if (IsFinished()) { return FActionResult::Fail(EActionResult::Finished, "Trận đã kết thúc."); }
 
 	if (MovesUsedInTurn == 0) { AddLog("Người chơi kết thúc turn mà không nối được gì."); }
+	BeginAction();
 	AdvanceTurn(true);
 	return FActionResult::Ok("Đã kết thúc turn.");
 }
@@ -787,10 +874,14 @@ void FBattle::AdvanceTurn(bool bExplicitEarlyEnd)
 		if (D->DeflectStacks < Cfg.DeflectStacksRequired) { continue; }
 
 		D->DeflectStacks = 0;
-		const float StaggerDamage = BossState.StaggerMax * Cfg.DeflectStaggerPercent;
-		AddLog(D->Def.Name + " (Deflecter) giải phóng " + ToText(Cfg.DeflectStacksRequired)
-			+ " stack match-4 -> phá " + ToText(StaggerDamage) + " stagger!");
-		ReduceStagger(StaggerDamage, D->Def.Name + " [Deflecter]");
+		const FEnemyState* Target = TryGetEnemy(TargetIndex);
+		if (Target && Target->bAlive && Target->StaggerMax > 0.f)
+		{
+			const float StaggerDamage = Target->StaggerMax * Cfg.DeflectStaggerPercent;
+			AddLog(D->Def.Name + " (Deflecter) giải phóng " + ToText(Cfg.DeflectStacksRequired)
+				+ " stack match-4 -> phá " + ToText(StaggerDamage) + " stagger của " + Target->Name + "!");
+			ReduceStagger(TargetIndex, StaggerDamage, D->Def.Name + " [Deflecter]");
+		}
 	}
 
 	// ---------------------------------------------------------------------
@@ -800,15 +891,24 @@ void FBattle::AdvanceTurn(bool bExplicitEarlyEnd)
 	if (BoardState.TickTraps(ExplodedTraps) > 0)
 	{
 		const float TrapDamage = 130.f * static_cast<float>(ExplodedTraps.size());
-		const float Done = Team.DamageAll(TrapDamage);
+		const float Done = DamagePartyAllLogged(TrapDamage, "Bẫy đếm ngược");
 		DamageTakenTotal += Done;
 		AddLog("[ĐỊCH] BẪY ĐẾM NGƯỢC NỔ! Bẫy của Boss phát nổ gây " + ToText(Done) + " sát thương lên toàn đội!");
 	}
 
 	// ---------------------------------------------------------------------
-	// 4) Boss hành động (trừ khi đang bị BREAK).
+	// 3b) Mở khoá các ô đã hết thời gian bị phong ấn.
 	// ---------------------------------------------------------------------
-	if (!IsFinished()) { BossAction(); }
+	const int32 Unlocked = BoardState.TickLocks();
+	if (Unlocked > 0)
+	{
+		AddLog("[Hết hạn] " + ToText(Unlocked) + " ô được giải phong ấn, đổi chỗ lại được.");
+	}
+
+	// ---------------------------------------------------------------------
+	// 4) Lượt của hàng địch: mỗi địch còn sống lần lượt hành động.
+	// ---------------------------------------------------------------------
+	if (!IsFinished()) { EnemyTurn(); }
 
 	// ---------------------------------------------------------------------
 	// 5) Hết hạn buff/debuff.
@@ -836,10 +936,26 @@ void FBattle::AdvanceTurn(bool bExplicitEarlyEnd)
 
 	AddLog("--- Turn " + ToText(TurnIndex) + " bắt đầu: " + ToText(MovesRemaining) + " lượt nối ---");
 
-	// Tính toán dự định hành động tiếp theo của Boss cho UI hiển thị viền đỏ nhắm mục tiêu
-	const int32 NextActionIdx = BossState.PatternIndex % 7;
-	BossState.IntentAction = static_cast<EBossAction>(NextActionIdx);
-	if (BossState.IntentAction == EBossAction::SingleTargetAttack)
+	// Cập nhật dự định hành động tiếp theo của TỪNG địch để UI vẽ trước (viền đỏ / biểu tượng).
+	RetargetIfNeeded();
+	for (FEnemyState& Enemy : EnemyList) { PlanEnemyIntent(Enemy.SlotIndex); }
+
+	UpdateChallenges();
+	CheckBattleEnd();
+}
+
+// -----------------------------------------------------------------------------
+// Dự đoán hành động kế tiếp của 1 địch (UI đọc IntentAction trước khi nó ra tay).
+// -----------------------------------------------------------------------------
+void FBattle::PlanEnemyIntent(int32 EnemyIndex)
+{
+	FEnemyState* Enemy = TryGetEnemy(EnemyIndex);
+	if (!Enemy || !Enemy->bAlive) { return; }
+
+	Enemy->IntentAction = Enemy->NextAction();
+	Enemy->IntentTargetMemberIndex = -1;
+
+	if (Enemy->IntentAction == EBossAction::SingleTargetAttack)
 	{
 		const std::vector<int32> Alive = Team.AliveIndices();
 		if (!Alive.empty())
@@ -854,50 +970,60 @@ void FBattle::AdvanceTurn(bool bExplicitEarlyEnd)
 					TargetIdx = idx;
 				}
 			}
-			BossState.IntentTargetMemberIndex = TargetIdx;
+			Enemy->IntentTargetMemberIndex = TargetIdx;
 		}
-		else { BossState.IntentTargetMemberIndex = -1; }
 	}
-	else
-	{
-		BossState.IntentTargetMemberIndex = -1;
-	}
-
-	UpdateChallenges();
-	CheckBattleEnd();
 }
 
-void FBattle::BossAction()
+// -----------------------------------------------------------------------------
+// Lượt của cả hàng địch: mỗi con còn sống hành động theo chu kì của nó.
+// -----------------------------------------------------------------------------
+void FBattle::EnemyTurn()
 {
-	// Đang bị vỡ stagger: boss ngất, không hành động.
-	if (BossState.bBroken)
+	for (int32 i = 0; i < EnemyCount(); ++i)
 	{
-		BossState.BreakTurnsLeft -= 1;
-		AddLog(BossState.Name + " đang BREAK, mất lượt hành động (còn "
-			+ ToText(std::max(0, BossState.BreakTurnsLeft)) + " turn).");
+		if (IsFinished()) { return; }
+		EnemyAct(i);
+	}
+}
 
-		if (BossState.BreakTurnsLeft <= 0)
+void FBattle::EnemyAct(int32 EnemyIndex)
+{
+	FEnemyState* Enemy = TryGetEnemy(EnemyIndex);
+	if (!Enemy || !Enemy->bAlive) { return; }
+
+	// Đang bị vỡ stagger: địch ngất, không hành động.
+	if (Enemy->bBroken)
+	{
+		Enemy->BreakTurnsLeft -= 1;
+		AddLog(Enemy->Name + " đang BREAK, mất lượt hành động (còn "
+			+ ToText(std::max(0, Enemy->BreakTurnsLeft)) + " turn).");
+
+		if (Enemy->BreakTurnsLeft <= 0)
 		{
-			BossState.bBroken = false;
-			BossState.Stagger = BossState.StaggerMax * 0.75f;   // hồi lại 75% thanh stagger
-			AddLog(BossState.Name + " hồi tỉnh, thanh stagger được nạp lại.");
+			Enemy->bBroken = false;
+			Enemy->Stagger = Enemy->StaggerMax * 0.75f;   // hồi lại 75% thanh stagger
+			AddLog(Enemy->Name + " hồi tỉnh, thanh stagger được nạp lại.");
 		}
 		return;
 	}
 
-	// Hỗ trợ 6 dạng hành động của Boss (AoE, SingleTarget, SpawnObstacles, SpawnTraps, SelfBuff, WeakenTeam)
-	const int32 ActionIndex = BossState.PatternIndex % 6;
-	BossState.PatternIndex += 1;
+	const EBossAction Action = Enemy->NextAction();
+	Enemy->PatternIndex += 1;
 
-	switch (static_cast<EBossAction>(ActionIndex))
+	// Nhịp cho UI: địch nào vừa ra chiêu gì (để diễn cảnh nó lao tới trước khi đội ăn đòn).
+	PushEvent(EBattleEventKind::EnemyAction, -1, EnemyIndex, Enemy->Atk,
+		Enemy->Name + ": " + BossActionName(Action), Enemy->IsBossLike(), static_cast<int32>(Action));
+
+	switch (Action)
 	{
 	case EBossAction::AoEAttack:
 	{
-		float Damage = BossState.Atk * 0.8f * BossState.SelfBuffAtkMultiplier(); // sát thương AoE cơ bản nhân hệ số Buff
+		float Damage = Enemy->Atk * 0.8f * Enemy->SelfBuffAtkMultiplier(); // sát thương AoE cơ bản nhân hệ số Buff
 		Damage *= EffectsState.DamageTakenMultiplier();          // khiên / Defender / miễn nhiễm
-		const float Done = Team.DamageAll(Damage);
+		const float Done = DamagePartyAllLogged(Damage, Enemy->Name + " [AoE]");
 		DamageTakenTotal += Done;
-		AddLog(BossState.Name + " dùng AoE: đội nhận " + ToText(Done) + " sát thương (hệ số nhận vào x"
+		AddLog(Enemy->Name + " dùng AoE: đội nhận " + ToText(Done) + " sát thương (hệ số nhận vào x"
 			+ ToText(EffectsState.DamageTakenMultiplier()) + ").");
 		break;
 	}
@@ -907,15 +1033,19 @@ void FBattle::BossAction()
 		const std::vector<int32> Alive = Team.AliveIndices();
 		if (!Alive.empty())
 		{
-			// Ưu tiên nhắm vào nhân vật có % HP thấp nhất
-			int32 TargetIdx = Alive[0];
-			float LowestHpPct = 1.0f;
-			for (int32 idx : Alive)
+			// Đã lên kế hoạch từ đầu turn thì bám đúng mục tiêu đó, chưa có thì nhắm người máu thấp nhất.
+			int32 TargetIdx = Enemy->IntentTargetMemberIndex;
+			if (TargetIdx < 0 || !Team.TryGet(TargetIdx) || !Team.TryGet(TargetIdx)->bAlive)
 			{
-				if (Team.Members()[idx].HpPercent() < LowestHpPct)
+				TargetIdx = Alive[0];
+				float LowestHpPct = 1.0f;
+				for (int32 idx : Alive)
 				{
-					LowestHpPct = Team.Members()[idx].HpPercent();
-					TargetIdx = idx;
+					if (Team.Members()[idx].HpPercent() < LowestHpPct)
+					{
+						LowestHpPct = Team.Members()[idx].HpPercent();
+						TargetIdx = idx;
+					}
 				}
 			}
 
@@ -933,10 +1063,10 @@ void FBattle::BossAction()
 				}
 			}
 
-			float Damage = BossState.Atk * 1.6f * BossState.SelfBuffAtkMultiplier() * SingleTakenMult;
-			const float Done = Team.DamageMember(TargetIdx, Damage);
+			float Damage = Enemy->Atk * 1.6f * Enemy->SelfBuffAtkMultiplier() * SingleTakenMult;
+			const float Done = DamagePartyMemberLogged(TargetIdx, Damage, Enemy->Name + " [Đơn thể]");
 			DamageTakenTotal += Done;
-			AddLog(BossState.Name + " tung đòn ĐƠN THỂ dứt điểm vào " + Target.Def.Name + ": gây " + ToText(Done) + " sát thương!");
+			AddLog(Enemy->Name + " tung đòn ĐƠN THỂ dứt điểm vào " + Target.Def.Name + ": gây " + ToText(Done) + " sát thương!");
 
 			if (!Target.bAlive && Target.Def.MatchColor != EColor::None)
 			{
@@ -950,23 +1080,23 @@ void FBattle::BossAction()
 
 	case EBossAction::BossChargeAttack:
 	{
-		if (BossState.bCharging)
+		if (Enemy->bCharging)
 		{
 			// Phá chiêu thất bại -> Tuyệt kĩ nổ cực mạnh
-			BossState.bCharging = false;
-			float Damage = BossState.Atk * 2.2f * BossState.SelfBuffAtkMultiplier() * EffectsState.DamageTakenMultiplier();
-			const float Done = Team.DamageAll(Damage);
+			Enemy->bCharging = false;
+			float Damage = Enemy->Atk * 2.2f * Enemy->SelfBuffAtkMultiplier() * EffectsState.DamageTakenMultiplier();
+			const float Done = DamagePartyAllLogged(Damage, Enemy->Name + " [Tuyệt kĩ]");
 			DamageTakenTotal += Done;
-			AddLog("PHÁ CHIÊU THẤT BẠI! " + BossState.Name + " giáng Tuyệt kĩ nổ " + ToText(Done) + " sát thương lên toàn đội!");
+			AddLog("PHÁ CHIÊU THẤT BẠI! " + Enemy->Name + " giáng Tuyệt kĩ nổ " + ToText(Done) + " sát thương lên toàn đội!");
 		}
 		else
 		{
 			// Bắt đầu nạp tuyệt kĩ (Skill Break QTE)
-			BossState.bCharging = true;
-			BossState.SkillBreakKind = ESkillBreakKind::ComboCount;
-			BossState.SkillBreakRequired = 3; // Nối combo >= 3 trong 1 nước
-			BossState.SkillBreakCurrent = 0;
-			AddLog(BossState.Name + " bắt đầu NẠP TUYỆT KĨ! Yêu cầu phá chiêu: Tạo chuỗi combo >= 3 trong lượt nối!");
+			Enemy->bCharging = true;
+			Enemy->SkillBreakKind = ESkillBreakKind::ComboCount;
+			Enemy->SkillBreakRequired = 3; // Nối combo >= 3 trong 1 nước
+			Enemy->SkillBreakCurrent = 0;
+			AddLog(Enemy->Name + " bắt đầu NẠP TUYỆT KĨ! Yêu cầu phá chiêu: Tạo chuỗi combo >= 3 trong lượt nối!");
 		}
 		break;
 	}
@@ -975,26 +1105,106 @@ void FBattle::BossAction()
 	{
 		if (EffectsState.BlocksObstacleSpawn())
 		{
-			AddLog(BossState.Name + " định tạo vật cản nhưng bị Hộ thuẫn chặn!");
+			AddLog(Enemy->Name + " định tạo vật cản nhưng bị Hộ thuẫn chặn!");
 			break;
 		}
 		const std::vector<FCell> Placed = BoardState.PlaceRandomObstacles(Cfg.BossObstaclesPerAction, 1);
-		AddLog(BossState.Name + " tạo " + ToText(static_cast<int32>(Placed.size())) + " vật cản lên bàn.");
+		PushEvent(EBattleEventKind::Obstacle, -1, EnemyIndex, static_cast<float>(Placed.size()),
+			Enemy->Name + " tạo vật cản");
+		AddLog(Enemy->Name + " tạo " + ToText(static_cast<int32>(Placed.size())) + " vật cản lên bàn.");
 		break;
 	}
 
 	case EBossAction::SpawnTraps:
 	{
 		const std::vector<FCell> Placed = BoardState.PlaceRandomTraps(2, 3);
-		AddLog(BossState.Name + " gài " + ToText(static_cast<int32>(Placed.size())) + " Bẫy đếm ngược (3 turn) lên bàn!");
+		PushEvent(EBattleEventKind::Obstacle, -1, EnemyIndex, static_cast<float>(Placed.size()),
+			Enemy->Name + " gài bẫy");
+		AddLog(Enemy->Name + " gài " + ToText(static_cast<int32>(Placed.size())) + " Bẫy đếm ngược (3 turn) lên bàn!");
 		break;
 	}
 
 	case EBossAction::SelfBuff:
 	{
-		BossState.SelfBuffStacks += 1;
-		AddLog(BossState.Name + " tịnh quán vận công! Sát thương tăng thành +"
-			+ ToText(BossState.SelfBuffStacks * 10) + "%.");
+		Enemy->SelfBuffStacks += 1;
+		PushEvent(EBattleEventKind::Buff, -1, EnemyIndex, static_cast<float>(Enemy->SelfBuffStacks),
+			Enemy->Name + " tăng sát thương");
+		AddLog(Enemy->Name + " tịnh quán vận công! Sát thương tăng thành +"
+			+ ToText(Enemy->SelfBuffStacks * 10) + "%.");
+		break;
+	}
+
+	case EBossAction::LockCells:
+	{
+		// Khoá vài ô trong vài turn: người chơi không swap được, block cũng không rơi.
+		const int32 LockCount = 2 + (Enemy->IsBossLike() ? 2 : 0);
+		const std::vector<FCell> Locked = BoardState.LockRandomCells(LockCount, std::max(1, Cfg.LockedCellTurns));
+		PushEvent(EBattleEventKind::LockCells, -1, EnemyIndex, static_cast<float>(Locked.size()),
+			Enemy->Name + " phong ấn ô");
+		AddLog(Enemy->Name + " niệm chú PHONG ẤN: khoá " + ToText(static_cast<int32>(Locked.size()))
+			+ " ô trên bàn trong " + ToText(std::max(1, Cfg.LockedCellTurns)) + " turn!");
+		break;
+	}
+
+	case EBossAction::ScrambleColors:
+	{
+		const int32 Count = 3 + (Enemy->IsBossLike() ? 2 : 0);
+		const int32 Changed = BoardState.ScrambleRandomColors(Count);
+		PushEvent(EBattleEventKind::Scramble, -1, EnemyIndex, static_cast<float>(Changed),
+			Enemy->Name + " đảo màu block");
+		AddLog(Enemy->Name + " ĐẢO MÀU " + ToText(Changed) + " block: các đường nối đang chuẩn bị bị phá!");
+		// Bàn đổi màu xong có thể lòi ra match sẵn -> để người chơi hưởng lợi thì dọn trước.
+		BoardState.EnsurePlayable();
+		break;
+	}
+
+	case EBossAction::DrainUltimate:
+	{
+		const int32 Drain = Cfg.UltimateDrainPerAction;
+		int32 Drained = 0;
+		for (FCharacterState& M : Team.Members())
+		{
+			if (!M.bAlive) { continue; }
+			const int32 Before = M.UltimateCharge;
+			M.UltimateCharge = std::max(0, M.UltimateCharge - Drain);
+			Drained += (Before - M.UltimateCharge);
+		}
+		AddLog(Enemy->Name + " HÚT NĂNG LƯỢNG: cả đội mất tổng " + ToText(Drained) + " điểm ultimate!");
+		if (Drained > 0)
+		{
+			PushEvent(EBattleEventKind::Drain, -1, EnemyIndex, static_cast<float>(Drained),
+				Enemy->Name + " hút ultimate");
+		}
+		break;
+	}
+
+	case EBossAction::SummonMinion:
+	{
+		if (EnemyCount() >= Cfg.MaxEnemiesOnField)
+		{
+			AddLog(Enemy->Name + " định triệu hồi quái nhưng chiến trường đã đầy!");
+			break;
+		}
+		FEnemyDef Minion = FEnemyDef::Make("enemy.minion.summoned", "Tiểu Yêu Triệu Hồi",
+			EEnemyTier::Normal,
+			Enemy->HpMax * (static_cast<float>(Cfg.MinionHpPercent) / 100.f),
+			Enemy->Atk * (static_cast<float>(Cfg.MinionAtkPercent) / 100.f), "minion");
+		Minion.Pattern = { EBossAction::AoEAttack, EBossAction::SingleTargetAttack };
+
+		FEnemyState Summoned;
+		Summoned.Def = Minion;
+		Summoned.Name = Minion.Name;
+		Summoned.Hp = Minion.Hp;
+		Summoned.HpMax = Minion.Hp;
+		Summoned.Atk = Minion.Atk;
+		Summoned.Stagger = 0.f;
+		Summoned.StaggerMax = 0.f;
+		Summoned.StaggerRate = Cfg.BossStaggerRate;
+		Summoned.bAlive = true;
+		Summoned.SlotIndex = EnemyCount();
+		EnemyList.push_back(Summoned);
+		PushEvent(EBattleEventKind::EnemySummoned, -1, Summoned.SlotIndex, Summoned.Hp, Minion.Name);
+		AddLog(Enemy->Name + " TRIỆU HỒI " + Minion.Name + " ra chiến trường!");
 		break;
 	}
 
@@ -1003,12 +1213,13 @@ void FBattle::BossAction()
 	{
 		FTeamBuff Debuff;
 		Debuff.Id = "debuff.boss.weaken";
-		Debuff.Source = BossState.Name;
+		Debuff.Source = Enemy->Name;
 		Debuff.Stacks = 1;
 		Debuff.AtkPerStack = -0.12f;      // giảm 12% sát thương match mỗi stack
 		Debuff.TurnsLeft = static_cast<int32>(std::max(1.f, Cfg.BossWeakenTurns));
 		EffectsState.AddStack(Debuff, 5);
-		AddLog(BossState.Name + " gây debuff lên đội: -12% sát thương match trong "
+		PushEvent(EBattleEventKind::Buff, -1, EnemyIndex, 0.f, Enemy->Name + " suy yếu đội");
+		AddLog(Enemy->Name + " gây debuff lên đội: -12% sát thương match trong "
 			+ ToText(Debuff.TurnsLeft) + " turn.");
 		break;
 	}
@@ -1121,31 +1332,52 @@ void FBattle::CheckBattleEnd()
 {
 	if (IsFinished()) { return; }
 
-	if (BossState.Hp <= 0.f)
+	// Duyệt từng địch: hạ máu về 0 -> chuyển phase (nếu còn) hoặc tính là đã gục.
+	for (FEnemyState& Enemy : EnemyList)
 	{
-		if (BossState.CurrentPhase < BossState.TotalPhases)
+		if (!Enemy.bAlive || Enemy.Hp > 0.f) { continue; }
+
+		if (Enemy.CurrentPhase < Enemy.TotalPhases)
 		{
-			BossState.CurrentPhase++;
-			BossState.Hp = BossState.HpMax;
-			BossState.Stagger = BossState.StaggerMax;
-			BossState.bBroken = false;
-			BossState.BreakTurnsLeft = 0;
-			AddLog("!!! BOSS CHUYỂN SANG PHASE " + ToText(BossState.CurrentPhase) + "/" + ToText(BossState.TotalPhases) + " !!!");
-			return;
+			Enemy.CurrentPhase++;
+			Enemy.Hp = Enemy.HpMax;
+			Enemy.Stagger = Enemy.StaggerMax;
+			Enemy.bBroken = false;
+			Enemy.BreakTurnsLeft = 0;
+			AddLog("!!! " + Enemy.Name + " CHUYỂN SANG PHASE " + ToText(Enemy.CurrentPhase)
+				+ "/" + ToText(Enemy.TotalPhases) + " !!!");
+			continue;
 		}
-		BossState.Hp = 0.f;
+
+		Enemy.Hp = 0.f;
+		Enemy.bAlive = false;
+		Enemy.bBroken = false;
+		Enemy.bCharging = false;
+		PushEvent(EBattleEventKind::EnemyDefeated, -1, Enemy.SlotIndex, 0.f, Enemy.Name, true);
+		AddLog("[HẠ GỤC] " + Enemy.Name + " (" + EnemyTierName(Enemy.Tier()) + ") đã bị đánh bại!");
+	}
+
+	// Thắng khi TOÀN BỘ hàng địch đã gục.
+	if (EnemyList.empty() || AliveEnemyCount() == 0)
+	{
 		bVictory = true;
+		PushEvent(EBattleEventKind::Victory, -1, -1, 0.f, "CHIẾN THẮNG", true);
 		AddLog("=== CHIẾN THẮNG sau " + ToText(TurnIndex) + " turn ===");
+		for (const std::string& Line : StageStory.VictoryLines) { AddLog("[Story] " + Line); }
 		UpdateChallenges();
 		MaxStarsReached = EvaluateStars();
 		AddLog("Đánh giá: " + ToText(MaxStarsReached) + " sao.");
 		return;
 	}
 
+	RetargetIfNeeded();
+
 	if (Team.AllDead())
 	{
 		bDefeat = true;
+		PushEvent(EBattleEventKind::Defeat, -1, -1, 0.f, "THẤT BẠI", true);
 		AddLog("=== THẤT BẠI: toàn đội đã gục ===");
+		for (const std::string& Line : StageStory.DefeatLines) { AddLog("[Story] " + Line); }
 	}
 }
 
@@ -1168,11 +1400,45 @@ FBattleSnapshot FBattle::Snapshot() const
 	Snap.MovesLeft = MovesRemaining;
 	Snap.MovesPerTurn = Cfg.MovesPerTurn;
 
-	Snap.BossHp = BossState.Hp;
-	Snap.BossHpMax = BossState.HpMax;
-	Snap.Stagger = BossState.Stagger;
-	Snap.StaggerMax = BossState.StaggerMax;
-	Snap.bBroken = BossState.bBroken;
+	// Toàn bộ hàng địch cho UI vẽ nhiều con / nhiều boss.
+	Snap.Enemies.reserve(EnemyList.size());
+	for (const FEnemyState& Enemy : EnemyList)
+	{
+		FEnemySnapshot ES;
+		ES.Slot = Enemy.SlotIndex;
+		ES.Id = Enemy.Def.Id;
+		ES.Name = Enemy.Name;
+		ES.Tier = Enemy.Tier();
+		ES.TierKey = EnemyTierKey(Enemy.Tier());
+		ES.SpriteKey = Enemy.Def.SpriteKey.empty() ? EnemyTierKey(Enemy.Tier()) : Enemy.Def.SpriteKey;
+		ES.Hp = Enemy.Hp;
+		ES.HpMax = Enemy.HpMax;
+		ES.Stagger = Enemy.Stagger;
+		ES.StaggerMax = Enemy.StaggerMax;
+		ES.bBroken = Enemy.bBroken;
+		ES.bAlive = Enemy.bAlive;
+		ES.BreakTurnsLeft = Enemy.BreakTurnsLeft;
+		ES.CurrentPhase = Enemy.CurrentPhase;
+		ES.TotalPhases = Enemy.TotalPhases;
+		ES.SelfBuffStacks = Enemy.SelfBuffStacks;
+		ES.IntentAction = Enemy.IntentAction;
+		ES.IntentTargetMemberIndex = Enemy.IntentTargetMemberIndex;
+		ES.bCharging = Enemy.bCharging;
+		ES.SkillBreakCurrent = Enemy.SkillBreakCurrent;
+		ES.SkillBreakRequired = Enemy.SkillBreakRequired;
+		Snap.Enemies.push_back(ES);
+	}
+	Snap.TargetEnemyIndex = IsValidEnemyIndex(TargetIndex) ? TargetIndex : 0;
+
+	// Bản tổng hợp của địch đang được ngắm (giữ tương thích UI/HUD cũ).
+	if (const FEnemyState* Main = TryGetEnemy(Snap.TargetEnemyIndex))
+	{
+		Snap.BossHp = Main->Hp;
+		Snap.BossHpMax = Main->HpMax;
+		Snap.Stagger = Main->Stagger;
+		Snap.StaggerMax = Main->StaggerMax;
+		Snap.bBroken = Main->bBroken;
+	}
 
 	Snap.TeamHp = Team.TotalHp();
 	Snap.TeamHpMax = Team.TotalHpMax();
@@ -1204,6 +1470,66 @@ const std::string& FBattle::LastLog() const
 }
 
 // =============================================================================
+//  DÒNG NHỊP SỰ KIỆN (UI phát lại thành animation kiểu FF/GBF)
+// =============================================================================
+void FBattle::BeginAction()
+{
+	EventList.clear();
+	EventSeqCounter += 1;
+}
+
+void FBattle::PushEvent(EBattleEventKind Kind, int32 Member, int32 Enemy,
+                        float Amount, const std::string& Text, bool bBig, int32 Value)
+{
+	FBattleEvent Event;
+	Event.Kind = Kind;
+	Event.MemberIndex = Member;
+	Event.EnemyIndex = Enemy;
+	Event.Amount = Amount;
+	Event.Text = Text;
+	Event.bBig = bBig;
+	Event.Value = Value;
+	EventList.push_back(std::move(Event));
+}
+
+// Sát thương lên toàn đội nhưng ghi nhịp cho TỪNG nhân vật (UI biết ai vừa ăn đòn).
+float FBattle::DamagePartyAllLogged(float Amount, const std::string& Source)
+{
+	float Done = 0.f;
+	for (int32 i = 0; i < Team.MemberCount(); ++i)
+	{
+		Done += DamagePartyMemberLogged(i, Amount, Source);
+	}
+	return Done;
+}
+
+float FBattle::DamagePartyMemberLogged(int32 MemberIndex, float Amount, const std::string& Source)
+{
+	const float Done = Team.DamageMember(MemberIndex, Amount);
+	if (Done > 0.f)
+	{
+		const bool bBig = (Amount >= Team.Members()[static_cast<size_t>(MemberIndex)].HpMax * 0.15f);
+		PushEvent(EBattleEventKind::PartyDamaged, MemberIndex, -1, Done, Source, bBig);
+	}
+	return Done;
+}
+
+float FBattle::HealPartyAllLogged(float Amount, const std::string& Source)
+{
+	float Done = 0.f;
+	for (int32 i = 0; i < Team.MemberCount(); ++i)
+	{
+		const float Healed = Team.HealMember(i, Amount);
+		Done += Healed;
+		if (Healed > 0.f)
+		{
+			PushEvent(EBattleEventKind::Heal, i, -1, Healed, Source);
+		}
+	}
+	return Done;
+}
+
+// =============================================================================
 //  Tiện ích nội bộ
 // =============================================================================
 int32 FBattle::FindMemberIndexByRole(ERole Role) const
@@ -1228,6 +1554,77 @@ void FBattle::RebuildPartyStats()
 void FBattle::TickTurnStart()
 {
 	// Hiện chưa cần xử lý gì riêng ở đầu turn; giữ hàm để dễ mở rộng về sau.
+}
+
+// =============================================================================
+//  Tiện ích hàng địch
+// =============================================================================
+int32 FBattle::ClampIndex(int32 Index) const
+{
+	if (EnemyList.empty()) { return 0; }
+	return std::max(0, std::min(Index, static_cast<int32>(EnemyList.size()) - 1));
+}
+
+int32 FBattle::AliveEnemyCount() const
+{
+	int32 Count = 0;
+	for (const FEnemyState& Enemy : EnemyList) { if (Enemy.bAlive) { ++Count; } }
+	return Count;
+}
+
+// Trùm chính = boss/mid-boss còn sống đầu tiên; không có thì lấy địch còn sống đầu tiên.
+int32 FBattle::PrimaryEnemyIndex() const
+{
+	for (int32 i = 0; i < EnemyCount(); ++i)
+	{
+		if (EnemyList[static_cast<size_t>(i)].bAlive && EnemyList[static_cast<size_t>(i)].IsBossLike()) { return i; }
+	}
+	for (int32 i = 0; i < EnemyCount(); ++i)
+	{
+		if (EnemyList[static_cast<size_t>(i)].bAlive) { return i; }
+	}
+	return 0;
+}
+
+bool FBattle::SetTargetEnemy(int32 Index)
+{
+	if (!IsValidEnemyIndex(Index)) { return false; }
+	if (!EnemyList[static_cast<size_t>(Index)].bAlive) { return false; }
+	if (TargetIndex != Index)
+	{
+		TargetIndex = Index;
+		AddLog("Đổi mục tiêu sang: " + EnemyList[static_cast<size_t>(Index)].Name + ".");
+	}
+	return true;
+}
+
+// Mục tiêu gục -> tự chuyển sang địch còn sống gần nhất (ưu tiên trùm chính).
+void FBattle::RetargetIfNeeded()
+{
+	const FEnemyState* Current = TryGetEnemy(TargetIndex);
+	if (Current && Current->bAlive) { return; }
+	if (AliveEnemyCount() == 0) { return; }
+
+	const int32 NewTarget = PrimaryEnemyIndex();
+	if (NewTarget != TargetIndex)
+	{
+		TargetIndex = NewTarget;
+		AddLog("Mục tiêu cũ đã gục -> chuyển sang " + EnemyList[static_cast<size_t>(NewTarget)].Name + ".");
+	}
+}
+
+std::string FBattle::EnemyLineupText() const
+{
+	std::string Out;
+	for (size_t i = 0; i < EnemyList.size(); ++i)
+	{
+		if (i > 0) { Out += ", "; }
+		Out += EnemyList[i].Name;
+		Out += " [";
+		Out += EnemyTierName(EnemyList[i].Tier());
+		Out += "]";
+	}
+	return Out.empty() ? std::string("Không có địch") : Out;
 }
 
 } // namespace M3

@@ -132,6 +132,14 @@ M3WEB_API int m3_cell_variant(int x, int y)
 	return Block ? Block->Variant : 0;
 }
 
+// Ô bị địch khoá (Phong Ấn): 1 = đang bị khoá, 0 = bình thường.
+M3WEB_API int m3_cell_locked(int x, int y)
+{
+	EnsureActive();
+	const M3::FBlock* Block = gBattle.Board().TryGet(x, y);
+	return (Block && Block->bLocked) ? 1 : 0;
+}
+
 M3WEB_API const char* m3_last_error()
 {
 	return Keep(gLastError);
@@ -456,3 +464,445 @@ M3WEB_API const char* m3_log_line(int index)
 }
 
 M3WEB_API const char* m3_last_message() { EnsureActive(); return Keep(gBattle.LastLog()); }
+
+// =============================================================================
+//  HÀNG ĐỊCH (nhiều quái / nhiều boss, phân cấp) - UI web đọc để vẽ dàn trận
+// =============================================================================
+M3WEB_API int m3_enemy_count() { EnsureActive(); return gBattle.EnemyCount(); }
+
+M3WEB_API int m3_enemy_alive_count() { EnsureActive(); return gBattle.AliveEnemyCount(); }
+
+M3WEB_API const char* m3_enemy_name(int index)
+{
+	EnsureActive();
+	const M3::FEnemyState* E = gBattle.TryGetEnemy(index);
+	return E ? Keep(E->Name) : Keep("-");
+}
+
+M3WEB_API const char* m3_enemy_id(int index)
+{
+	EnsureActive();
+	const M3::FEnemyState* E = gBattle.TryGetEnemy(index);
+	return E ? Keep(E->Def.Id) : Keep("");
+}
+
+// 0 = Normal, 1 = Elite, 2 = MidBoss, 3 = Boss
+M3WEB_API int m3_enemy_tier(int index)
+{
+	EnsureActive();
+	const M3::FEnemyState* E = gBattle.TryGetEnemy(index);
+	return E ? static_cast<int>(E->Tier()) : 0;
+}
+
+M3WEB_API const char* m3_enemy_tier_name(int index)
+{
+	EnsureActive();
+	const M3::FEnemyState* E = gBattle.TryGetEnemy(index);
+	return E ? Keep(M3::EnemyTierName(E->Tier())) : Keep("-");
+}
+
+// Khoá tra hình pixel: "minion" / "elite" / "midboss" / "boss" (hoặc SpriteKey riêng).
+M3WEB_API const char* m3_enemy_sprite(int index)
+{
+	EnsureActive();
+	const M3::FEnemyState* E = gBattle.TryGetEnemy(index);
+	if (!E) { return Keep(""); }
+	return Keep(E->Def.SpriteKey.empty() ? M3::EnemyTierKey(E->Tier()) : E->Def.SpriteKey);
+}
+
+M3WEB_API float m3_enemy_hp(int index)
+{
+	EnsureActive();
+	const M3::FEnemyState* E = gBattle.TryGetEnemy(index);
+	return E ? E->Hp : 0.f;
+}
+
+M3WEB_API float m3_enemy_hp_max(int index)
+{
+	EnsureActive();
+	const M3::FEnemyState* E = gBattle.TryGetEnemy(index);
+	return E ? E->HpMax : 0.f;
+}
+
+M3WEB_API float m3_enemy_hp_pct(int index)
+{
+	EnsureActive();
+	const M3::FEnemyState* E = gBattle.TryGetEnemy(index);
+	return E ? E->HpPercent() : 0.f;
+}
+
+M3WEB_API int m3_enemy_alive(int index)
+{
+	EnsureActive();
+	const M3::FEnemyState* E = gBattle.TryGetEnemy(index);
+	return (E && E->bAlive) ? 1 : 0;
+}
+
+M3WEB_API int m3_enemy_has_stagger(int index)
+{
+	EnsureActive();
+	const M3::FEnemyState* E = gBattle.TryGetEnemy(index);
+	return (E && E->StaggerMax > 0.f) ? 1 : 0;
+}
+
+M3WEB_API float m3_enemy_stagger_pct(int index)
+{
+	EnsureActive();
+	const M3::FEnemyState* E = gBattle.TryGetEnemy(index);
+	return E ? E->StaggerPercent() : 0.f;
+}
+
+M3WEB_API int m3_enemy_broken(int index)
+{
+	EnsureActive();
+	const M3::FEnemyState* E = gBattle.TryGetEnemy(index);
+	return (E && E->bBroken) ? 1 : 0;
+}
+
+M3WEB_API int m3_enemy_break_turns(int index)
+{
+	EnsureActive();
+	const M3::FEnemyState* E = gBattle.TryGetEnemy(index);
+	return E ? E->BreakTurnsLeft : 0;
+}
+
+M3WEB_API int m3_enemy_phase(int index)
+{
+	EnsureActive();
+	const M3::FEnemyState* E = gBattle.TryGetEnemy(index);
+	return E ? E->CurrentPhase : 1;
+}
+
+M3WEB_API int m3_enemy_total_phases(int index)
+{
+	EnsureActive();
+	const M3::FEnemyState* E = gBattle.TryGetEnemy(index);
+	return E ? E->TotalPhases : 1;
+}
+
+M3WEB_API int m3_enemy_self_buffs(int index)
+{
+	EnsureActive();
+	const M3::FEnemyState* E = gBattle.TryGetEnemy(index);
+	return E ? E->SelfBuffStacks : 0;
+}
+
+// Hành động địch SẮP dùng (UI vẽ biểu tượng cảnh báo trước khi nó ra tay).
+M3WEB_API int m3_enemy_intent_action(int index)
+{
+	EnsureActive();
+	const M3::FEnemyState* E = gBattle.TryGetEnemy(index);
+	return E ? static_cast<int>(E->IntentAction) : 0;
+}
+
+M3WEB_API const char* m3_enemy_intent_name(int index)
+{
+	EnsureActive();
+	const M3::FEnemyState* E = gBattle.TryGetEnemy(index);
+	return E ? Keep(M3::BossActionName(E->IntentAction)) : Keep("-");
+}
+
+M3WEB_API int m3_enemy_intent_target(int index)
+{
+	EnsureActive();
+	const M3::FEnemyState* E = gBattle.TryGetEnemy(index);
+	return E ? E->IntentTargetMemberIndex : -1;
+}
+
+M3WEB_API int m3_enemy_charging(int index)
+{
+	EnsureActive();
+	const M3::FEnemyState* E = gBattle.TryGetEnemy(index);
+	return (E && E->bCharging) ? 1 : 0;
+}
+
+M3WEB_API int m3_enemy_break_cur(int index)
+{
+	EnsureActive();
+	const M3::FEnemyState* E = gBattle.TryGetEnemy(index);
+	return E ? E->SkillBreakCurrent : 0;
+}
+
+M3WEB_API int m3_enemy_break_req(int index)
+{
+	EnsureActive();
+	const M3::FEnemyState* E = gBattle.TryGetEnemy(index);
+	return E ? E->SkillBreakRequired : 0;
+}
+
+M3WEB_API int m3_target_enemy() { EnsureActive(); return gBattle.TargetEnemyIndex(); }
+
+M3WEB_API int m3_set_target_enemy(int index)
+{
+	EnsureActive();
+	return gBattle.SetTargetEnemy(index) ? 1 : 0;
+}
+
+M3WEB_API int m3_primary_enemy() { EnsureActive(); return gBattle.PrimaryEnemyIndex(); }
+
+// Tên hiển thị của 1 hành động địch (UI tra bảng chú giải).
+M3WEB_API const char* m3_action_name(int actionId)
+{
+	if (actionId < 0 || actionId >= static_cast<int>(M3::EBossAction::Count)) { return Keep("-"); }
+	return Keep(M3::BossActionName(static_cast<M3::EBossAction>(actionId)));
+}
+
+// =============================================================================
+//  STORY (chương / màn) - UI web đọc để hiển thị trước và sau trận
+// =============================================================================
+M3WEB_API const char* m3_story_chapter_title() { EnsureActive(); return Keep(gBattle.Story().ChapterTitle); }
+M3WEB_API const char* m3_story_stage_title()   { EnsureActive(); return Keep(gBattle.Story().StageTitle); }
+M3WEB_API const char* m3_story_brief()         { EnsureActive(); return Keep(gBattle.Story().Brief); }
+
+M3WEB_API int m3_story_intro_count() { EnsureActive(); return static_cast<int>(gBattle.Story().IntroLines.size()); }
+
+M3WEB_API const char* m3_story_intro_line(int index)
+{
+	EnsureActive();
+	const auto& Lines = gBattle.Story().IntroLines;
+	if (index < 0 || index >= static_cast<int>(Lines.size())) { return Keep(""); }
+	return Keep(Lines[static_cast<size_t>(index)]);
+}
+
+M3WEB_API int m3_story_victory_count() { EnsureActive(); return static_cast<int>(gBattle.Story().VictoryLines.size()); }
+
+M3WEB_API const char* m3_story_victory_line(int index)
+{
+	EnsureActive();
+	const auto& Lines = gBattle.Story().VictoryLines;
+	if (index < 0 || index >= static_cast<int>(Lines.size())) { return Keep(""); }
+	return Keep(Lines[static_cast<size_t>(index)]);
+}
+
+// --- Thư viện story (đọc trước khi vào màn, cho màn chọn chương) ---
+M3WEB_API int m3_story_chapter_count()
+{
+	return static_cast<int>(M3::FContentLibrary::StoryChapters().size());
+}
+
+M3WEB_API const char* m3_story_chapter_stage_title(int index)
+{
+	const auto& Chapters = M3::FContentLibrary::StoryChapters();
+	if (index < 0 || index >= static_cast<int>(Chapters.size())) { return Keep(""); }
+	return Keep(Chapters[static_cast<size_t>(index)].StageTitle);
+}
+
+M3WEB_API const char* m3_story_chapter_brief(int index)
+{
+	const auto& Chapters = M3::FContentLibrary::StoryChapters();
+	if (index < 0 || index >= static_cast<int>(Chapters.size())) { return Keep(""); }
+	return Keep(Chapters[static_cast<size_t>(index)].Brief);
+}
+
+// Tên màn hiển thị trên ô chọn map: ưu tiên story, không có thì lấy tên trùm chính.
+M3WEB_API const char* m3_stage_title(int index)
+{
+	const std::vector<M3::FBattleSetup> Stages = M3::FContentLibrary::CampaignStages();
+	if (index < 0 || index >= static_cast<int>(Stages.size())) { return Keep("?"); }
+	const M3::FBattleSetup& S = Stages[static_cast<size_t>(index)];
+	if (!S.Story.StageTitle.empty()) { return Keep(S.Story.StageTitle); }
+	const std::vector<M3::FEnemyDef> Lineup = S.BuildEnemyList();
+	return Keep(Lineup.empty() ? std::string("?") : Lineup.back().Name);
+}
+
+M3WEB_API int m3_stage_enemy_count(int index)
+{
+	const std::vector<M3::FBattleSetup> Stages = M3::FContentLibrary::CampaignStages();
+	if (index < 0 || index >= static_cast<int>(Stages.size())) { return 0; }
+	return static_cast<int>(Stages[static_cast<size_t>(index)].BuildEnemyList().size());
+}
+
+// =============================================================================
+//  DÒNG NHỊP SỰ KIỆN - UI đọc để phát lại thành animation (kiểu FF/GBF)
+// =============================================================================
+// Cách dùng ở JS:
+//   1. Trước hành động: ghi lại seq = m3_event_seq()
+//   2. Gọi hành động (m3_try_swap / m3_use_skill / m3_end_turn ...)
+//   3. Nếu m3_event_seq() > seq -> có nhịp mới, đọc m3_event_count() và phát lần lượt.
+M3WEB_API int m3_event_seq() { EnsureActive(); return gBattle.EventSeq(); }
+
+M3WEB_API int m3_event_count() { EnsureActive(); return static_cast<int>(gBattle.Events().size()); }
+
+M3WEB_API int m3_event_kind(int index)
+{
+	EnsureActive();
+	if (index < 0 || index >= static_cast<int>(gBattle.Events().size())) { return -1; }
+	return static_cast<int>(gBattle.Events()[static_cast<size_t>(index)].Kind);
+}
+
+// 0..12 (so với enum trong lõi). Giữ tên cho JS tự kiểm tra chéo.
+M3WEB_API const char* m3_event_kind_key(int index)
+{
+	EnsureActive();
+	if (index < 0 || index >= static_cast<int>(gBattle.Events().size())) { return Keep(""); }
+	return Keep(M3::BattleEventName(gBattle.Events()[static_cast<size_t>(index)].Kind));
+}
+
+M3WEB_API int m3_event_member(int index)
+{
+	EnsureActive();
+	if (index < 0 || index >= static_cast<int>(gBattle.Events().size())) { return -1; }
+	return gBattle.Events()[static_cast<size_t>(index)].MemberIndex;
+}
+
+M3WEB_API int m3_event_enemy(int index)
+{
+	EnsureActive();
+	if (index < 0 || index >= static_cast<int>(gBattle.Events().size())) { return -1; }
+	return gBattle.Events()[static_cast<size_t>(index)].EnemyIndex;
+}
+
+M3WEB_API float m3_event_amount(int index)
+{
+	EnsureActive();
+	if (index < 0 || index >= static_cast<int>(gBattle.Events().size())) { return 0.f; }
+	return gBattle.Events()[static_cast<size_t>(index)].Amount;
+}
+
+M3WEB_API int m3_event_value(int index)
+{
+	EnsureActive();
+	if (index < 0 || index >= static_cast<int>(gBattle.Events().size())) { return 0; }
+	return gBattle.Events()[static_cast<size_t>(index)].Value;
+}
+
+M3WEB_API int m3_event_big(int index)
+{
+	EnsureActive();
+	if (index < 0 || index >= static_cast<int>(gBattle.Events().size())) { return 0; }
+	return gBattle.Events()[static_cast<size_t>(index)].bBig ? 1 : 0;
+}
+
+M3WEB_API const char* m3_event_text(int index)
+{
+	EnsureActive();
+	if (index < 0 || index >= static_cast<int>(gBattle.Events().size())) { return Keep(""); }
+	return Keep(gBattle.Events()[static_cast<size_t>(index)].Text);
+}
+
+// =============================================================================
+//  HÌNH ẢNH NHÂN VẬT: khoá tra sprite (class + biến thể) do lõi quyết định
+// =============================================================================
+M3WEB_API const char* m3_member_sprite(int index)
+{
+	EnsureActive();
+	const M3::FCharacterState* Member = gBattle.Party().TryGet(index);
+	if (!Member) { return Keep(""); }
+	if (!Member->Def.SpriteKey.empty()) { return Keep(Member->Def.SpriteKey); }
+	// Chưa khai báo -> suy ra biến thể 1 theo class (khớp tên role trong pixelart.js).
+	std::string Key = "attacker.1";
+	switch (Member->Def.Role)
+	{
+	case M3::ERole::Supporter: Key = "supporter.1"; break;
+	case M3::ERole::Healer:    Key = "healer.1";    break;
+	case M3::ERole::Defender:  Key = "defender.1";  break;
+	case M3::ERole::Counter:   Key = "counter.1";   break;
+	case M3::ERole::Deflecter: Key = "deflecter.1"; break;
+	case M3::ERole::Mage:      Key = "mage.1";      break;
+	default:                   Key = "attacker.1";  break;
+	}
+	return Keep(Key);
+}
+
+// =============================================================================
+//  BỘ ĐỊCH ĐỊNH NGHĨA BÊN NGOÀI LÕI (Web/enemies.js)
+// -----------------------------------------------------------------------------
+// Nhờ 4 hàm dưới đây, bộ địch của bản web nằm trong 1 file dữ liệu riêng, không
+// phải sửa và biên dịch lại lõi. Cách dùng từ JS:
+//   m3_custom_stage_begin("Tên màn", 4, 3);
+//   m3_custom_stage_add_enemy("id", "Tên", "minion.2", 0 /*tier*/, 700, 70, 0, 0, 0, "0,1,4");
+//   m3_custom_stage_start();
+// =============================================================================
+namespace
+{
+	bool gCustomBuilding = false;
+	std::string gCustomTitle;
+	int  gCustomMoves = 4;
+	int  gCustomObstacles = 3;
+	std::vector<M3::FEnemyDef> gCustomEnemies;
+
+	// Tách chuỗi "0,2,3" thành danh sách hành động.
+	std::vector<M3::EBossAction> ParsePattern(const char* Csv)
+	{
+		std::vector<M3::EBossAction> Out;
+		if (!Csv) { return Out; }
+
+		std::string S(Csv);
+		size_t Pos = 0;
+		while (Pos < S.size())
+		{
+			const size_t Next = S.find(',', Pos);
+			const std::string Token = S.substr(Pos, (Next == std::string::npos) ? std::string::npos : Next - Pos);
+			if (!Token.empty())
+			{
+				const int Value = std::atoi(Token.c_str());
+				if (Value >= 0 && Value < static_cast<int>(M3::EBossAction::Count))
+				{
+					Out.push_back(static_cast<M3::EBossAction>(Value));
+				}
+			}
+			if (Next == std::string::npos) { break; }
+			Pos = Next + 1;
+		}
+		return Out;
+	}
+}
+
+M3WEB_API void m3_custom_stage_begin(const char* title, int movesPerTurn, int startObstacles)
+{
+	gCustomBuilding = true;
+	gCustomTitle = title ? title : "";
+	gCustomMoves = (movesPerTurn > 0) ? movesPerTurn : 4;
+	gCustomObstacles = (startObstacles >= 0) ? startObstacles : 3;
+	gCustomEnemies.clear();
+}
+
+M3WEB_API void m3_custom_stage_add_enemy(const char* id, const char* name, const char* sprite,
+                                         int tier, float hp, float atk, float stagger,
+                                         int physResistPct, int magResistPct, const char* patternCsv)
+{
+	if (!gCustomBuilding) { return; }
+
+	M3::FEnemyDef Def;
+	Def.Id = id ? id : "enemy.custom";
+	Def.Name = name ? name : "Quái";
+	Def.Tier = static_cast<M3::EEnemyTier>(tier < 0 ? 0 : (tier > 3 ? 3 : tier));
+	Def.Hp = (hp > 0.f) ? hp : 500.f;
+	Def.Atk = (atk > 0.f) ? atk : 60.f;
+	Def.Stagger = (stagger > 0.f) ? stagger : 0.f;
+	Def.PhysResist = static_cast<float>(physResistPct) / 100.f;
+	Def.MagResist  = static_cast<float>(magResistPct) / 100.f;
+	Def.SpriteKey = sprite ? sprite : "";
+	Def.Pattern = ParsePattern(patternCsv);
+	gCustomEnemies.push_back(Def);
+}
+
+M3WEB_API int m3_custom_stage_enemy_count() { return static_cast<int>(gCustomEnemies.size()); }
+
+M3WEB_API int m3_custom_stage_start()
+{
+	if (!gCustomBuilding || gCustomEnemies.empty()) { return 0; }
+
+	M3::FBattleSetup Setup = M3::FContentLibrary::DefaultBattleSetup(6, 20261014u);
+	Setup.Enemies = gCustomEnemies;
+	Setup.Balance.MovesPerTurn = gCustomMoves;
+	Setup.StartObstacles = gCustomObstacles;
+	Setup.Story.ChapterId = "custom";
+	Setup.Story.ChapterTitle = "Màn tuỳ biến";
+	Setup.Story.StageTitle = gCustomTitle;
+	Setup.Story.Brief = "Màn này dựng từ bộ địch bên ngoài lõi (Web/enemies.js).";
+
+	// Đưa đội lên đủ 6 người để thử được nhiều class khác nhau.
+	std::vector<M3::FCharacterDef> Roster = M3::FContentLibrary::AllCharacters();
+	Setup.Roster = Roster;
+
+	gBattle.Setup(Setup);
+	gActive = true;
+	gStage = -1;              // -1 = màn tuỳ biến (không nằm trong chiến dịch)
+	gCustomBuilding = false;
+	RefreshHint();
+	return 1;
+}
+
+// Số địch trong màn đang chơi (kể cả màn tuỳ biến).
+M3WEB_API int m3_is_custom_stage() { return (gStage < 0) ? 1 : 0; }

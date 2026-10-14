@@ -1,13 +1,14 @@
 /* ============================================================================
-   style.css - Giao diện bản chơi web
+   style.css - Giao diện bản chơi web (bố cục CHIA ĐÔI MÀN)
    ----------------------------------------------------------------------------
-   Bảng màu: nền xanh đen, điểm nhấn hổ phách (stagger) + đỏ (boss).
+   Nửa trái: bàn match-3.  Nửa phải: toàn cảnh trận chiến (hàng địch, đội hình,
+   story, nhật ký). Nhân vật/quái/boss là pixel art 2D, không dùng asset animation.
+   Bảng màu: nền xanh đen, điểm nhấn hổ phách (stagger) + đỏ (địch).
    Tương phản chữ đạt WCAG AA trên nền tối. Có trạng thái hover/focus/disabled.
    ========================================================================== */
 
 :root {
   --bg: #0b0f17;
-  --bg-soft: #121826;
   --panel: #161d2d;
   --panel-2: #1d2637;
   --line: #2c3750;
@@ -24,9 +25,6 @@
 
 * { box-sizing: border-box; }
 
-/* Bắt buộc: mặc định của trình duyệt cho [hidden] là display:none, nhưng quy tắc
-   .banner { display: flex } bên dưới sẽ ĐÈ LÊN nó (style của tác giả mạnh hơn style
-   của trình duyệt) khiến bảng kết quả không tắt được. Khai báo tường minh ở đây. */
 [hidden] { display: none !important; }
 
 html, body {
@@ -61,7 +59,7 @@ kbd {
   justify-content: space-between;
   gap: 20px;
   flex-wrap: wrap;
-  padding: 18px 26px;
+  padding: 16px 24px;
   border-bottom: 1px solid var(--line);
   background: rgba(11, 15, 23, .72);
   backdrop-filter: blur(8px);
@@ -90,6 +88,7 @@ kbd {
   border-radius: var(--radius-sm);
   padding: 8px 10px;
   font: inherit;
+  max-width: 320px;
 }
 .select-wrap select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
@@ -125,453 +124,540 @@ kbd {
 
 .btn-wide { width: 100%; margin-top: 12px; }
 
-/* ---------------------------- Bố cục ---------------------------- */
-.layout {
+/* ---------------------------- BỐ CỤC CHIA ĐÔI MÀN ---------------------------- */
+.split {
   display: grid;
-  grid-template-columns: minmax(280px, 330px) minmax(360px, 1fr) minmax(300px, 360px);
-  gap: 18px;
-  padding: 20px 26px 30px;
+  grid-template-columns: minmax(420px, 1fr) minmax(460px, 1.05fr);
+  gap: 16px;
+  padding: 16px 24px 28px;
   align-items: start;
+  min-height: calc(100vh - 132px);
 }
 
-@media (max-width: 1180px) {
-  .layout { grid-template-columns: 1fr; }
-}
-
-.panel {
-  background: linear-gradient(180deg, rgba(255, 255, 255, .035), rgba(255, 255, 255, 0)) , var(--panel);
+/* Nửa màn: khung chung */
+.half {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .035), rgba(255, 255, 255, 0)), var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 16px 16px 18px;
   box-shadow: var(--shadow);
+  min-width: 0;
 }
 
-.panel-head {
+/* Nửa phải: toàn cảnh trận chiến - cao theo nội dung, cho phép cuộn riêng */
+.battle-half {
   display: flex;
-  align-items: baseline;
+  flex-direction: column;
+  gap: 10px;
+  max-height: calc(100vh - 150px);
+  overflow-y: auto;
+}
+
+@media (max-width: 1080px) {
+  .split { grid-template-columns: 1fr; }
+  .battle-half { max-height: none; overflow: visible; }
+}
+
+.half-head, .battle-head {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
-.panel-head.sub { margin-top: 18px; }
-.panel-head h2 { font-size: 15px; margin: 0; letter-spacing: .3px; text-transform: uppercase; color: #cdd7ee; }
+.half-head h2, .battle-head h2 {
+  font-size: 15px; margin: 0; letter-spacing: .3px; text-transform: uppercase; color: #cdd7ee;
+}
+.panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.panel-head.sub { margin-top: 6px; }
+.panel-head h2 { font-size: 13px; margin: 0; letter-spacing: .3px; text-transform: uppercase; color: #aab6d0; }
 
 .hint { font-size: 12px; color: var(--text-dim); margin: 6px 0 0; }
 
-/* ---------------------------- Boss ---------------------------- */
-.badge {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .5px;
-  padding: 4px 9px;
-  border-radius: 999px;
-}
-.badge-break {
-  background: rgba(245, 165, 36, .16);
-  color: #ffce6b;
-  border: 1px solid rgba(245, 165, 36, .5);
-  animation: pulse 1.1s ease-in-out infinite;
-}
-@keyframes pulse { 50% { opacity: .55; } }
-
-.stat { margin-bottom: 12px; }
-.stat-row { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--text-dim); margin-bottom: 5px; }
-.stat-row strong { color: var(--text); font-variant-numeric: tabular-nums; }
-
-.bar {
-  height: 14px;
-  border-radius: 999px;
-  background: #0a0d15;
-  border: 1px solid var(--line);
-  overflow: hidden;
-}
-.bar i {
-  display: block;
-  height: 100%;
-  width: 0%;
-  transition: width .28s ease;
-}
-.bar-hp i { background: linear-gradient(90deg, #ef4444, #b91c1c); }
-.bar-stagger i { background: linear-gradient(90deg, #f7c948, #f59e0b); }
-.bar-team i { background: linear-gradient(90deg, #34d399, #059669); }
-
-.turn-strip {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  margin: 12px 0 14px;
-}
+/* ---------------------------- Thanh số liệu ---------------------------- */
+.turn-strip { display: flex; gap: 8px; }
 .turn-cell {
-  background: var(--bg-soft);
+  background: var(--panel-2);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  padding: 8px 6px;
+  padding: 5px 10px;
   text-align: center;
+  min-width: 62px;
 }
-.turn-cell span { display: block; font-size: 11px; color: var(--text-dim); }
-.turn-cell strong { font-size: 16px; font-variant-numeric: tabular-nums; }
+.turn-cell span { display: block; font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .5px; }
+.turn-cell strong { font-size: 15px; font-variant-numeric: tabular-nums; }
+.move-dots { display: block; font-size: 10px; color: var(--accent); letter-spacing: 1px; }
 
 /* ---------------------------- Bàn nối ---------------------------- */
-.board-panel { display: flex; flex-direction: column; }
+.legend { font-size: 11.5px; color: var(--text-dim); margin-bottom: 10px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.legend em { font-style: normal; }
+.dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.dot.c1 { background: #ef4444; } .dot.c2 { background: #3b82f6; } .dot.c3 { background: #22c55e; }
+.dot.c4 { background: #f5a524; } .dot.c5 { background: #a855f7; } .dot.c6 { background: #22d3ee; }
 
-.legend { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-dim); }
-.legend em { font-style: normal; margin-left: 6px; }
-
-.dot { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
-.c1 { background: #ea3a3d; } .c2 { background: #2a6bf2; } .c3 { background: #33c25b; }
-.c4 { background: #facd2a; } .c5 { background: #9e4de6; } .c6 { background: #29d2db; }
+.board-wrap { position: relative; }
 
 .board {
   display: grid;
   gap: 6px;
-  grid-template-columns: repeat(8, 1fr);
-  aspect-ratio: 1 / 1;
   width: 100%;
+  aspect-ratio: 1 / 1;
   max-width: 620px;
   margin: 0 auto;
-  padding: 10px;
-  background: #0a0e17;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  touch-action: manipulation;
 }
 
 .cell {
   position: relative;
-  border-radius: 11px;
-  border: 1px solid rgba(0, 0, 0, .45);
+  border: 1px solid rgba(255, 255, 255, .10);
+  border-radius: 10px;
+  background: #0f1523;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
-  transition: background-color .18s ease, transform .12s ease, box-shadow .18s ease;
-  box-shadow: inset 0 6px 10px rgba(255, 255, 255, .18), inset 0 -6px 12px rgba(0, 0, 0, .35);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
-  font-weight: 800;
-  color: rgba(0, 0, 0, .55);
-  user-select: none;
+  transition: transform .08s ease, box-shadow .12s ease, border-color .12s ease;
+  padding: 0;
+  overflow: hidden;
 }
-.cell:hover { transform: translateY(-2px); }
-.cell:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
-.cell.sel { transform: translateY(-4px) scale(1.06); box-shadow: 0 0 0 3px #fff, 0 8px 18px rgba(0,0,0,.5); }
-.cell.hintA, .cell.hintB { animation: hintRing 1s ease-in-out infinite; }
-@keyframes hintRing { 50% { box-shadow: 0 0 0 3px var(--accent); } }
+.cell:hover { transform: translateY(-1px); border-color: rgba(255, 255, 255, .35); }
+.cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; z-index: 2; }
+
+.cell.c1 { background: linear-gradient(160deg, #f87171, #b91c1c); }
+.cell.c2 { background: linear-gradient(160deg, #60a5fa, #1d4ed8); }
+.cell.c3 { background: linear-gradient(160deg, #4ade80, #15803d); }
+.cell.c4 { background: linear-gradient(160deg, #fbbf24, #b45309); }
+.cell.c5 { background: linear-gradient(160deg, #c084fc, #6d28d9); }
+.cell.c6 { background: linear-gradient(160deg, #67e8f9, #0e7490); }
+
+.cell.sel { box-shadow: 0 0 0 3px #fff inset, 0 0 14px rgba(255, 255, 255, .5); }
+.cell.hintA { box-shadow: 0 0 0 3px var(--accent) inset; }
 
 .cell.obstacle {
-  background: repeating-linear-gradient(45deg, #2b3140, #2b3140 8px, #232936 8px, #232936 16px) !important;
-  color: #cbd5e1;
-  box-shadow: inset 0 4px 10px rgba(0, 0, 0, .6);
+  background: repeating-linear-gradient(45deg, #2b3446, #2b3446 6px, #222a3a 6px, #222a3a 12px);
+  color: #b9c5db;
 }
-.cell.trap {
-  background: repeating-linear-gradient(-45deg, #7f1d1d, #7f1d1d 8px, #450a0a 8px, #450a0a 16px) !important;
-  color: #fca5a5;
-  border: 1px solid #ef4444;
-  box-shadow: inset 0 4px 10px rgba(239, 68, 68, 0.4);
-  animation: trapPulse 1.2s ease-in-out infinite;
-}
-@keyframes trapPulse {
-  50% { box-shadow: inset 0 4px 10px rgba(239, 68, 68, 0.8), 0 0 10px rgba(239, 68, 68, 0.6); }
-}
-.cell.special-line {
-  border-radius: 4px;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.7), inset 0 0 8px rgba(255, 255, 255, 0.6);
-  font-size: 18px;
-}
-.cell.special-line-row {
-  border-top: 2px solid #38bdf8 !important;
-  border-bottom: 2px solid #38bdf8 !important;
-}
-.cell.special-line-col {
-  border-left: 2px solid #38bdf8 !important;
-  border-right: 2px solid #38bdf8 !important;
-}
-.cell.special-square { border-radius: 50%; }
-.cell.special-rainbow {
-  background: conic-gradient(from 0deg, #ef4444, #f59e0b, #22c55e, #22d3ee, #7c5cff, #ef4444) !important;
-  color: #10151f;
-}
-.cell.special-area {
-  border: 2px solid #fbbf24 !important;
-  box-shadow: 0 0 14px rgba(245, 158, 11, 0.85), inset 0 0 10px rgba(255, 255, 255, 0.6);
-  animation: areaGlow 1.3s ease-in-out infinite;
-}
-.cell.special-area::after {
-  content: "★";
-  position: absolute;
-  top: 1px;
-  right: 4px;
-  font-size: 10px;
-  color: #fde047;
-  text-shadow: 0 0 4px #000;
-  pointer-events: none;
-}
-@keyframes areaGlow {
-  50% { box-shadow: 0 0 20px rgba(251, 191, 36, 1), inset 0 0 14px rgba(255, 255, 255, 0.9); }
-}
+.cell.trap { background: repeating-linear-gradient(45deg, #3a1d24, #3a1d24 6px, #2a1419 6px, #2a1419 12px); color: #ffb4c0; }
+.cell.locked { background: repeating-linear-gradient(135deg, #1b2436, #1b2436 5px, #162031 5px, #162031 10px); color: #8ea0c0; }
+.cell.locked::after { content: ''; position: absolute; inset: 0; box-shadow: 0 0 0 2px rgba(140, 160, 200, .45) inset; border-radius: 10px; }
 
-.cell .charges.danger {
-  color: #fca5a5;
-  font-weight: 800;
-  text-shadow: 0 0 5px #ef4444;
-}
-.cell.pop { animation: pop .22s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-@keyframes pop { 0% { transform: scale(.7); opacity: .7; } 100% { transform: scale(1); opacity: 1; } }
+.cell.special-line, .cell.special-square, .cell.special-rainbow, .cell.special-area { color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .7); }
+.cell.special-line { box-shadow: 0 0 0 2px rgba(255, 255, 255, .55) inset; }
+.cell.special-square { box-shadow: 0 0 0 2px #fde047 inset; }
+.cell.special-rainbow { background: conic-gradient(from 90deg, #ef4444, #f5a524, #22c55e, #22d3ee, #7c5cff, #ef4444); }
+.cell.special-area { box-shadow: 0 0 0 2px #fb7185 inset; }
 
-.cell.drop { animation: dropIn .35s cubic-bezier(0.34, 1.56, 0.64, 1); }
-@keyframes dropIn {
-  0% { transform: translateY(-38px) scale(0.85); opacity: 0.5; }
-  65% { transform: translateY(4px) scale(1.03); opacity: 1; }
-  100% { transform: translateY(0) scale(1); }
+.charges {
+  position: absolute; right: 3px; bottom: 2px;
+  font-size: 10px; font-weight: 800; color: #e2e8f6;
+  background: rgba(0, 0, 0, .55); border-radius: 5px; padding: 0 3px;
 }
+.charges.danger { color: #ffd2da; background: rgba(120, 12, 30, .8); }
 
-.board-wrap { position: relative; width: 100%; max-width: 620px; margin: 0 auto; }
+@keyframes pop { from { transform: scale(.62); opacity: .25; } to { transform: scale(1); opacity: 1; } }
+.cell.pop { animation: pop .18s ease-out; }
+@keyframes dropIn { from { transform: translateY(-24%); opacity: .35; } to { transform: translateY(0); opacity: 1; } }
+.cell.drop { animation: dropIn .2s ease-out; }
 
 .combo-badge {
-  position: absolute;
-  top: 45%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.5);
-  background: linear-gradient(135deg, #f59e0b, #ef4444);
-  color: #ffffff;
-  font-size: 22px;
-  font-weight: 900;
-  padding: 8px 22px;
+  position: absolute; left: 50%; top: 42%;
+  transform: translate(-50%, -50%);
+  padding: 10px 18px;
   border-radius: 999px;
-  box-shadow: 0 10px 25px rgba(239, 68, 68, 0.6), inset 0 2px 4px rgba(255,255,255,0.4);
-  border: 2px solid #fff;
-  z-index: 30;
+  background: linear-gradient(180deg, #fbbf24, #f97316);
+  color: #2b1403;
+  font-weight: 900;
+  letter-spacing: .5px;
+  box-shadow: var(--shadow);
+  animation: pop .2s ease-out;
   pointer-events: none;
-  animation: comboPop 1.2s ease-out forwards;
-}
-
-@keyframes comboPop {
-  0% { transform: translate(-50%, -50%) scale(0.4); opacity: 0; }
-  20% { transform: translate(-50%, -60%) scale(1.25); opacity: 1; }
-  35% { transform: translate(-50%, -55%) scale(1); opacity: 1; }
-  80% { transform: translate(-50%, -75%) scale(1); opacity: 0.9; }
-  100% { transform: translate(-50%, -90%) scale(0.8); opacity: 0; }
-}
-
-.cell.gone { opacity: .18; }
-
-
-.cell .charges {
-  position: absolute; bottom: 3px; right: 5px;
-  font-size: 10px; color: #f8fafc; opacity: .85;
 }
 
 .toast {
-  margin: 12px auto 0;
-  max-width: 620px;
-  text-align: center;
-  font-size: 13px;
+  margin: 12px 0 0;
+  font-size: 12.5px;
   color: var(--text-dim);
-  min-height: 20px;
+  min-height: 18px;
 }
 .toast.flash { color: #ffd88a; }
 
-/* ---------------------------- Đội hình ---------------------------- */
-.team { display: flex; flex-direction: column; gap: 10px; transition: box-shadow .3s ease; }
-.team.boss-target-aoe {
-  box-shadow: 0 0 16px rgba(239, 68, 68, 0.45);
+/* ---------------------------- Hàng địch (nhiều quái/boss) ---------------------------- */
+.enemy-line {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  padding: 10px;
+  border: 1px solid var(--line);
   border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, rgba(120, 20, 40, .18), rgba(20, 26, 40, .5));
+  min-height: 170px;
 }
+
+.enemy-card {
+  flex: 1 1 118px;
+  min-width: 108px;
+  max-width: 190px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel-2);
+  color: var(--text);
+  padding: 8px;
+  cursor: pointer;
+  text-align: center;
+  font: inherit;
+  transition: transform .1s ease, border-color .16s ease, box-shadow .16s ease, opacity .2s ease;
+}
+.enemy-card:hover:not(:disabled) { transform: translateY(-2px); border-color: #526287; }
+.enemy-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.enemy-card:disabled { cursor: default; }
+
+.enemy-card.tier-normal  { border-color: #2f7a46; }
+.enemy-card.tier-elite   { border-color: #2f6ea8; }
+.enemy-card.tier-midboss { border-color: #a55b18; }
+.enemy-card.tier-boss    { border-color: #a3283a; }
+
+.enemy-card.targeted {
+  box-shadow: 0 0 0 2px var(--accent), 0 0 18px rgba(245, 165, 36, .35);
+}
+.enemy-card.dead { opacity: .35; filter: grayscale(.85); }
+.enemy-card.broken { animation: pulse 1.1s ease-in-out infinite; }
+.enemy-card.charging { border-color: #facc15; }
+
+@keyframes pulse { 50% { opacity: .55; } }
+
+.enemy-top { display: flex; justify-content: space-between; align-items: center; gap: 4px; font-size: 9.5px; }
+.enemy-tier { font-weight: 800; letter-spacing: .4px; text-transform: uppercase; color: var(--text-dim); }
+.tier-boss .enemy-tier { color: #ff8b9c; }
+.tier-midboss .enemy-tier { color: #ffbf74; }
+.tier-elite .enemy-tier { color: #86c2ff; }
+.enemy-intent { font-size: 9.5px; color: #ffd88a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 88px; }
+
+.enemy-art { display: flex; justify-content: center; margin: 4px 0 2px; min-height: 48px; }
+
+.pixel-sprite {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .45));
+}
+
+.enemy-name { font-size: 12px; font-weight: 700; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.enemy-bar { height: 8px; border-radius: 999px; background: #0a0d15; border: 1px solid var(--line); overflow: hidden; }
+.enemy-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #ef4444, #b91c1c); transition: width .28s ease; }
+.enemy-hp { font-size: 10.5px; color: var(--text-dim); font-variant-numeric: tabular-nums; margin-top: 2px; }
+
+.enemy-stagger-wrap { margin-top: 3px; }
+.enemy-stagger { height: 5px; border-radius: 999px; background: #0a0d15; border: 1px solid var(--line); overflow: hidden; }
+.enemy-stagger i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #f5a524, #b45309); transition: width .28s ease; }
+.enemy-stagger-wrap.full-break .enemy-stagger i { background: linear-gradient(90deg, #fde047, #f59e0b); }
+.enemy-stagger-text { display: block; font-size: 9.5px; color: var(--text-dim); margin-top: 1px; }
+
+/* ---------------------------- Story ---------------------------- */
+.story-panel {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent-2);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, rgba(124, 92, 255, .12), rgba(20, 26, 40, .4));
+  padding: 10px 12px;
+}
+.story-chapter { font-size: 11px; letter-spacing: .6px; text-transform: uppercase; color: #b9a6ff; }
+.story-title { font-size: 14px; font-weight: 800; margin: 2px 0 4px; }
+.story-brief { margin: 0 0 6px; font-size: 12.5px; color: var(--text-dim); }
+.story-lines { margin: 0; padding-left: 16px; font-size: 12.5px; color: #dbe3f4; }
+.story-lines li { margin-bottom: 2px; }
+
+/* ---------------------------- Đội hình ---------------------------- */
+.team { display: flex; flex-direction: column; gap: 8px; }
 
 .member {
-  position: relative;
-  background: var(--bg-soft);
+  display: flex;
+  align-items: center;
+  gap: 10px;
   border: 1px solid var(--line);
-  border-left: 4px solid var(--line);
   border-radius: var(--radius-sm);
-  padding: 10px 11px;
+  background: var(--panel-2);
+  padding: 8px;
+  transition: border-color .16s ease, opacity .2s ease;
 }
-.member.down { opacity: .5; }
-.member.boss-target-single {
-  border: 2px solid #ef4444 !important;
-  box-shadow: 0 0 15px rgba(239, 68, 68, 0.75), inset 0 0 10px rgba(239, 68, 68, 0.25);
-  animation: targetPulse 1.1s ease-in-out infinite;
-}
-.member.boss-target-single::after {
-  content: "🎯 MỤC TIÊU ĐỚN THỂ";
-  position: absolute;
-  top: -9px;
-  right: 10px;
-  background: #ef4444;
-  color: #ffffff;
-  font-size: 9.5px;
-  font-weight: 800;
-  padding: 1px 6px;
-  border-radius: 4px;
-  box-shadow: 0 2px 6px rgba(0,0,0,.5);
-}
-@keyframes targetPulse {
-  50% { border-color: #f87171 !important; box-shadow: 0 0 22px rgba(239, 68, 68, 0.95); }
-}
+.member.down { opacity: .45; filter: grayscale(.7); }
+.member.targeted-by-enemy { border-color: var(--danger); box-shadow: 0 0 0 1px rgba(239, 68, 68, .5) inset; }
 
-.badge-break.charging {
-  background: linear-gradient(90deg, #dc2626, #b91c1c) !important;
-  color: #fff !important;
-  animation: chargeFlash 1s ease-in-out infinite;
-}
-@keyframes chargeFlash { 50% { opacity: .7; } }
-.member-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.member-name { font-weight: 700; font-size: 13.5px; }
-.member-role { font-size: 11px; color: var(--text-dim); }
+.member-art { flex: 0 0 auto; display: flex; align-items: center; }
+.member-info { flex: 1 1 auto; min-width: 0; }
+.member-head { display: flex; align-items: baseline; gap: 8px; }
+.member-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.member-role { font-size: 10.5px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .4px; }
 
-.member-bars { margin: 7px 0 8px; display: grid; gap: 4px; }
+.member-bars { margin-top: 5px; display: flex; flex-direction: column; gap: 3px; }
 .mini-bar { height: 7px; border-radius: 999px; background: #0a0d15; border: 1px solid var(--line); overflow: hidden; }
-.mini-bar i { display: block; height: 100%; width: 0; transition: width .25s ease; }
-.mini-hp i { background: linear-gradient(90deg, #4ade80, #16a34a); }
+.mini-bar i { display: block; height: 100%; width: 0; transition: width .28s ease; }
+.mini-hp i { background: linear-gradient(90deg, #22c55e, #15803d); }
 .mini-ult i { background: linear-gradient(90deg, #a78bfa, #6d28d9); }
 
-/* Buffs & Debuffs */
-.buff-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin: 5px 0 6px;
-  min-height: 18px;
-}
+.member-actions { flex: 0 0 auto; display: flex; flex-direction: column; gap: 5px; }
+.member-actions .btn { padding: 5px 8px; font-size: 11px; max-width: 190px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------------------------- Buff / Debuff ---------------------------- */
+.buff-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 .buff-badge {
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 1px 6px;
-  border-radius: 4px;
   font-size: 10.5px;
-  font-weight: 700;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: var(--text);
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .07);
+  border: 1px solid var(--line);
   cursor: help;
-  user-select: none;
-}
-.buff-badge.buff-atk {
-  background: rgba(239, 68, 68, 0.18);
-  border-color: rgba(239, 68, 68, 0.45);
-  color: #fca5a5;
-}
-.buff-badge.buff-def {
-  background: rgba(59, 130, 246, 0.18);
-  border-color: rgba(59, 130, 246, 0.45);
-  color: #93c5fd;
-}
-.buff-badge.buff-burst {
-  background: rgba(245, 158, 11, 0.18);
-  border-color: rgba(245, 158, 11, 0.45);
-  color: #fde68a;
-}
-.buff-badge.buff-debuff {
-  background: rgba(168, 85, 247, 0.18);
-  border-color: rgba(168, 85, 247, 0.45);
-  color: #d8b4fe;
-}
-.buff-badge .tooltip {
-  visibility: hidden;
-  opacity: 0;
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: #111827;
-  color: #f9fafb;
-  font-size: 11px;
-  font-weight: 500;
-  padding: 5px 9px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
   white-space: nowrap;
-  pointer-events: none;
-  z-index: 100;
-  transition: opacity .15s ease, visibility .15s ease;
 }
-.buff-badge:hover .tooltip {
-  visibility: visible;
-  opacity: 1;
-}
-.buff-badge .tooltip::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 50%;
+.buff-atk { border-color: #a1622a; color: #ffd08a; }
+.buff-def { border-color: #2f6ea8; color: #a9d2ff; }
+.buff-burst { border-color: #a8288f; color: #ffb3ef; }
+.buff-debuff { border-color: #a3283a; color: #ffb4c0; }
+
+.buff-badge .tooltip {
+  position: absolute; left: 50%; bottom: 130%;
   transform: translateX(-50%);
-  border-width: 4px;
-  border-style: solid;
-  border-color: #111827 transparent transparent transparent;
+  background: #0b0f17;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 9px;
+  width: max-content;
+  max-width: 250px;
+  font-size: 11px;
+  color: var(--text);
+  opacity: 0; pointer-events: none;
+  transition: opacity .12s ease;
+  z-index: 30;
+  box-shadow: var(--shadow);
 }
+.buff-badge:hover .tooltip { opacity: 1; }
 
-.member-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
-.member-actions .btn { padding: 7px 8px; font-size: 12px; text-align: left; }
+/* ---------------------------- Hai cột nhỏ (nhiệm vụ + nhật ký) ---------------------------- */
+.two-col { display: grid; grid-template-columns: 1fr 1.1fr; gap: 14px; }
+@media (max-width: 760px) { .two-col { grid-template-columns: 1fr; } }
 
-.challenges { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.challenges li { display: flex; gap: 8px; font-size: 12.5px; color: var(--text-dim); }
-.challenges li.done { color: #86efac; }
-.challenges li .mark { width: 16px; }
+.challenges { list-style: none; margin: 0; padding: 0; font-size: 12.5px; }
+.challenges li { display: flex; gap: 7px; align-items: flex-start; margin-bottom: 4px; color: var(--text-dim); }
+.challenges li.done { color: var(--ok); }
+.challenges .mark { flex: 0 0 auto; }
 
 .log {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  max-height: 230px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column-reverse;
-  gap: 4px;
-  font-size: 12px;
-  color: var(--text-dim);
+  list-style: none; margin: 0; padding: 0;
+  max-height: 190px; overflow-y: auto;
+  font-size: 12px; color: var(--text-dim);
+  display: flex; flex-direction: column-reverse;
 }
-.log li { padding: 4px 6px; border-radius: 6px; background: rgba(255, 255, 255, .03); }
-.log li:last-child { color: var(--text); background: rgba(245, 165, 36, .10); }
+.log li { padding: 1px 0; border-bottom: 1px dashed rgba(255, 255, 255, .05); }
+.log li.log-story { color: #c3b4ff; }
+.log li.log-win { color: #8ef0b4; font-weight: 700; }
+.log li.log-lose { color: #ffb4c0; font-weight: 700; }
 
-/* ---------------------------- Chân trang + bảng kết quả ---------------------------- */
-.footer {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  padding: 14px 26px 26px;
-  font-size: 12px;
-  color: var(--text-dim);
-}
-.footer-sep { width: 1px; height: 14px; background: var(--line); }
-
+/* ---------------------------- Bảng kết quả ---------------------------- */
 .banner {
-  position: fixed; inset: 0; z-index: 40;
-  background: rgba(6, 9, 15, .72);
+  position: fixed; inset: 0;
+  background: rgba(5, 8, 14, .72);
   display: flex; align-items: center; justify-content: center;
-  backdrop-filter: blur(3px);
-  cursor: pointer;            /* bấm ra vùng tối để đóng */
+  z-index: 60;
+  padding: 20px;
 }
 .banner-box {
   position: relative;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 26px 30px;
-  text-align: center;
+  padding: 22px 24px;
+  max-width: 520px;
+  width: 100%;
   box-shadow: var(--shadow);
-  max-width: 420px;
-  cursor: default;
+  text-align: center;
 }
 .banner-box h2 { margin: 0 0 8px; font-size: 22px; }
-.banner-box p { margin: 0 0 18px; color: var(--text-dim); }
-.banner-actions { display: flex; gap: 10px; justify-content: center; }
-.banner.win h2 { color: #6ee7a8; }
-.banner.lose h2 { color: #fca5a5; }
-
+.banner.win .banner-box h2 { color: #8ef0b4; }
+.banner.lose .banner-box h2 { color: #ffb4c0; }
+.banner-box p { color: var(--text-dim); font-size: 13.5px; }
+.banner-box .story-lines { text-align: left; color: #dbe3f4; margin-bottom: 12px; }
+.banner-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
 .banner-close {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
-  border: 1px solid var(--line);
-  background: var(--panel-2);
-  color: var(--text);
-  font-size: 19px;
-  line-height: 1;
-  cursor: pointer;
+  position: absolute; top: 8px; right: 10px;
+  background: transparent; border: 0; color: var(--text-dim);
+  font-size: 24px; line-height: 1; cursor: pointer; padding: 2px 6px;
 }
-.banner-close:hover { background: #24304a; }
-.banner-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.banner-close:hover { color: var(--text); }
+
+/* ---------------------------- Chân trang ---------------------------- */
+.footer {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 12px 24px 20px;
+  font-size: 12px; color: var(--text-dim);
+  border-top: 1px solid var(--line);
+}
+.footer-sep { width: 1px; height: 12px; background: var(--line); }
+
+/* ============================================================================
+   HOẠT ẢNH TRẬN ĐẤU (kiểu FF/GBF)
+   ----------------------------------------------------------------------------
+   Lõi phát ra dòng nhịp; m3ui.js phát lại từng nhịp và bật các lớp dưới đây.
+   Mọi chuyển động đều ngắn (150-450ms) để cảnh đánh không bị chậm.
+   ========================================================================== */
+
+/* --- Sân đấu rung khi có đòn mạnh --- */
+@keyframes shakeSoft { 0%,100% { transform: translate(0, 0); } 25% { transform: translate(-3px, 1px); } 75% { transform: translate(3px, -1px); } }
+@keyframes shakeHard { 0%,100% { transform: translate(0, 0); } 15% { transform: translate(-8px, 3px); } 40% { transform: translate(7px, -3px); } 65% { transform: translate(-5px, 2px); } 85% { transform: translate(4px, -2px); } }
+.split.shake-1 { animation: shakeSoft .22s ease-in-out 2; }
+.split.shake-2 { animation: shakeHard .32s ease-in-out 1; }
+
+/* --- Nhân vật chồm tới đánh / địch lao vào đội --- */
+@keyframes lungeRight { 0% { transform: translateX(0); } 45% { transform: translateX(16px) scale(1.03); } 100% { transform: translateX(0); } }
+@keyframes lungeLeft  { 0% { transform: translateX(0); } 45% { transform: translateX(-16px) scale(1.03); } 100% { transform: translateX(0); } }
+.member.lunge-right { animation: lungeRight .26s ease-out; z-index: 5; }
+.enemy-card.lunge-left { animation: lungeLeft .3s ease-out; z-index: 5; }
+
+/* --- Trúng đòn --- */
+@keyframes hitShake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 80% { transform: translateX(-3px); } }
+.member.hit, .enemy-card.hit { animation: hitShake .22s ease-out; }
+.member.hit { box-shadow: 0 0 0 2px var(--danger) inset; }
+.enemy-card.hit { box-shadow: 0 0 0 2px #ffd3d3 inset; }
+
+/* --- Hồi máu --- */
+@keyframes healPulse { 0% { box-shadow: 0 0 0 0 rgba(34,197,94,.0); } 50% { box-shadow: 0 0 0 3px rgba(34,197,94,.55) inset; } 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); } }
+.member.heal-glow { animation: healPulse .42s ease-out; }
+
+/* --- Ra chiêu / ultimate --- */
+@keyframes castGlow { 0% { box-shadow: 0 0 0 0 rgba(167,139,250,0); } 40% { box-shadow: 0 0 18px 4px rgba(167,139,250,.6); } 100% { box-shadow: 0 0 0 0 rgba(167,139,250,0); } }
+.member.cast-glow { animation: castGlow .42s ease-out; }
+
+/* --- Vỡ stagger --- */
+@keyframes breakBurst {
+  0% { box-shadow: 0 0 0 0 rgba(253,224,71,.9); transform: scale(1); }
+  35% { box-shadow: 0 0 26px 8px rgba(253,224,71,.75); transform: scale(1.06); }
+  100% { box-shadow: 0 0 0 0 rgba(253,224,71,0); transform: scale(1); }
+}
+.enemy-card.break-burst { animation: breakBurst .7s ease-out; }
+
+/* --- Bị hạ gục / được triệu hồi --- */
+@keyframes fallDown { 0% { transform: rotate(0) translateY(0); opacity: 1; } 100% { transform: rotate(-12deg) translateY(14px) scale(.86); opacity: .35; } }
+.enemy-card.defeated { animation: fallDown .45s ease-in forwards; }
+.enemy-card.defeated { filter: grayscale(.9); }
+
+@keyframes summonIn { 0% { transform: scale(.4) translateY(24px); opacity: 0; } 60% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+.enemy-card.summon-in { animation: summonIn .5s ease-out; }
+
+/* --- Bàn bị địch tác động --- */
+@keyframes boardFlash { 0% { box-shadow: 0 0 0 0 rgba(239,68,68,.0) inset; } 50% { box-shadow: 0 0 0 3px rgba(239,68,68,.5) inset; } 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0) inset; } }
+.cell.board-flash { animation: boardFlash .34s ease-out; }
+
+/* --- Số sát thương / chữ nổi --- */
+@keyframes floatUp { 0% { transform: translateY(6px) scale(.8); opacity: 0; } 25% { transform: translateY(-4px) scale(1.12); opacity: 1; } 100% { transform: translateY(-30px) scale(1); opacity: 0; } }
+.float-num {
+  position: absolute; left: 50%; top: 8px;
+  transform: translateX(-50%);
+  font-weight: 900;
+  font-size: 15px;
+  pointer-events: none;
+  animation: floatUp 1s ease-out forwards;
+  text-shadow: 0 2px 0 rgba(0,0,0,.65);
+  z-index: 8;
+  white-space: nowrap;
+}
+.float-num.dmg { color: #ffe08a; }
+.float-num.dmg.big { color: #ff9d9d; font-size: 20px; }
+.float-num.heal { color: #86efac; }
+.float-num.ko { color: #ff8fa3; font-size: 13px; letter-spacing: .5px; }
+
+.member, .enemy-card { position: relative; overflow: visible; }
+
+/* --- Bảng gọi tên chiêu (COMBO / BREAK / ULTIMATE / TURN) --- */
+@keyframes calloutIn { 0% { transform: translate(-50%, 6px) scale(.7); opacity: 0; } 22% { transform: translate(-50%, 0) scale(1.06); opacity: 1; } 100% { transform: translate(-50%, -10px) scale(1); opacity: 0; } }
+.callout {
+  position: absolute; left: 50%; top: 38%;
+  transform: translate(-50%, 0);
+  padding: 9px 20px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: 1px;
+  pointer-events: none;
+  z-index: 12;
+  box-shadow: var(--shadow);
+  animation: calloutIn 1.05s ease-out forwards;
+  white-space: nowrap;
+}
+.callout.combo    { background: linear-gradient(180deg, #fbbf24, #f97316); color: #2b1403; }
+.callout.ultimate { background: linear-gradient(180deg, #c084fc, #6d28d9); color: #f7f3ff; }
+.callout.break    { background: linear-gradient(180deg, #fde047, #f59e0b); color: #3a2503; }
+.callout.summon   { background: linear-gradient(180deg, #67e8f9, #0e7490); color: #04242c; }
+.callout.enemy    { background: linear-gradient(180deg, #fb7185, #9f1239); color: #fff5f7; font-size: 15px; }
+.callout.turn     { background: linear-gradient(180deg, #94a3b8, #334155); color: #f1f5f9; top: 12%; font-size: 16px; }
+
+/* --- Trong lúc diễn hoạ: khoá thao tác cho khỏi lệch nhịp --- */
+body.playing .board .cell { pointer-events: none; }
+body.playing .member-actions .btn { pointer-events: none; opacity: .6; }
+body.playing #btnEndTurn { pointer-events: none; opacity: .6; }
+.playing-hint { display: none; }
+
+/* ============================================================================
+   BỘ ĐỊCH (dữ liệu riêng trong Web/enemies.js)
+   ========================================================================== */
+.enemy-set {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel-2);
+  padding: 10px;
+}
+
+.enemy-set-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.enemy-set-toolbar select { max-width: 260px; }
+
+.hint.warn { color: #ffb4c0; }
+
+.enemy-set-grid { display: flex; flex-direction: column; gap: 10px; }
+
+.enemy-set-group-head {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--text-dim);
+  margin-bottom: 5px;
+}
+.enemy-set-group-head.tier-normal  { color: #7fd6a0; }
+.enemy-set-group-head.tier-elite   { color: #86c2ff; }
+.enemy-set-group-head.tier-midboss { color: #ffbf74; }
+.enemy-set-group-head.tier-boss    { color: #ff8b9c; }
+
+.enemy-set-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.enemy-set-card {
+  flex: 0 0 auto;
+  width: 84px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #131a28;
+  color: var(--text);
+  padding: 6px 4px;
+  cursor: pointer;
+  text-align: center;
+  font: inherit;
+  transition: transform .1s ease, border-color .16s ease;
+}
+.enemy-set-card:hover { transform: translateY(-2px); border-color: #526287; }
+.enemy-set-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.enemy-set-art { display: flex; justify-content: center; }
+.enemy-set-name {
+  font-size: 10.5px;
+  font-weight: 700;
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.enemy-set-meta { font-size: 9.5px; color: var(--text-dim); }

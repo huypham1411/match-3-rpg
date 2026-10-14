@@ -64,6 +64,13 @@ struct FBalance
 	float DefenderDamageReduction   = 0.5f;   // Defender: giảm 50% sát thương AoE
 	int32 DefenderShieldTurns       = 1;
 
+	// ------------------------- Hàng địch (nhiều quái/boss) -------------------------
+	int32 MaxEnemiesOnField         = 5;   // trần số địch cùng lúc (triệu hồi không vượt)
+	int32 UltimateDrainPerAction    = 25;  // DrainUltimate: mỗi địch hút bao nhiêu điểm ultimate
+	int32 LockedCellTurns           = 2;   // số turn một ô bị khoá (LockCells)
+	int32 MinionHpPercent           = 18;  // % HP tối đa của chủ thể khi triệu hồi quái (%)
+	int32 MinionAtkPercent          = 45;  // % Atk của chủ thể khi triệu hồi quái (%)
+
 	// ------------------------- Ultimate -------------------------
 	int32 UltimateMaxCharge        = 100;
 	int32 UltimateChargePerTurn    = 12;   // nạp đều mỗi turn

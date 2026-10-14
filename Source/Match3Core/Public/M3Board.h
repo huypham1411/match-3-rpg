@@ -78,6 +78,14 @@ public:
 	// Thay thế toàn bộ block cùng màu trên bàn thành Vật cản (khi nhân vật màu đó gục).
 	int32 ReplaceColorWithObstacles(EColor Color);
 
+	// ----- Địch tác động bàn (nhiều cách khác nhau) -----
+	// Khoá ngẫu nhiên N ô trong TurnsLeft turn (không swap, không rơi). Trả về ô đã khoá.
+	std::vector<FCell> LockRandomCells(int32 Count, int32 TurnsLeft = 2);
+	// Mở khoá các ô đã hết thời gian; gọi mỗi cuối turn. Trả về số ô vừa được mở.
+	int32 TickLocks();
+	// Đổi NGẪU NHIÊN màu của N block (phá đường nối người chơi đang chuẩn bị). Trả về số ô đã đổi.
+	int32 ScrambleRandomColors(int32 Count);
+
 	// ----- Rơi & sinh mới -----
 	// Block rơi xuống theo từng cột; vật cản đứng yên và chặn đường rơi.
 	// Ô trống còn lại được sinh block mới ở phía trên. Trả về true nếu bàn có thay đổi.

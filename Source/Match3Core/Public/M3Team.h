@@ -49,6 +49,11 @@ struct FCharacterDef
 	std::string BasicSkillDesc = "";
 	std::string UltimateName   = "Ultimate";
 	std::string UltimateDesc   = "";
+
+	// Khoá tra hình ở lớp UI: "<class>.<biến thể>", vd "attacker.2".
+	// Rỗng -> UI tự dùng biến thể 1 của class. Nhờ vậy mỗi class có nhiều hình
+	// mà không phải sửa luật chơi, và bạn thay ảnh thật sau cũng theo khoá này.
+	std::string SpriteKey = "";
 };
 
 

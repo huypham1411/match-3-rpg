@@ -2,9 +2,14 @@
 <!-- ==========================================================================
      index.html - Bản chơi web của Match-3 RPG
      --------------------------------------------------------------------------
-     Trang này KHÔNG chứa luật chơi. Luật nằm ở Source/Match3Core (C++) đã được
-     biên dịch sang WebAssembly (m3core.mjs + m3core.wasm). Nhờ vậy bản web và bản
-     Unreal dùng CHUNG một nguồn luật, sửa một chỗ là cả hai thay đổi theo.
+     Bố cục CHIA ĐÔI MÀN (bạn yêu cầu):
+       - Nửa TRÁI : bàn match-3 (khu vực thao tác nối block)
+       - Nửa PHẢI : toàn cảnh trận chiến (hàng địch + đội hình + story + nhật ký)
+
+     Nhân vật / quái / boss được vẽ bằng PIXEL ART (Web/pixelart.js), không dùng
+     asset animation. Trang này KHÔNG chứa luật chơi: luật nằm ở Source/Match3Core
+     đã biên dịch sang WebAssembly (dist/m3core.mjs + .wasm) nên web và Unreal dùng
+     chung một nguồn luật.
      ========================================================================== -->
 <html lang="vi">
 <head>
@@ -20,12 +25,12 @@
     <span class="brand-mark"></span>
     <div>
       <h1>Match-3 RPG</h1>
-      <p class="brand-sub">Lõi luật chơi C++ biên dịch sang WebAssembly - dùng chung với bản Unreal Engine 5.6</p>
+      <p class="brand-sub" id="stageTag">Lõi luật chơi C++ biên dịch sang WebAssembly</p>
     </div>
   </div>
   <div class="topbar-actions">
     <label class="select-wrap">
-      <span>Map</span>
+      <span>Màn</span>
       <select id="stageSelect"></select>
     </label>
     <button id="btnHint" class="btn btn-ghost" type="button">Gợi ý nước đi <kbd>H</kbd></button>
@@ -33,76 +38,91 @@
   </div>
 </header>
 
-<main class="layout">
+<!-- ===================== BỐ CỤC CHIA ĐÔI MÀN ===================== -->
+<main class="split">
 
-  <!-- ================= Boss ================= -->
-  <section class="panel boss-panel">
-    <div class="panel-head">
-      <h2 id="bossName">Boss</h2>
-      <span id="breakBadge" class="badge badge-break" hidden>STAGGER VỠ - BREAK</span>
-    </div>
-    <div id="bossBuffs" class="buff-list" style="margin-bottom: 10px;"></div>
-
-    <div class="stat">
-      <div class="stat-row">
-        <span>HP</span>
-        <strong id="bossHpText">0 / 0</strong>
-      </div>
-      <div class="bar bar-hp"><i id="bossHpBar"></i></div>
-    </div>
-
-    <div class="stat">
-      <div class="stat-row">
-        <span>Thanh stagger</span>
-        <strong id="staggerText">0 / 0</strong>
-      </div>
-      <div class="bar bar-stagger"><i id="staggerBar"></i></div>
-      <p class="hint">Sát thương lên boss làm giảm stagger. Vỡ stagger = boss ngất, nhận thêm sát thương và Counter được ra tay.</p>
-    </div>
-
-    <div class="turn-strip">
-      <div class="turn-cell"><span>Turn</span><strong id="turnText">1</strong></div>
-      <div class="turn-cell"><span>Lượt nối</span><strong id="movesText">0 / 4</strong></div>
-      <div class="turn-cell"><span>Vật cản</span><strong id="obstacleText">0</strong></div>
-      <div class="turn-cell"><span>Sao</span><strong id="starText">0</strong></div>
-    </div>
-
-    <div class="stat">
-      <div class="stat-row"><span>Máu đội</span><strong id="teamHpText">0%</strong></div>
-      <div class="bar bar-team"><i id="teamHpBar"></i></div>
-    </div>
-  </section>
-
-  <!-- ================= Bàn nối ================= -->
-  <section class="panel board-panel">
-    <div class="panel-head">
+  <!-- ============ NỬA TRÁI: BÀN MATCH-3 ============ -->
+  <section class="half board-half">
+    <div class="half-head">
       <h2>Bàn nối</h2>
-      <span class="legend">
-        <i class="dot c1"></i><i class="dot c2"></i><i class="dot c3"></i>
-        <em>vuông 2x2 = ✸ tên lửa · 4 dọc = ═ sét hàng · 4 ngang = ║ sét cột · 5 góc = 💣 bom khối 3x3 · 5 thẳng = ✷ cầu vồng · ☠️ = bẫy</em>
-      </span>
+      <div class="turn-strip">
+        <div class="turn-cell"><span>Turn</span><strong id="turnText">1</strong></div>
+        <div class="turn-cell"><span>Lượt nối</span><strong id="movesText">0 / 4</strong></div>
+        <div class="turn-cell"><span>Vật cản</span><strong id="obstacleText">0</strong></div>
+        <div class="turn-cell"><span>Sao</span><strong id="starText">0</strong></div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <i class="dot c1"></i><i class="dot c2"></i><i class="dot c3"></i><i class="dot c4"></i><i class="dot c5"></i><i class="dot c6"></i>
+      <em>vuông 2x2 = ✸ tên lửa · 4 dọc = ═ sét hàng · 4 ngang = ║ sét cột · 5 góc = 💣 bom 3x3 · 5 thẳng = ✷ cầu vồng · ☠️ = bẫy · 🔒 = ô bị khoá</em>
     </div>
 
     <div id="boardWrap" class="board-wrap">
-      <div id="board" class="board" role="grid" aria-label="Bàn nối 8x8"></div>
+      <div id="board" class="board" role="grid" aria-label="Bàn nối"></div>
     </div>
 
-
     <p id="toast" class="toast" aria-live="polite">Click 2 ô kề nhau để đổi chỗ.</p>
+    <button id="btnEndTurn" class="btn btn-primary btn-wide" type="button">Kết thúc turn <kbd>Tab</kbd></button>
   </section>
 
-  <!-- ================= Đội hình ================= -->
-  <section class="panel team-panel">
-    <div class="panel-head"><h2>Đội hình</h2><span class="hint">1..6 = kỹ năng · NumPad 1..6 = ultimate</span></div>
+  <!-- ============ NỬA PHẢI: TOÀN CẢNH TRẬN CHIẾN ============ -->
+  <section class="half battle-half">
+
+    <!-- Hàng địch: nhiều quái / nhiều boss, mỗi con một thẻ pixel art -->
+    <div class="battle-head">
+      <h2>Toàn cảnh trận chiến</h2>
+      <span id="enemyAliveTag" class="badge">0 địch</span>
+    </div>
+
+    <div id="enemyLine" class="enemy-line" aria-label="Hàng địch"></div>
+
+    <!-- Story của màn: chương / tiêu đề / thoại mở màn -->
+    <div id="storyPanel" class="story-panel" hidden>
+      <div class="story-chapter" id="storyChapter"></div>
+      <div class="story-title" id="storyTitle"></div>
+      <p class="story-brief" id="storyBrief"></p>
+      <ul class="story-lines" id="storyLines"></ul>
+    </div>
+
+    <!-- Đội hình người chơi: pixel art theo class -->
+    <div class="panel-head sub">
+      <h2>Đội hình</h2>
+      <span class="hint">1..6 = kỹ năng · NumPad 1..6 = ultimate</span>
+    </div>
     <div id="team" class="team"></div>
 
-    <button id="btnEndTurn" class="btn btn-primary btn-wide" type="button">Kết thúc turn <kbd>Tab</kbd></button>
+    <!-- ------------------------------------------------------------------
+         BỘ ĐỊCH (dữ liệu riêng trong Web/enemies.js)
+         Tương đương Data Asset "UM3EnemySet" bên Unreal: sửa quái/boss ở đây
+         là đổi được trận, không cần động vào lõi luật chơi.
+         ------------------------------------------------------------------ -->
+    <div class="panel-head sub">
+      <h2>Bộ địch (dữ liệu riêng)</h2>
+      <span class="hint" id="enemySetHint">đang nạp...</span>
+    </div>
+    <div class="enemy-set">
+      <div class="enemy-set-toolbar">
+        <label class="select-wrap">
+          <span>Màn dựng từ dữ liệu</span>
+          <select id="lineupSelect"></select>
+        </label>
+        <button id="btnRunLineup" class="btn btn-primary" type="button">Chơi màn này</button>
+      </div>
+      <div id="enemySetGrid" class="enemy-set-grid" aria-label="Bộ địch"></div>
+    </div>
 
-    <div class="panel-head sub"><h2>Nhiệm vụ map</h2></div>
-    <ul id="challenges" class="challenges"></ul>
-
-    <div class="panel-head sub"><h2>Nhật ký trận</h2></div>
-    <ol id="log" class="log"></ol>
+    <!-- Nhiệm vụ + nhật ký -->
+    <div class="two-col">
+      <div>
+        <div class="panel-head sub"><h2>Nhiệm vụ map</h2></div>
+        <ul id="challenges" class="challenges"></ul>
+      </div>
+      <div>
+        <div class="panel-head sub"><h2>Nhật ký trận</h2></div>
+        <ol id="log" class="log"></ol>
+      </div>
+    </div>
   </section>
 </main>
 
@@ -117,9 +137,10 @@
     <button id="btnCloseBanner" class="banner-close" type="button" title="Đóng (Esc)" aria-label="Đóng bảng kết quả">×</button>
     <h2 id="bannerTitle">Kết quả</h2>
     <p id="bannerText"></p>
+    <ul class="story-lines" id="bannerStory"></ul>
     <div class="banner-actions">
-      <button id="btnPlayAgain" class="btn btn-primary" type="button">Chơi lại map này</button>
-      <button id="btnNextMap" class="btn btn-ghost" type="button">Map kế tiếp</button>
+      <button id="btnPlayAgain" class="btn btn-primary" type="button">Chơi lại màn này</button>
+      <button id="btnNextMap" class="btn btn-ghost" type="button">Màn kế tiếp</button>
     </div>
     <p class="hint">Bấm nút ×, bấm ra ngoài, hoặc nhấn Esc để đóng bảng này và xem lại bàn nối.</p>
   </div>

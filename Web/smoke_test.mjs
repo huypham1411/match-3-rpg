@@ -31,6 +31,85 @@ check(M._m3_width() === 8 && M._m3_height() === 8, 'bàn mặc định 8x8');
 check(M._m3_member_count() === 4, 'đội mặc định có 4 nhân vật');
 check(M._m3_stage_count() >= 4, 'có ít nhất 4 map mẫu');
 
+// ---------------------------------------------------------------------------
+// 1b. Hàng địch nhiều con + phân cấp + story (tính năng mới)
+// ---------------------------------------------------------------------------
+const enemyCount = M._m3_enemy_count();
+check(enemyCount > 1, `màn có nhiều hơn 1 địch (thực tế ${enemyCount})`);
+check(M._m3_enemy_alive_count() === enemyCount, 'ban đầu toàn bộ địch còn sống');
+check(M._m3_target_enemy() >= 0 && M._m3_target_enemy() < enemyCount, 'có mục tiêu đang ngắm hợp lệ');
+
+let tierOk = true;
+let spriteOk = true;
+for (let i = 0; i < enemyCount; i++) {
+  const tier = M._m3_enemy_tier(i);
+  if (tier < 0 || tier > 3) { tierOk = false; }
+  if (M.UTF8ToString(M._m3_enemy_tier_name(i)).length === 0) { tierOk = false; }
+  if (M.UTF8ToString(M._m3_enemy_sprite(i)).length === 0) { spriteOk = false; }
+  if (M._m3_enemy_hp(i) <= 0) { tierOk = false; }
+}
+check(tierOk, 'mỗi địch có cấp bậc + tên cấp bậc + HP hợp lệ');
+check(spriteOk, 'mỗi địch có khoá sprite pixel để UI vẽ');
+
+check(typeof M._m3_set_target_enemy === 'function', 'có hàm đổi mục tiêu');
+check(M._m3_set_target_enemy(0) === 1, 'đổi mục tiêu sang địch đầu hàng được');
+check(M._m3_target_enemy() === 0, 'mục tiêu đã đổi đúng');
+check(M._m3_set_target_enemy(enemyCount + 5) === 0, 'mục tiêu ngoài phạm vi bị từ chối');
+
+check(typeof M._m3_enemy_intent_name === 'function', 'đọc được ý định hành động của địch (UI cảnh báo trước)');
+check(M._m3_enemy_has_stagger(0) === 0 || M._m3_enemy_has_stagger(0) === 1, 'đọc được cờ có thanh stagger');
+
+// Story của màn
+check(typeof M._m3_story_stage_title === 'function', 'có dữ liệu story của màn');
+check(M._m3_story_chapter_count() >= 1, 'có ít nhất 1 chương story trong thư viện');
+check(M.UTF8ToString(M._m3_story_stage_title()).length > 0, 'màn 1 có tiêu đề story');
+check(M._m3_story_intro_count() >= 1, 'màn 1 có thoại mở màn');
+
+// ---------------------------------------------------------------------------
+// 1c. Dòng nhịp sự kiện (nền tảng cho animation kiểu FF/GBF)
+// ---------------------------------------------------------------------------
+check(typeof M._m3_event_seq === 'function', 'có hàm đọc số thứ tự nhịp');
+check(typeof M._m3_event_count === 'function', 'có hàm đếm số nhịp của hành động vừa rồi');
+
+// Một nước đi thật phải sinh ra dòng nhịp cho giao diện diễn hoạ.
+{
+  const seqBefore = M._m3_event_seq();
+  const hx = M._m3_hint_ax();
+  if (hx >= 0) { M._m3_try_swap(hx, M._m3_hint_ay(), M._m3_hint_bx(), M._m3_hint_by()); }
+
+  check(M._m3_event_seq() > seqBefore, 'nước đi làm tăng số thứ tự nhịp');
+  const eventCount = M._m3_event_count();
+  check(eventCount > 0, `nước đi sinh ra nhịp để diễn hoạ (${eventCount} nhịp)`);
+
+  let sawMatchClear = false;
+  for (let i = 0; i < eventCount; i++) {
+    if (M._m3_event_kind(i) === 0) { sawMatchClear = true; }
+  }
+  check(sawMatchClear, 'dòng nhịp có sự kiện "nối block"');
+}
+
+// Lượt của địch cũng phải sinh nhịp (địch ra chiêu + đội ăn đòn) - luôn xảy ra khi hết turn.
+{
+  const seqBeforeTurn = M._m3_event_seq();
+  M._m3_end_turn();
+  check(M._m3_event_seq() > seqBeforeTurn, 'kết thúc turn làm tăng số thứ tự nhịp');
+
+  const count = M._m3_event_count();
+  let sawEnemyAction = false;
+  let sawPartyHit = false;
+  let sawValidKind = true;
+  for (let i = 0; i < count; i++) {
+    const kind = M._m3_event_kind(i);
+    if (kind < 0 || kind > 17) { sawValidKind = false; }
+    if (kind === 6) { sawEnemyAction = true; }
+    if (kind === 3) { sawPartyHit = true; }
+  }
+  check(sawValidKind, 'mã loại nhịp nằm trong khoảng hợp lệ');
+  check(sawEnemyAction, 'lượt địch có nhịp "địch ra chiêu"');
+  check(sawPartyHit, 'lượt địch có nhịp "nhân vật ăn đòn"');
+}
+
+
 // Mọi ô phải có màu hợp lệ (0..6) hoặc là ô trống (-1 kind)
 let colorOk = true;
 for (let y = 0; y < M._m3_height(); y++) {

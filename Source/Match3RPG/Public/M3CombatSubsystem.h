@@ -16,6 +16,8 @@
 #include "M3Content.h"
 #include "M3Team.h"
 
+#include "M3EnemySet.h"
+
 #include "M3CombatSubsystem.generated.h"
 
 UCLASS()
@@ -36,6 +38,18 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Match3")
 	void NextStage();
+
+	// ---------- Bộ địch (Data Asset) ----------
+	// Gán bộ địch cho trận. Bỏ trống -> dùng bộ địch mặc định trong lõi.
+	UFUNCTION(BlueprintCallable, Category = "Match3|EnemySet")
+	void SetEnemySet(UM3EnemySet* InEnemySet);
+
+	UFUNCTION(BlueprintPure, Category = "Match3|EnemySet")
+	UM3EnemySet* GetEnemySet() const { return EnemySet; }
+
+	// Số màn hiện có (theo Data Asset nếu đã gán, ngược lại theo chiến dịch mặc định).
+	UFUNCTION(BlueprintPure, Category = "Match3|EnemySet")
+	int32 GetStageCount() const;
 
 	// Đổi chỗ 2 ô kề nhau. Trả về true nếu nước đi hợp lệ.
 	UFUNCTION(BlueprintCallable, Category = "Match3")
@@ -67,6 +81,32 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Match3") FString GetBossName() const;
 	UFUNCTION(BlueprintPure, Category = "Match3") FString GetLastMessage() const;
 
+	// ---------- Hàng địch (nhiều quái / nhiều boss) ----------
+	UFUNCTION(BlueprintPure, Category = "Match3|Enemy") int32 GetEnemyCount() const;
+	UFUNCTION(BlueprintPure, Category = "Match3|Enemy") int32 GetEnemyAliveCount() const;
+	UFUNCTION(BlueprintPure, Category = "Match3|Enemy") FString GetEnemyName(int32 EnemyIndex) const;
+	// 0 = Quái thường, 1 = Tinh anh, 2 = Trùm giữa màn, 3 = Trùm cuối màn
+	UFUNCTION(BlueprintPure, Category = "Match3|Enemy") int32 GetEnemyTier(int32 EnemyIndex) const;
+	UFUNCTION(BlueprintPure, Category = "Match3|Enemy") FString GetEnemyTierName(int32 EnemyIndex) const;
+	UFUNCTION(BlueprintPure, Category = "Match3|Enemy") float GetEnemyHpPercent(int32 EnemyIndex) const;
+	UFUNCTION(BlueprintPure, Category = "Match3|Enemy") bool IsEnemyAlive(int32 EnemyIndex) const;
+	UFUNCTION(BlueprintPure, Category = "Match3|Enemy") float GetEnemyStaggerPercent(int32 EnemyIndex) const;
+	UFUNCTION(BlueprintPure, Category = "Match3|Enemy") bool IsEnemyBroken(int32 EnemyIndex) const;
+	UFUNCTION(BlueprintPure, Category = "Match3|Enemy") FString GetEnemyIntentName(int32 EnemyIndex) const;
+	UFUNCTION(BlueprintPure, Category = "Match3|Enemy") int32 GetEnemyIntentTarget(int32 EnemyIndex) const;
+
+	// Mục tiêu đang được ngắm + đổi mục tiêu (click thẻ địch trên HUD).
+	UFUNCTION(BlueprintCallable, Category = "Match3|Enemy") int32 GetTargetEnemy() const;
+	UFUNCTION(BlueprintCallable, Category = "Match3|Enemy") bool SetTargetEnemy(int32 EnemyIndex);
+	UFUNCTION(BlueprintCallable, Category = "Match3|Enemy") void CycleTargetEnemy();
+
+	// ---------- Story của màn ----------
+	UFUNCTION(BlueprintPure, Category = "Match3|Story") FString GetStoryChapterTitle() const;
+	UFUNCTION(BlueprintPure, Category = "Match3|Story") FString GetStoryStageTitle() const;
+	UFUNCTION(BlueprintPure, Category = "Match3|Story") FString GetStoryBrief() const;
+	UFUNCTION(BlueprintPure, Category = "Match3|Story") int32 GetStoryIntroCount() const;
+	UFUNCTION(BlueprintPure, Category = "Match3|Story") FString GetStoryIntroLine(int32 Index) const;
+
 	// Số thứ tự thay đổi trạng thái: actor so sánh để biết khi nào cần vẽ lại.
 	int32 GetRevision() const { return Revision; }
 
@@ -78,6 +118,10 @@ private:
 	bool  bBattleActive = false;
 	int32 Revision = 0;
 	int32 StageIndex = 0;
+
+	// Bộ địch do nhà thiết kế gán trong Editor (có thể để trống).
+	UPROPERTY(EditAnywhere, Category = "Match3")
+	UM3EnemySet* EnemySet = nullptr;
 
 	void MarkChanged() { ++Revision; }
 	void ApplyStage(int32 InStageIndex);

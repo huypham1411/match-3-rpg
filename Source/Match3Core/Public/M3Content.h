@@ -21,6 +21,24 @@ struct MATCH3CORE_API FContentLibrary
 	static std::vector<FCharacterDef> ExtraCharacters();
 	static std::vector<FCharacterDef> AllCharacters();
 
+	// --- Kẻ địch ---
+	// Quái thường (tier Normal): xuất hiện theo nhóm, máu thấp, tác động bàn nhẹ.
+	static std::vector<FEnemyDef> MinionEnemies();
+	// Quái tinh anh (tier Elite): máu trung bình, có chiêu khoá ô / gài bẫy.
+	static std::vector<FEnemyDef> EliteEnemies();
+	// Trùm giữa màn (tier MidBoss): nhiều phase, tác động bàn mạnh.
+	static std::vector<FEnemyDef> MidBossEnemies();
+	// Trùm cuối (tier Boss): đủ bộ chiêu, có nạp tuyệt kĩ.
+	static std::vector<FEnemyDef> BossEnemies();
+	// Tra một địch mẫu theo Id.
+	static FEnemyDef FindEnemy(const std::string& Id);
+	// Toàn bộ địch mẫu.
+	static std::vector<FEnemyDef> AllEnemies();
+
+	// --- Story ---
+	// Danh sách chương (mỗi chương là một nhóm màn) - bạn điền tiếp khi viết story.
+	static std::vector<FStageStory> StoryChapters();
+
 	// Trang bị khởi đầu (3 món mỗi nhân vật) - nền tảng cho hệ gacha về sau.
 	static std::vector<FEquipment> StarterEquipment();
 	// Challenge mẫu -> quyết định số sao khi qua ải.
@@ -30,7 +48,7 @@ struct MATCH3CORE_API FContentLibrary
 	//   TeamSize 4 = đội cơ bản; 5/6 = thêm Counter và Deflecter.
 	static FBattleSetup DefaultBattleSetup(int32 TeamSize = 4, uint32 Seed = 20261008u);
 
-	// Vài map mẫu tăng dần độ khó.
+	// Vài map mẫu tăng dần độ khó (mỗi màn có thể gồm nhiều địch).
 	static std::vector<FBattleSetup> CampaignStages(uint32 Seed = 20261008u);
 };
 

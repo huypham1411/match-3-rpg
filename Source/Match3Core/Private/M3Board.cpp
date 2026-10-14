@@ -341,6 +341,91 @@ int32 FBoard::ReplaceColorWithObstacles(EColor Color)
 }
 
 // -----------------------------------------------------------------------------
+// Địch tác động bàn: khoá ô, mở khoá, đảo màu
+// -----------------------------------------------------------------------------
+std::vector<FCell> FBoard::LockRandomCells(int32 Count, int32 TurnsLeft)
+{
+	std::vector<FCell> Out;
+	if (Count <= 0) { return Out; }
+
+	// Chỉ khoá được block thường (không khoá vật cản / ô trống / special đang nằm chờ nổ).
+	std::vector<FCell> Candidates;
+	for (int32 Y = 0; Y < SizeY; ++Y)
+	{
+		for (int32 X = 0; X < SizeX; ++X)
+		{
+			const FBlock& B = At(X, Y);
+			if (B.Kind == EBlockKind::Normal && B.Color != EColor::None && !B.bLocked)
+			{
+				Candidates.push_back(MakeCell(X, Y));
+			}
+		}
+	}
+
+	while (static_cast<int32>(Out.size()) < Count && !Candidates.empty())
+	{
+		const int32 Pick = Rng.Range(0, static_cast<int32>(Candidates.size()));
+		const FCell C = Candidates[static_cast<size_t>(Pick)];
+		Candidates.erase(Candidates.begin() + Pick);
+
+		At(C).bLocked  = true;
+		At(C).LockTurns = std::max(1, TurnsLeft);
+		Out.push_back(C);
+	}
+	return Out;
+}
+
+int32 FBoard::TickLocks()
+{
+	int32 Unlocked = 0;
+	for (FBlock& B : Cells)
+	{
+		if (!B.bLocked) { continue; }
+		if (B.LockTurns > 0) { B.LockTurns -= 1; }
+		if (B.LockTurns <= 0)
+		{
+			B.bLocked = false;
+			B.LockTurns = 0;
+			++Unlocked;
+		}
+	}
+	return Unlocked;
+}
+
+int32 FBoard::ScrambleRandomColors(int32 Count)
+{
+	if (Count <= 0) { return 0; }
+
+	std::vector<FCell> Candidates;
+	for (int32 Y = 0; Y < SizeY; ++Y)
+	{
+		for (int32 X = 0; X < SizeX; ++X)
+		{
+			const FBlock& B = At(X, Y);
+			if (B.Kind == EBlockKind::Normal && B.Color != EColor::None && !B.bLocked)
+			{
+				Candidates.push_back(MakeCell(X, Y));
+			}
+		}
+	}
+
+	int32 Changed = 0;
+	while (Changed < Count && !Candidates.empty())
+	{
+		const int32 Pick = Rng.Range(0, static_cast<int32>(Candidates.size()));
+		const FCell C = Candidates[static_cast<size_t>(Pick)];
+		Candidates.erase(Candidates.begin() + Pick);
+
+		// Đổi sang một màu KHÁC màu hiện tại -> chắc chắn phá được đường nối đang chuẩn bị.
+		EColor NewColor = RandomColor();
+		for (int32 Guard = 0; Guard < 8 && NewColor == At(C).Color; ++Guard) { NewColor = RandomColor(); }
+		At(C).Color = NewColor;
+		++Changed;
+	}
+	return Changed;
+}
+
+// -----------------------------------------------------------------------------
 // Rơi & sinh mới
 // -----------------------------------------------------------------------------
 bool FBoard::ApplyGravityAndRefill()
