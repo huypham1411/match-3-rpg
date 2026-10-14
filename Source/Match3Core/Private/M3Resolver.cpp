@@ -34,6 +34,64 @@ void RemoveCell(std::vector<FCell>& Vec, const FCell& C)
 	Vec.erase(std::remove(Vec.begin(), Vec.end(), C), Vec.end());
 }
 
+// -----------------------------------------------------------------------------
+// Vùng nổ khi ĐỔI CHỖ 2 BLOCK ĐẶC BIỆT cho nhau (mô phỏng Candy Crush):
+//   LineClear + LineClear            -> 1 hàng + 1 cột (chạy hết bàn)
+//   LineClear + SquareBomb/AreaBomb  -> 3 HÀNG + 3 CỘT quanh ô vừa đổi
+//   Square/Area + Square/Area        -> vùng 5x5 (bán kính 2)
+// Các special nằm trong vùng này sẽ tự kích hoạt dây chuyền ở bước xoá tiếp theo.
+// -----------------------------------------------------------------------------
+std::vector<FCell> BuildSpecialComboCells(const FBoard& Board, const FCell& Center,
+                                          EBlockKind KindA, EBlockKind KindB)
+{
+	std::vector<FCell> Cells;
+
+	auto AddRow = [&](int32 Y)
+	{
+		if (Y < 0 || Y >= Board.Height()) { return; }
+		for (int32 X = 0; X < Board.Width(); ++X) { AddUnique(Cells, MakeCell(X, Y)); }
+	};
+	auto AddColumn = [&](int32 X)
+	{
+		if (X < 0 || X >= Board.Width()) { return; }
+		for (int32 Y = 0; Y < Board.Height(); ++Y) { AddUnique(Cells, MakeCell(X, Y)); }
+	};
+	auto AddArea = [&](int32 Radius)
+	{
+		for (int32 dy = -Radius; dy <= Radius; ++dy)
+		{
+			for (int32 dx = -Radius; dx <= Radius; ++dx)
+			{
+				const FCell N = MakeCell(Center.X + dx, Center.Y + dy);
+				if (Board.InBounds(N)) { AddUnique(Cells, N); }
+			}
+		}
+	};
+
+	const bool bLineA = (KindA == EBlockKind::LineClear);
+	const bool bLineB = (KindB == EBlockKind::LineClear);
+
+	if (bLineA && bLineB)
+	{
+		AddRow(Center.Y);
+		AddColumn(Center.X);
+	}
+	else if (bLineA || bLineB)
+	{
+		// "Chuỗi 4" + "bom": nổ 3 hàng ngang và 3 cột dọc quanh ô đổi chỗ.
+		for (int32 d = -1; d <= 1; ++d)
+		{
+			AddRow(Center.Y + d);
+			AddColumn(Center.X + d);
+		}
+	}
+	else
+	{
+		AddArea(2);
+	}
+	return Cells;
+}
+
 // Màu xuất hiện nhiều nhất trong tập ô (dùng khi block cầu vồng bị cuốn vào vùng xoá).
 EColor DominantColor(const FBoard& Board, const std::vector<FCell>& Cells)
 {
@@ -425,6 +483,14 @@ FResolveOutcome FResolver::ResolveSwap(const FCell& A, const FCell& B)
 
 	const bool bASpecial = BeforeA.IsSpecial();
 	const bool bBSpecial = BeforeB.IsSpecial();
+
+	// --- Combo 2 block đặc biệt đổi chỗ CHO NHAU (giống Candy Crush) ---
+	// Ví dụ: "chuỗi 4" (LineClear) đặt cạnh "bom" (SquareBomb) -> nổ 3 hàng + 3 cột.
+	if (bASpecial && bBSpecial)
+	{
+		const std::vector<FCell> ComboCells = BuildSpecialComboCells(Board, B, BeforeA.Kind, BeforeB.Kind);
+		return ResolveLoopInternal(nullptr, false, FCell(), FCell(), &ComboCells);
+	}
 
 	// --- Đổi chỗ có chứa block đặc biệt (LineClear, SquareBomb, AreaBomb) ---
 	if (bASpecial || bBSpecial)

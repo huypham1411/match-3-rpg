@@ -110,6 +110,90 @@ function bigCallout(text, cls) {
 function memberCard(index) { return teamEl.children[index] || null; }
 function enemyCard(index) { return enemyLineEl.children[index] || null; }
 
+// ---------------------------------------------------------------------------
+// Hiệu ứng chiến đấu: đòn đánh thường / kỹ năng / ultimate
+//   - fx-layer là lớp phủ toàn màn hình, không chặn chuột (pointer-events: none)
+//   - mọi phần tử đều tự xoá sau khi diễn xong nên không rò rỉ DOM
+// ---------------------------------------------------------------------------
+function fxLayer() {
+  let layer = document.getElementById('fx-layer');
+  if (!layer) {
+    layer = document.createElement('div');
+    layer.id = 'fx-layer';
+    layer.className = 'fx-layer';
+    document.body.appendChild(layer);
+  }
+  return layer;
+}
+
+// Đếm số hiệu ứng đã phát (dùng cho chế độ tự kiểm tra ?selftest=1).
+const fxCounters = { projectile: 0, spark: 0, ring: 0, cutin: 0 };
+
+// Đường bay (vệt chém hoặc tia phép) từ ô này tới ô kia.
+function spawnProjectile(fromEl, toEl, cls, durationMs) {
+  if (!fromEl || !toEl) { return; }
+  const a = fromEl.getBoundingClientRect();
+  const b = toEl.getBoundingClientRect();
+  const x0 = a.left + a.width / 2;
+  const y0 = a.top + a.height / 2;
+  const dx = (b.left + b.width / 2) - x0;
+  const dy = (b.top + b.height / 2) - y0;
+  const len = Math.max(28, Math.hypot(dx, dy));
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+  const shot = document.createElement('div');
+  shot.className = 'fx-projectile ' + (cls || 'slash');
+  shot.style.left = x0 + 'px';
+  shot.style.top = y0 + 'px';
+  shot.style.width = len + 'px';
+  shot.style.transform = `rotate(${angle}deg)`;
+  shot.style.setProperty('--fx-dur', durationMs + 'ms');
+  fxLayer().appendChild(shot);
+  fxCounters.projectile++;
+  setTimeout(() => shot.remove(), durationMs + 90);
+}
+
+// Vòng sáng dưới chân người vừa niệm chiêu.
+function castRing(card, ms) {
+  if (!card) { return; }
+  const r = card.getBoundingClientRect();
+  const ring = document.createElement('div');
+  ring.className = 'fx-ring';
+  ring.style.left = (r.left + r.width / 2) + 'px';
+  ring.style.top = (r.top + r.height * 0.72) + 'px';
+  fxLayer().appendChild(ring);
+  fxCounters.ring++;
+  setTimeout(() => ring.remove(), (ms || 520) + 90);
+}
+
+// Tia lửa + nhịp sáng khi đòn đánh trúng đích.
+function impactSpark(targetEl, kind) {
+  if (!targetEl) { return; }
+  const r = targetEl.getBoundingClientRect();
+  const spark = document.createElement('div');
+  spark.className = 'fx-spark ' + (kind || 'hit');
+  spark.style.left = (r.left + r.width / 2) + 'px';
+  spark.style.top = (r.top + r.height * 0.35) + 'px';
+  fxLayer().appendChild(spark);
+  fxCounters.spark++;
+  setTimeout(() => spark.remove(), 500);
+}
+
+// Cắt cảnh ultimate: dải ngang màn hình + tên nhân vật + tên tuyệt kĩ.
+function cutIn(title, who, ms) {
+  const box = document.createElement('div');
+  box.className = 'fx-cutin';
+  const whoLine = who ? `<span class="fx-cutin-who">${who}</span>` : '';
+  box.innerHTML = `${whoLine}<span class="fx-cutin-title">${title}</span>`;
+  fxLayer().appendChild(box);
+  fxCounters.cutin++;
+  requestAnimationFrame(() => box.classList.add('show'));
+  setTimeout(() => {
+    box.classList.remove('show');
+    setTimeout(() => box.remove(), 280);
+  }, ms || 900);
+}
+
 // Các mã loại nhịp (khớp EBattleEventKind trong lõi).
 const EV = {
   MatchClear: 0, PartyAttack: 1, EnemyDamaged: 2, PartyDamaged: 3, Heal: 4, Buff: 5,
@@ -126,19 +210,66 @@ async function playEvent(e) {
       return 150;
     }
 
-    case EV.Skill:
-    case EV.Ultimate: {
+    case EV.PartyAttack: {
+      // Đòn đánh thường: nhân vật lao lên, vệt chém bay sang địch, tia lửa tại đích.
+      const card = memberCard(e.member);
+      const target = e.enemy >= 0 ? enemyCard(e.enemy) : null;
+      if (card) {
+        card.classList.add('lunge-right');
+        poseSprite(findSprite(card.querySelector('.member-art')), 'attack', 320, 0.25);
+        setTimeout(() => card.classList.remove('lunge-right'), 320);
+      }
+      if (target) {
+        spawnProjectile(card, target, 'slash', 300);
+        setTimeout(() => impactSpark(target, 'hit'), 300);
+      }
+      return 250;
+    }
+
+    case EV.Skill: {
+      // Kỹ năng: vòng sáng dưới chân + tên chiêu + luồng năng lượng bay tới địch.
       const card = memberCard(e.member);
       if (card) {
         card.classList.add('cast-glow');
-        poseSprite(findSprite(card.querySelector('.member-art')), 'cast', 420, 0.35);
-        setTimeout(() => card.classList.remove('cast-glow'), 420);
+        poseSprite(findSprite(card.querySelector('.member-art')), 'cast', 520, 0.45);
+        castRing(card, 520);
+        setTimeout(() => card.classList.remove('cast-glow'), 520);
       }
-      if (e.kind === EV.Ultimate) {
-        bigCallout(e.value > 1 ? `FULL BURST x${e.value}` : 'ULTIMATE', 'ultimate');
-        screenShake(e.value > 1 ? 2 : 1);
+      if (e.text) { bigCallout(e.text.toUpperCase(), 'skill'); }
+      const target = e.enemy >= 0 ? enemyCard(e.enemy) : null;
+      if (target) {
+        spawnProjectile(card, target, 'bolt', 340);
+        setTimeout(() => impactSpark(target, 'magic'), 340);
       }
-      return e.kind === EV.Ultimate ? 420 : 260;
+      return 430;
+    }
+
+    case EV.Ultimate: {
+      // Ultimate: cắt cảnh + tên tuyệt kĩ, rồi 3 nhát liên tiếp lên địch.
+      const card = memberCard(e.member);
+      const target = e.enemy >= 0 ? enemyCard(e.enemy) : null;
+      const who = (M._m3_member_name && e.member >= 0) ? M.UTF8ToString(M._m3_member_name(e.member)) : '';
+
+      if (card) {
+        card.classList.add('cast-glow');
+        poseSprite(findSprite(card.querySelector('.member-art')), 'cast', 900, 0.6);
+        castRing(card, 760);
+        setTimeout(() => card.classList.remove('cast-glow'), 900);
+      }
+
+      cutIn(e.text || 'ULTIMATE', who, 900);
+      bigCallout(e.value > 1 ? `FULL BURST x${e.value}` : 'ULTIMATE', 'ultimate');
+      screenShake(e.value > 1 ? 2 : 1);
+
+      if (target) {
+        for (let i = 0; i < 3; i++) {
+          setTimeout(() => {
+            spawnProjectile(card, target, 'bolt', 220);
+            impactSpark(target, 'magic');
+          }, 260 + i * 150);
+        }
+      }
+      return 920;
     }
 
     case EV.EnemyDamaged: {
@@ -1211,7 +1342,7 @@ function toast(text, flash) {
 // ---------------------------------------------------------------------------
 // Tự kiểm tra (?selftest=1)
 // ---------------------------------------------------------------------------
-function runSelfTest() {
+async function runSelfTest() {
   const results = [];
   const banner = $('banner');
   const bannerVisible = () => getComputedStyle(banner).display !== 'none';
@@ -1241,9 +1372,64 @@ function runSelfTest() {
   results.push(['trận mới đã bắt đầu', M._m3_finished() === 0 && M._m3_turn() === 1]);
   results.push(['đổi mục tiêu được', M._m3_set_target_enemy(M._m3_primary_enemy()) === 1]);
 
+  // (3) Kiểm tra animation: chơi qua ĐÚNG đường hành động của người chơi để nhịp được diễn hoạ.
+  const fxBefore = { ...fxCounters };
+  //     Ultimate cần tích đầy thanh nên phải chơi đủ turn; nếu hết màn thì sang màn mới
+  //     (tối đa 3 lần) để chắc chắn có dịp thấy cắt cảnh.
+  let stageRestarts = 0;
+  // Số liệu chẩn đoán để biết vì sao ultimate có/không phát.
+  let ultMaxPct = 0;
+  let ultTries = 0;
+  let ultOk = 0;
+  const kindsSeen = new Set();
+  for (let action = 0; action < 160; action++) {
+    if (fxCounters.spark > fxBefore.spark
+      && fxCounters.ring > fxBefore.ring
+      && fxCounters.cutin > fxBefore.cutin) { break; }
+
+    if (M._m3_finished() === 1) {
+      if (stageRestarts >= 3) { break; }
+      stageRestarts++;
+      startStage(0);
+      continue;
+    }
+
+    const hx = M._m3_hint_ax();
+    if (hx >= 0) {
+      const seq = M._m3_event_seq();
+      M._m3_try_swap(hx, M._m3_hint_ay(), M._m3_hint_bx(), M._m3_hint_by());
+      if (M._m3_event_seq() > seq) { await playEventTimeline(); }
+    } else {
+      M._m3_end_turn();
+    }
+
+    // Dùng kỹ năng / ultimate khi có thể -> thấy animation kỹ năng và cắt cảnh ultimate.
+    for (let i = 0; i < M._m3_member_count(); i++) {
+      if (M._m3_member_alive(i) !== 1) { continue; }
+      const pct = M._m3_member_ultimate_pct(i);
+      ultMaxPct = Math.max(ultMaxPct, pct);
+      const seq2 = M._m3_event_seq();
+      if (pct >= 100) {
+        ultTries++;
+        if (M._m3_use_ultimate(i) === 1) { ultOk++; }
+      } else if (M._m3_member_cooldown(i) === 0) {
+        M._m3_use_skill(i);
+      }
+      if (M._m3_event_seq() > seq2) {
+        for (let k = 0; k < M._m3_event_count(); k++) { kindsSeen.add(M._m3_event_kind(k)); }
+        await playEventTimeline();
+      }
+    }
+  }
+
+  results.push(['animation đòn đánh thường đã phát', fxCounters.spark > fxBefore.spark]);
+  results.push(['animation kỹ năng đã phát', fxCounters.ring > fxBefore.ring]);
+  results.push(['animation ultimate (cắt cảnh) đã phát', fxCounters.cutin > fxBefore.cutin]);
+
   const failed = results.filter(([, ok]) => !ok);
   document.title = `SELFTEST ${failed.length === 0 ? 'OK' : 'FAIL'} (${results.length - failed.length}/${results.length})`;
-  $('engineText').textContent = 'SELFTEST ' + results.map(([name, ok]) => `${ok ? 'OK' : 'FAIL'} - ${name}`).join(' | ');
+  const diag = ` [ult: max ${ultMaxPct}%, thu ${ultTries}, thanh cong ${ultOk}; kinds ${[...kindsSeen].sort((a, b) => a - b).join(',')}]`;
+  $('engineText').textContent = 'SELFTEST ' + results.map(([name, ok]) => `${ok ? 'OK' : 'FAIL'} - ${name}`).join(' | ') + diag;
 }
 
 boot();

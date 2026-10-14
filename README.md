@@ -9,8 +9,8 @@ nhờ vậy bạn thay model/asset thoải mái mà không phải động vào g
 | Hạng mục | Kết quả |
 |---|---|
 | Build Unreal Engine 5.6 (Editor, Win64, Development) | Thành công (`Result: Succeeded`) |
-| Bộ test luật chơi chạy độc lập (không cần UE) | 41/41 PASS |
-| Bản chơi trên web (WebAssembly, dùng chung lõi luật chơi) | Thành công — 27/27 test WASM PASS |
+| Bộ test luật chơi chạy độc lập (không cần UE) | 61/61 PASS |
+| Bản chơi trên web (WebAssembly, dùng chung lõi luật chơi) | Thành công — 51/51 test WASM PASS |
 | Chơi được trong level trống | Có (GameMode tự dựng sàn, đèn, bàn nối, boss, đội hình) |
 | Asset 3D | Dùng hình cơ bản của engine, thay thế được qua Data Asset |
 | Đã kiểm chứng bằng mắt (hình ảnh trong Editor) | Chưa — cần bạn mở Editor và bấm Play |

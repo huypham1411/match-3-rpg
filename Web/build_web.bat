@@ -37,11 +37,18 @@ py -3 "%EMSDK_DIR%\upstream\emscripten\em++.py" -O2 -std=c++20 ^
 	-sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web,node ^
 	-sALLOW_MEMORY_GROWTH=1 -sSTACK_SIZE=2MB ^
 	-sEXPORTED_RUNTIME_METHODS=UTF8ToString,allocateUTF8,stringToUTF8,lengthBytesUTF8 ^
-	-sEXPORTED_FUNCTIONS=_malloc,_free
+	-sEXPORTED_FUNCTIONS=_malloc,_free ^
+	-sSINGLE_FILE=1
 if errorlevel 1 (
 	echo [LOI] Bien dich WebAssembly that bai.
 	exit /b 1
 )
+
+rem SINGLE_FILE=1: nhung luon wasm vao m3core.mjs (base64) -> chi con MOT file.
+rem Ly do: file .wasm rieng truoc day bi gan cache immutable 1 nam tren Vercel, nen
+rem may da truy cap cu dung lai logic cu mai. Xoa file .wasm cu (neu con) de khong
+rem con duong dan nao phuc vu ban cu nua.
+if exist "%ROOT%\Web\dist\m3core.wasm" del /q "%ROOT%\Web\dist\m3core.wasm"
 
 echo.
 echo === Xong. File trong Web\dist ===

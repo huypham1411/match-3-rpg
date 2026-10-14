@@ -294,12 +294,15 @@ void FBattle::ApplyMatchEffects(const FResolveOutcome& Outcome)
 		case ERole::Attacker:
 		{
 			const float Damage = ComputeMatchDamage(i, Outcome);
+			// Nhịp cho UI: nhân vật này vừa ra đòn -> bản web phát animation tấn công.
+			PushEvent(EBattleEventKind::PartyAttack, i, TargetIndex, Damage, M->Def.Name);
 			DealDamageToBoss(Damage, M->Def.Name, M->Def.DamageType);
 			break;
 		}
 		case ERole::Mage:
 		{
 			const float Damage = ComputeMageDamage(i, Outcome);
+			PushEvent(EBattleEventKind::PartyAttack, i, TargetIndex, Damage, M->Def.Name);
 			DealDamageToBoss(Damage, M->Def.Name, EDamageType::Magic);
 			ApplyMageMatchDebuff(i, Outcome);
 			break;
@@ -514,11 +517,15 @@ void FBattle::CheckStaggerBreak(int32 EnemyIndex)
 	AddLog("!! THANH STAGGER VỠ - " + Enemy->Name + " bị BREAK trong " + ToText(Cfg.BreakDurationTurns) + " turn !!");
 
 	// Counter: chỉ kích hoạt khi thanh stagger vỡ.
-	for (FCharacterState* C : Team.FindAllByRole(ERole::Counter))
+	for (int32 CounterIndex = 0; CounterIndex < Team.MemberCount(); ++CounterIndex)
 	{
+		FCharacterState* C = Team.TryGet(CounterIndex);
+		if (!C || !C->bAlive || C->Def.Role != ERole::Counter) { continue; }
+
 		const float Damage = C->Atk * Cfg.CounterDamageMultiplier;
 		AddLog(C->Def.Name + " (Counter) phản kích khi " + Enemy->Name + " vỡ stagger!");
 		// Counter đánh thẳng vào địch vừa vỡ stagger (không dồn sang mục tiêu khác).
+		PushEvent(EBattleEventKind::PartyAttack, CounterIndex, EnemyIndex, Damage, C->Def.Name + " [Counter]");
 		DealDamageToEnemy(EnemyIndex, Damage, C->Def.Name + " [Counter]");
 	}
 
@@ -723,6 +730,11 @@ FActionResult FBattle::UseUltimate(int32 MemberIndex)
 		return FActionResult::Fail(EActionResult::NotReady,
 			"Ultimate chưa đầy: " + ToText(M->UltimateCharge) + "/" + ToText(Cfg.UltimateMaxCharge) + ".");
 	}
+
+	// Mở dòng nhịp mới cho hành động này (xoá nhịp cũ + tăng số thứ tự).
+	// Thiếu dòng này thì UI so sánh EventSeq sẽ tưởng "không có gì mới" và BỎ QUA
+	// toàn bộ nhịp của ultimate -> ultimate không có animation (cắt cảnh, hiệu ứng).
+	BeginAction();
 
 	M->UltimateCharge = 0;
 	UltimatesUsedInTurn += 1;

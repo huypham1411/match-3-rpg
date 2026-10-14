@@ -661,3 +661,97 @@ body.playing #btnEndTurn { pointer-events: none; opacity: .6; }
   text-overflow: ellipsis;
 }
 .enemy-set-meta { font-size: 9.5px; color: var(--text-dim); }
+
+/* ------------------------- Hiệu ứng chiến đấu (fx) -------------------------
+   Dùng cho animation đòn đánh thường, kỹ năng và ultimate ở bản web.
+   Lớp phủ không nhận chuột để không chắn thao tác nối block. */
+.fx-layer { position: fixed; inset: 0; pointer-events: none; z-index: 30; overflow: hidden; }
+
+.fx-projectile {
+  position: fixed;
+  height: 6px;
+  border-radius: 999px;
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, rgba(255,255,255,0), #fff 45%, rgba(255,255,255,0));
+  box-shadow: 0 0 12px rgba(255, 255, 255, .7);
+  animation: fxFly var(--fx-dur, 300ms) cubic-bezier(.3, .9, .4, 1) forwards;
+}
+.fx-projectile.slash {
+  height: 4px;
+  background: linear-gradient(90deg, rgba(255,255,255,0), #ffe9a8 45%, rgba(255,255,255,0));
+}
+.fx-projectile.bolt {
+  height: 8px;
+  background: linear-gradient(90deg, rgba(124,92,255,0), #c4b5fd 45%, rgba(124,92,255,0));
+  box-shadow: 0 0 16px rgba(167, 139, 250, .85);
+}
+@keyframes fxFly {
+  0%   { opacity: 0; clip-path: inset(0 100% 0 0); }
+  25%  { opacity: 1; }
+  100% { opacity: 1; clip-path: inset(0 0 0 0); }
+}
+
+.fx-spark {
+  position: fixed;
+  width: 48px;
+  height: 48px;
+  margin: -24px 0 0 -24px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.95), rgba(255,214,102,.6) 45%, rgba(255,255,255,0) 72%);
+  animation: fxSpark .46s ease-out forwards;
+}
+.fx-spark.magic {
+  background: radial-gradient(circle, #fff, rgba(167,139,250,.75) 45%, rgba(124,92,255,0) 75%);
+}
+@keyframes fxSpark {
+  0%   { transform: scale(.25); opacity: 1; }
+  70%  { opacity: .9; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+.fx-ring {
+  position: fixed;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border-radius: 50%;
+  border: 2px solid rgba(167, 139, 250, .9);
+  animation: fxRing .58s ease-out forwards;
+}
+@keyframes fxRing {
+  0%   { transform: scale(.4); opacity: .95; }
+  100% { transform: scale(4.4); opacity: 0; }
+}
+
+.fx-cutin {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 33%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 0;
+  background: linear-gradient(90deg, rgba(11,15,23,0), rgba(46,26,84,.92) 16%, rgba(46,26,84,.92) 84%, rgba(11,15,23,0));
+  border-top: 1px solid rgba(196, 181, 253, .5);
+  border-bottom: 1px solid rgba(196, 181, 253, .5);
+  opacity: 0;
+  transform: translateX(-6%) scaleX(.92);
+  transition: opacity .18s ease, transform .22s ease;
+}
+.fx-cutin.show { opacity: 1; transform: translateX(0) scaleX(1); }
+.fx-cutin-who {
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #ddd6fe;
+}
+.fx-cutin-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 0 18px rgba(167, 139, 250, .85);
+}
+
+.callout.skill { background: linear-gradient(180deg, #7dd3fc, #0369a1); color: #f0f9ff; }

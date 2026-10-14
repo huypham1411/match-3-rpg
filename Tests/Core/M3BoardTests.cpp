@@ -436,3 +436,59 @@ M3TEST(MoveLineClear_ClearHangVaCotTuDo)
 	}
 }
 
+// -----------------------------------------------------------------------------
+// Combo "chuỗi 4" (LineClear) + "bom" (SquareBomb) đổi chỗ CHO NHAU
+//   -> nổ 3 HÀNG + 3 CỘT quanh ô đổi chỗ (giống Candy Crush)
+M3TEST(ComboChuoi4VaBom_No3HangVa3Cot)
+{
+	FBoard Board(8, 8, 2401u, 6);
+	FillCleanBoard(Board);
+
+	const FCell LineCell = MakeCell(3, 3);
+	const FCell BombCell = MakeCell(3, 4);
+	Board.SetCell(LineCell, FBlock::MakeSpecial(EColor::Red, EBlockKind::LineClear, 0));
+	Board.SetCell(BombCell, FBlock::MakeSpecial(EColor::Red, EBlockKind::SquareBomb));
+
+	FResolver Resolver(Board);
+	const FResolveOutcome Outcome = Resolver.ResolveSwap(LineCell, BombCell);
+
+	M3REQUIRE(Outcome.bValid);
+
+	// Vùng nổ = 3 hàng (3,4,5) + 3 cột (2,3,4), trừ 9 ô giao nhau -> 39 ô.
+	M3REQUIRE_EQ(Outcome.Steps[0].BlocksInStep, 39);
+
+	const std::vector<FCell>& Cleared = Outcome.Steps[0].ClearedCells;
+	auto WasCleared = [&Cleared](int32 X, int32 Y)
+	{
+		for (const FCell& C : Cleared)
+		{
+			if (C.X == X && C.Y == Y) { return true; }
+		}
+		return false;
+	};
+
+	M3REQUIRE(WasCleared(0, 3));    // đầu hàng trên của vùng nổ
+	M3REQUIRE(WasCleared(7, 5));    // đầu hàng dưới của vùng nổ
+	M3REQUIRE(WasCleared(2, 0));    // đầu cột trái của vùng nổ
+	M3REQUIRE(WasCleared(4, 7));    // đầu cột phải của vùng nổ
+	M3REQUIRE(!WasCleared(0, 0));   // nằm ngoài vùng thì không bị xoá
+}
+
+// -----------------------------------------------------------------------------
+// Combo "chuỗi 4" + "chuỗi 4" -> 1 hàng + 1 cột (dấu cộng)
+M3TEST(ComboChuoi4VaChuoi4_No1HangVa1Cot)
+{
+	FBoard Board(8, 8, 2402u, 6);
+	FillCleanBoard(Board);
+
+	const FCell A = MakeCell(3, 3);
+	const FCell B = MakeCell(3, 4);
+	Board.SetCell(A, FBlock::MakeSpecial(EColor::Blue, EBlockKind::LineClear, 0));
+	Board.SetCell(B, FBlock::MakeSpecial(EColor::Blue, EBlockKind::LineClear, 1));
+
+	FResolver Resolver(Board);
+	const FResolveOutcome Outcome = Resolver.ResolveSwap(A, B);
+
+	M3REQUIRE(Outcome.bValid);
+	M3REQUIRE_EQ(Outcome.Steps[0].BlocksInStep, 15);   // hàng 4 + cột 3, trừ 1 ô chung
+}
