@@ -187,9 +187,11 @@ M3WEB_API int m3_use_ultimate(int memberIndex)
 M3WEB_API int m3_end_turn()
 {
 	EnsureActive();
-	gBattle.EndTurn();
+	const M3::FActionResult Result = gBattle.EndTurn();
+	if (!Result.IsOk()) { gLastError = Result.Message; }
+	else { gLastError.clear(); }
 	RefreshHint();
-	return 1;
+	return Result.IsOk() ? 1 : 0;
 }
 
 M3WEB_API int m3_hint_ax() { return gHintAX; }
