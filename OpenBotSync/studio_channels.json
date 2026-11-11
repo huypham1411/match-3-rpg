@@ -1,0 +1,44 @@
+[
+  {
+    "id": "channel-refray-game-dev",
+    "name": "RE:FRAY - Game Dev Studio",
+    "title": "Dự án RE:FRAY - Match-3 RPG",
+    "instructions": "Phòng làm việc chính thức của dự án RE:FRAY (Match-3 RPG turn-based). PM là Nhạc trưởng (Lead) điều phối toàn bộ luồng công việc. Các thành viên chỉ phát biểu khi được @PM hoặc @User gọi tên.",
+    "members": [
+      {
+        "agentId": "agent-fda75808-a213-4b86-a028-541efac14e2c"
+      },
+      {
+        "agentId": "agent-7bd407f3-02f9-4feb-a61d-3c11f84c83f2"
+      },
+      {
+        "agentId": "agent-a8bb798d-5ba7-47ac-bf51-6cb7d870410d"
+      },
+      {
+        "agentId": "agent-987cd2bf-577a-4814-98d5-76b38ae2fe1c"
+      },
+      {
+        "agentId": "agent-e5996c63-bedf-459e-910c-f382e7929eb7"
+      },
+      {
+        "agentId": "agent-95e4f8aa-5579-4e84-a659-67a18fb54813"
+      },
+      {
+        "agentId": "agent-6471d826-9fa3-4c63-abac-54eed0bb807d"
+      },
+      {
+        "agentId": "agent-63e2971c-488e-4306-be1b-783cc0407400"
+      },
+      {
+        "agentId": "agent-516de258-a216-448f-95ee-1a598fde82b4"
+      },
+      {
+        "agentId": "agent-732e2f21-4487-49d5-a826-51510dd3863e"
+      }
+    ],
+    "leadAgentId": "agent-fda75808-a213-4b86-a028-541efac14e2c",
+    "archived": false,
+    "revision": 29,
+    "createdAt": "2026-11-09T15:20:38.224Z"
+  }
+]

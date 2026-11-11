@@ -1,0 +1,12 @@
+{
+  // Giữ tiếng Việt trong comment hiện đúng.
+  "files.encoding": "utf8",
+  "files.autoGuessEncoding": false,
+  "files.eol": "\n",
+
+  // Bàn cờ và log của sân chơi in bằng ký tự, nên dùng font đều cho dễ đọc.
+  "editor.fontFamily": "'Cascadia Mono', Consolas, 'Courier New', monospace",
+
+  // Gợi ý file nào nên mở đầu tiên khi mới vào dự án.
+  "explorer.sortOrder": "type"
+}

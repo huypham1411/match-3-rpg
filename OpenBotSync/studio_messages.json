@@ -1,0 +1,127 @@
+[
+  {
+    "channel_id": "channel-refray-game-dev",
+    "sequence": 1,
+    "message_id": "2fbda5ba-be1b-4044-8230-117ae421df01",
+    "data": {
+      "id": "2fbda5ba-be1b-4044-8230-117ae421df01",
+      "channelId": "channel-refray-game-dev",
+      "taskId": "01e9da1e-651f-4cea-b441-baa089015080",
+      "author": {
+        "kind": "member",
+        "id": "local-user:d258821d-3633-4977-a3d5-eaa2bc9a5106",
+        "name": "You"
+      },
+      "sequence": 1,
+      "superseded": false,
+      "message": {
+        "id": "2fbda5ba-be1b-4044-8230-117ae421df01",
+        "text": "các bạn có kéo git và tiếp tục phần việc còn dang dở của nhóm trc được k?",
+        "author": "user",
+        "createdAt": "2026-11-09T16:27:15.962Z",
+        "status": "completed",
+        "replyToMessageId": null
+      }
+    }
+  },
+  {
+    "channel_id": "channel-refray-game-dev",
+    "sequence": 2,
+    "message_id": "bd833733-5ffe-462f-845b-7b1016dcdb7d",
+    "data": {
+      "id": "bd833733-5ffe-462f-845b-7b1016dcdb7d",
+      "channelId": "channel-refray-game-dev",
+      "taskId": "70d785c5-4769-48a3-949d-83fc691a9087",
+      "author": {
+        "kind": "member",
+        "id": "local-user:d258821d-3633-4977-a3d5-eaa2bc9a5106",
+        "name": "You"
+      },
+      "sequence": 2,
+      "superseded": false,
+      "message": {
+        "id": "bd833733-5ffe-462f-845b-7b1016dcdb7d",
+        "text": "D:\\project\\match-rpg path ở đây",
+        "author": "user",
+        "createdAt": "2026-11-09T16:27:46.309Z",
+        "status": "completed",
+        "replyToMessageId": null
+      }
+    }
+  },
+  {
+    "channel_id": "channel-refray-game-dev",
+    "sequence": 3,
+    "message_id": "ab1413ef-8502-41a5-82c1-b098f8d19623",
+    "data": {
+      "id": "ab1413ef-8502-41a5-82c1-b098f8d19623",
+      "channelId": "channel-refray-game-dev",
+      "taskId": "0f82a5e9-3404-4edb-9010-08c18af4d5c8",
+      "author": {
+        "kind": "member",
+        "id": "local-user:d258821d-3633-4977-a3d5-eaa2bc9a5106",
+        "name": "You"
+      },
+      "sequence": 3,
+      "superseded": false,
+      "message": {
+        "id": "ab1413ef-8502-41a5-82c1-b098f8d19623",
+        "text": "@[PM](agent:agent-fda75808-a213-4b86-a028-541efac14e2c) nhờ bạn phân việc cho các thành viên khác nhé",
+        "author": "user",
+        "createdAt": "2026-11-09T16:28:06.169Z",
+        "status": "completed",
+        "replyToMessageId": null
+      }
+    }
+  },
+  {
+    "channel_id": "channel-refray-game-dev",
+    "sequence": 4,
+    "message_id": "ee766cbd-5528-4f2b-aa25-63edcb99efc3",
+    "data": {
+      "id": "ee766cbd-5528-4f2b-aa25-63edcb99efc3",
+      "channelId": "channel-refray-game-dev",
+      "taskId": "28b5463d-7d76-4da2-9069-77c8d25a0605",
+      "author": {
+        "kind": "member",
+        "id": "7ba2a737-35d3-48a0-b5e8-2ddfd8074bd8",
+        "name": "You"
+      },
+      "sequence": 4,
+      "superseded": false,
+      "message": {
+        "id": "ee766cbd-5528-4f2b-aa25-63edcb99efc3",
+        "text": "@PM Dự án đã có sẵn tại D:\\project\\match-rpg. Nhờ bạn rà soát hiện trạng và phân công việc đầu tiên cho thành viên phụ trách để tiếp tục phần việc còn dang dở.",
+        "author": "user",
+        "createdAt": "2026-11-10T12:39:43.035Z",
+        "status": "completed",
+        "replyToMessageId": null
+      }
+    }
+  },
+  {
+    "channel_id": "channel-refray-game-dev",
+    "sequence": 5,
+    "message_id": "02f0c9e7-60bd-43da-88b2-ca7cb76e907d",
+    "data": {
+      "id": "02f0c9e7-60bd-43da-88b2-ca7cb76e907d",
+      "channelId": "channel-refray-game-dev",
+      "taskId": "f008f143-05d1-4256-b1fd-d384bc8f4a32",
+      "author": {
+        "kind": "member",
+        "id": "7ba2a737-35d3-48a0-b5e8-2ddfd8074bd8",
+        "name": "You"
+      },
+      "sequence": 5,
+      "superseded": false,
+      "message": {
+        "id": "02f0c9e7-60bd-43da-88b2-ca7cb76e907d",
+        "text": "@[PM](agent:agent-fda75808-a213-4b86-a028-541efac14e2c) : Tiếp nhận Chỉ Thị Điều Hành từ Giám Đốc Dự Án tại Docs/EXECUTIVE_DIRECTIVE_AND_DECISIONS.md. Toàn bộ 12 điểm đang mở đã có phán quyết dứt khoát. Hãy bắt đầu phân công ngay cho Game Dev & UI Dev triển khai hàng đợi animation AnimationStepQueue (Mũi nhọn 1) và Lore Writer kết hợp bộ tứ hoàn thiện Chương 1, 2, 3 (Mũi nhọn 2). Studio tự động vận hành liên tục theo chuẩn Gate Checklist.",
+        "author": "user",
+        "createdAt": "2026-11-10T15:24:31.903Z",
+        "status": "completed",
+        "replyToMessageId": null
+      }
+    }
+  }
+]

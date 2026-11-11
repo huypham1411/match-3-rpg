@@ -1,0 +1,45 @@
+{
+  // Cấu hình gỡ lỗi từng bước (đặt breakpoint, xem biến) cho phần lõi luật chơi.
+  //
+  // Cần extension "C/C++" của Microsoft (ms-vscode.cpptools).
+  //
+  // miDebuggerPath bên dưới trỏ tới bộ gdb portable đang có trên máy này.
+  // Nếu bạn cài MinGW/LLVM riêng hoặc xoá thư mục .orthex, hãy sửa lại đường dẫn
+  // này cho trỏ tới gdb.exe của bạn.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Gỡ lỗi: bộ test lõi (gdb)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/.orthex/tmp/host_tests/matchrpg_tests.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "MIMode": "gdb",
+      "miDebuggerPath": "${workspaceFolder}/.orthex/tmp/tc/w64/w64devkit/bin/gdb.exe",
+      "externalConsole": false,
+      "stopAtEntry": false,
+      "preLaunchTask": "Build core tests",
+      "setupCommands": [
+        { "description": "Bật in đẹp cho gdb", "text": "-enable-pretty-printing", "ignoreFailures": true }
+      ]
+    },
+    {
+      "name": "Gỡ lỗi: sân chơi (gdb, gõ lệnh được)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/.orthex/tmp/playground/playground.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "MIMode": "gdb",
+      "miDebuggerPath": "${workspaceFolder}/.orthex/tmp/tc/w64/w64devkit/bin/gdb.exe",
+      // Sân chơi cần đọc bàn phím, nên phải mở cửa sổ console riêng.
+      "externalConsole": true,
+      "stopAtEntry": false,
+      "preLaunchTask": "Build playground",
+      "setupCommands": [
+        { "description": "Bật in đẹp cho gdb", "text": "-enable-pretty-printing", "ignoreFailures": true }
+      ]
+    }
+  ]
+}
