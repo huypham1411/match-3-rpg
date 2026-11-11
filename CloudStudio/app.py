@@ -223,4 +223,4 @@ with gr.Blocks(title="RE:FRAY AI Studio") as demo:
         """)
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(ssr_mode=False)
