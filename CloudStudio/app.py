@@ -55,11 +55,12 @@ def call_openrouter(agent_name, user_message, chat_history, api_key):
     agent_info = AGENTS.get(agent_name, AGENTS["PM (Lead Director)"])
     
     messages = [{"role": "system", "content": agent_info["system"]}]
-    for user_text, bot_text in chat_history:
-        if user_text:
-            messages.append({"role": "user", "content": user_text})
-        if bot_text:
-            messages.append({"role": "assistant", "content": bot_text})
+    for msg in chat_history:
+        if isinstance(msg, dict):
+            messages.append({"role": msg.get("role", "user"), "content": msg.get("content", "")})
+        elif isinstance(msg, (list, tuple)) and len(msg) == 2:
+            if msg[0]: messages.append({"role": "user", "content": str(msg[0])})
+            if msg[1]: messages.append({"role": "assistant", "content": str(msg[1])})
     messages.append({"role": "user", "content": user_message})
 
     url = "https://openrouter.ai/api/v1/chat/completions"
@@ -89,14 +90,15 @@ def call_openrouter(agent_name, user_message, chat_history, api_key):
 def chat_response(user_message, history, agent_name, api_key):
     if not user_message.strip():
         return "", history
+    history = history or []
     bot_reply = call_openrouter(agent_name, user_message, history, api_key)
-    history.append((user_message, bot_reply))
+    history.append({"role": "user", "content": user_message})
+    history.append({"role": "assistant", "content": bot_reply})
     return "", history
 
 # --- Background Telegram Bot Daemon ---
 def run_telegram_bot(token):
     if not token or len(token) < 20:
-        print("[Telegram Bot] Không có token hoặc token không hợp lệ, bỏ qua.")
         return
     
     try:
@@ -148,7 +150,6 @@ def run_telegram_bot(token):
             app.add_handler(CommandHandler("start", start_cmd))
             app.add_handler(CommandHandler("status", status_cmd))
             app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), msg_handler))
-            print(f"[Telegram Bot] Khởi động thành công!")
             await app.run_polling()
 
         loop = asyncio.new_event_loop()
@@ -161,13 +162,8 @@ if TELEGRAM_BOT_TOKEN:
     t = threading.Thread(target=run_telegram_bot, args=(TELEGRAM_BOT_TOKEN,), daemon=True)
     t.start()
 
-# --- Gradio UI Layout ---
-custom_css = """
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-#chatbox { height: 500px !important; }
-"""
-
-with gr.Blocks(title="RE:FRAY AI Studio", css=custom_css, theme=gr.themes.Soft()) as demo:
+# --- Gradio UI Layout (Gradio 6.0+ Compliant) ---
+with gr.Blocks(title="RE:FRAY AI Studio") as demo:
     gr.Markdown("# 🎮 RE:FRAY — Autonomous Cloud Game Dev Studio")
     gr.Markdown("Hệ thống AI Agent điều phối và phát triển dự án **RE:FRAY (Match-3 RPG)** chạy 24/7 trên Cloud.")
 
@@ -185,7 +181,7 @@ with gr.Blocks(title="RE:FRAY AI Studio", css=custom_css, theme=gr.themes.Soft()
                 placeholder="sk-or-v1-..."
             )
 
-        chatbot = gr.Chatbot(label="Hội thoại Studio", elem_id="chatbox", type="tuples")
+        chatbot = gr.Chatbot(label="Hội thoại Studio", elem_id="chatbox")
         with gr.Row():
             msg_input = gr.Textbox(
                 placeholder="Nhập yêu cầu hoặc câu hỏi cho bot (vd: Báo cáo tiến độ Phase 1, viết tiếp kịch bản Ch.2...)",
