@@ -185,7 +185,7 @@ with gr.Blocks(title="RE:FRAY AI Studio", css=custom_css, theme=gr.themes.Soft()
                 placeholder="sk-or-v1-..."
             )
 
-        chatbot = gr.Chatbot(label="Hội thoại Studio", elem_id="chatbox")
+        chatbot = gr.Chatbot(label="Hội thoại Studio", elem_id="chatbox", type="tuples")
         with gr.Row():
             msg_input = gr.Textbox(
                 placeholder="Nhập yêu cầu hoặc câu hỏi cho bot (vd: Báo cáo tiến độ Phase 1, viết tiếp kịch bản Ch.2...)",
@@ -227,4 +227,4 @@ with gr.Blocks(title="RE:FRAY AI Studio", css=custom_css, theme=gr.themes.Soft()
         """)
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7860)
+    demo.launch()
