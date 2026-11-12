@@ -27,9 +27,23 @@ def _zerogpu_startup():
     """Satisfy ZeroGPU startup check on Hugging Face Spaces."""
     return True
 
-# OpenRouter API Key and Telegram Token from Environment / Secrets
+# OpenRouter API Key and Telegram Token from Environment / Secrets / .env
 DEFAULT_OPENROUTER_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+
+# Tự động nạp từ file .env cục bộ nếu có
+for env_path in [".env", os.path.join(os.path.dirname(__file__), "..", ".env")]:
+    if os.path.exists(env_path):
+        try:
+            with open(env_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("OPENROUTER_API_KEY=") and not DEFAULT_OPENROUTER_KEY:
+                        DEFAULT_OPENROUTER_KEY = line.split("=", 1)[1].strip().strip('"').strip("'")
+                    elif line.startswith("TELEGRAM_BOT_TOKEN=") and not TELEGRAM_BOT_TOKEN:
+                        TELEGRAM_BOT_TOKEN = line.split("=", 1)[1].strip().strip('"').strip("'")
+        except Exception:
+            pass
 
 # AI Agent Definitions
 AGENTS = {
