@@ -5,6 +5,24 @@ import threading
 import requests
 import gradio as gr
 
+# ZeroGPU Support for Hugging Face Spaces
+try:
+    import spaces
+except ImportError:
+    class _MockSpaces:
+        def GPU(self, *args, **kwargs):
+            if len(args) == 1 and callable(args[0]):
+                return args[0]
+            def decorator(fn):
+                return fn
+            return decorator
+    spaces = _MockSpaces()
+
+@spaces.GPU
+def _zerogpu_startup():
+    """Satisfy ZeroGPU startup check on Hugging Face Spaces."""
+    return True
+
 # OpenRouter API Key and Telegram Token from Environment / Secrets
 DEFAULT_OPENROUTER_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
@@ -87,6 +105,7 @@ def call_openrouter(agent_name, user_message, chat_history, api_key):
     except Exception as e:
         return f"❌ Exception kết nối: {str(e)}"
 
+@spaces.GPU(duration=60)
 def chat_response(user_message, history, agent_name, api_key):
     if not user_message.strip():
         return "", history
@@ -145,16 +164,13 @@ def run_telegram_bot(token):
             reply = call_openrouter(agent_role, user_text, [], DEFAULT_OPENROUTER_KEY)
             await update.message.reply_text(f"🤖 *[{agent_role}]*:\n\n{reply}", parse_mode="Markdown")
 
-        async def main():
-            app = ApplicationBuilder().token(token).build()
-            app.add_handler(CommandHandler("start", start_cmd))
-            app.add_handler(CommandHandler("status", status_cmd))
-            app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), msg_handler))
-            await app.run_polling()
-
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(main())
+        app = ApplicationBuilder().token(token).build()
+        app.add_handler(CommandHandler("start", start_cmd))
+        app.add_handler(CommandHandler("status", status_cmd))
+        app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), msg_handler))
+        app.run_polling(close_loop=False)
     except Exception as e:
         print(f"[Telegram Bot] Lỗi khởi động: {e}")
 
