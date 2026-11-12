@@ -11,7 +11,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>RE:FRAY — Match-3 RPG (PGR Tactical Edition)</title>
-<link rel="stylesheet" href="style.css?v=20261112_2245" />
+<link rel="stylesheet" href="style.css?v=20261113_0035" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
@@ -122,37 +122,50 @@
       </div>
     </div>
 
-    <!-- ------------------------------------------------------------------
-         BỘ ĐỊCH (dữ liệu riêng trong Web/enemies.js)
-         Tương đương Data Asset "UM3EnemySet" bên Unreal: sửa quái/boss ở đây
-         là đổi được trận, không cần động vào lõi luật chơi.
-         ------------------------------------------------------------------ -->
-    <div class="panel-head sub">
-      <h2>Bộ địch (dữ liệu riêng)</h2>
-      <span class="hint" id="enemySetHint">đang nạp...</span>
-    </div>
-    <div class="enemy-set">
-      <div class="enemy-set-toolbar">
-        <label class="select-wrap">
-          <span>Màn dựng từ dữ liệu</span>
-          <select id="lineupSelect"></select>
-        </label>
-        <button id="btnRunLineup" class="btn btn-primary" type="button">Chơi màn này</button>
-      </div>
-      <div id="enemySetGrid" class="enemy-set-grid" aria-label="Bộ địch"></div>
-    </div>
+    <!-- ==================================================================
+         DỮ LIỆU BỔ SUNG & NHẬT KÝ CHIẾN TRƯỜNG (Thu gọn mặc định để tối đa hóa không gian 3D & Bàn đấu)
+         Người dùng có thể bấm mở ra khi cần cấu hình quái hoặc tra cứu nhật ký.
+         ================================================================== -->
+    <details class="extra-data-drawer" id="extraDataDrawer">
+      <summary class="extra-drawer-summary">
+        <div class="drawer-summary-left">
+          <span class="drawer-icon">📊</span>
+          <span class="drawer-title">DỮ LIỆU BỔ SUNG & NHẬT KÝ CHIẾN TRƯỜNG</span>
+          <span class="drawer-badge">Bộ địch · Nhiệm vụ · Nhật ký</span>
+        </div>
+        <span class="drawer-toggle-hint">Bấm để mở rộng <span class="drawer-arrow">▼</span></span>
+      </summary>
 
-    <!-- Nhiệm vụ + nhật ký -->
-    <div class="two-col">
-      <div>
-        <div class="panel-head sub"><h2>Nhiệm vụ map</h2></div>
-        <ul id="challenges" class="challenges"></ul>
+      <div class="extra-drawer-content">
+        <!-- BỘ ĐỊCH (dữ liệu riêng trong Web/enemies.js) -->
+        <div class="panel-head sub">
+          <h2>Bộ địch (dữ liệu riêng)</h2>
+          <span class="hint" id="enemySetHint">đang nạp...</span>
+        </div>
+        <div class="enemy-set">
+          <div class="enemy-set-toolbar">
+            <label class="select-wrap">
+              <span>Màn dựng từ dữ liệu</span>
+              <select id="lineupSelect"></select>
+            </label>
+            <button id="btnRunLineup" class="btn btn-primary" type="button">Chơi màn này</button>
+          </div>
+          <div id="enemySetGrid" class="enemy-set-grid" aria-label="Bộ địch"></div>
+        </div>
+
+        <!-- Nhiệm vụ + nhật ký -->
+        <div class="two-col">
+          <div>
+            <div class="panel-head sub"><h2>Nhiệm vụ map</h2></div>
+            <ul id="challenges" class="challenges"></ul>
+          </div>
+          <div>
+            <div class="panel-head sub"><h2>Nhật ký trận</h2></div>
+            <ol id="log" class="log"></ol>
+          </div>
+        </div>
       </div>
-      <div>
-        <div class="panel-head sub"><h2>Nhật ký trận</h2></div>
-        <ol id="log" class="log"></ol>
-      </div>
-    </div>
+    </details>
   </section>
 </main>
 
@@ -176,6 +189,6 @@
   </div>
 </div>
 
-<script type="module" src="m3ui.js?v=20261112_2245"></script>
+<script type="module" src="m3ui.js?v=20261113_0035"></script>
 </body>
 </html>

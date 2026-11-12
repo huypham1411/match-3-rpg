@@ -697,8 +697,8 @@ kbd {
 .battle3d-stage {
   position: relative;
   width: 100%;
-  height: 460px;
-  min-height: 420px;
+  height: 540px;
+  min-height: 480px;
   border-radius: var(--radius);
   overflow: hidden;
   background: radial-gradient(circle at 50% 20%, #101420 0%, #06080d 100%);
@@ -1635,4 +1635,99 @@ body.playing #btnEndTurn { pointer-events: none; opacity: .6; }
 }
 .encounter-flash.flash {
   opacity: 0.65;
+}
+
+/* --------------------------------------------------------------------------
+   DRAWER DỮ LIỆU BỔ SUNG & NHẬT KÝ (Collapsible Extra Data Panel)
+   Thu gọn mặc định để dành trọn diện tích cho Đấu trường 3D & Bàn Match-3
+   -------------------------------------------------------------------------- */
+.extra-data-drawer {
+  margin-top: 10px;
+  background: rgba(14, 19, 30, 0.75);
+  border: 1px solid rgba(0, 229, 255, 0.18);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.25s ease;
+}
+
+.extra-data-drawer[open] {
+  background: rgba(12, 16, 26, 0.95);
+  border-color: rgba(0, 229, 255, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.extra-drawer-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 14px;
+  cursor: pointer;
+  user-select: none;
+  background: linear-gradient(90deg, rgba(18, 24, 38, 0.8), rgba(24, 32, 50, 0.6));
+  list-style: none;
+  transition: background 0.2s ease;
+}
+
+.extra-drawer-summary::-webkit-details-marker {
+  display: none;
+}
+
+.extra-drawer-summary:hover {
+  background: linear-gradient(90deg, rgba(24, 34, 54, 0.95), rgba(30, 42, 68, 0.85));
+}
+
+.drawer-summary-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drawer-icon {
+  font-size: 13px;
+}
+
+.drawer-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #c5d4ec;
+  text-transform: uppercase;
+}
+
+.drawer-badge {
+  font-size: 9.5px;
+  padding: 1px 7px;
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 999px;
+  color: #00e5ff;
+}
+
+.drawer-toggle-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.drawer-arrow {
+  display: inline-block;
+  transition: transform 0.25s ease;
+  font-size: 10px;
+}
+
+.extra-data-drawer[open] .drawer-arrow {
+  transform: rotate(180deg);
+}
+
+.extra-drawer-content {
+  padding: 12px 14px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  animation: fadeInDrawer 0.22s ease-out;
+}
+
+@keyframes fadeInDrawer {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }

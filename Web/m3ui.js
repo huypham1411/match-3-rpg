@@ -12,7 +12,7 @@
 import createModule from './dist/m3core.mjs';
 import { spriteKeyForTier, drawSprite, ANIM_FRAMES } from './pixelart.js';
 import { ENEMY_SET, STAGE_LINEUPS, TIER_NAMES, validateEnemySet } from './enemies.js';
-import { initBattle3D, trigger3DAttack, trigger3DSkill, trigger3DUltimate, trigger3DEnemyHit, trigger3DEnemyAttack } from './battle3d.js';
+import { initBattle3D, syncEnemies3D, trigger3DAttack, trigger3DSkill, trigger3DUltimate, trigger3DEnemyHit, trigger3DEnemyAttack } from './battle3d.js';
 
 // Truyền chuỗi từ JS vào lõi C++: cấp phát trong bộ nhớ WASM rồi giải phóng sau khi gọi.
 function withCString(text, fn) {
@@ -267,7 +267,7 @@ async function playEvent(e) {
         spawnProjectile(card, target, 'slash', 300);
         setTimeout(() => {
           impactSpark(target, 'hit');
-          trigger3DEnemyHit(false);
+          trigger3DEnemyHit(false, e.enemy);
         }, 280);
       }
       return 260;
@@ -293,7 +293,7 @@ async function playEvent(e) {
         spawnProjectile(card, target, 'bolt', 340);
         setTimeout(() => {
           impactSpark(target, 'magic');
-          trigger3DEnemyHit(true);
+          trigger3DEnemyHit(true, e.enemy);
         }, 340);
       }
       return 430;
@@ -326,7 +326,7 @@ async function playEvent(e) {
           setTimeout(() => {
             spawnProjectile(card, target, 'bolt', 220);
             impactSpark(target, 'magic');
-            trigger3DEnemyHit(true);
+            trigger3DEnemyHit(true, e.enemy);
           }, 260 + i * 150);
         }
       }
@@ -334,7 +334,7 @@ async function playEvent(e) {
     }
 
     case EV.EnemyDamaged: {
-      trigger3DEnemyHit(e.big);
+      trigger3DEnemyHit(e.big, e.enemy);
       const card = enemyCard(e.enemy);
       if (card) {
         card.classList.add('hit');
@@ -370,7 +370,7 @@ async function playEvent(e) {
 
     case EV.EnemyAction: {
       // Địch tấn công: Camera 3D chuyển sang góc nhìn địch (Enemy POV) như Pokémon
-      trigger3DEnemyAttack();
+      trigger3DEnemyAttack(e.enemy);
       const card = enemyCard(e.enemy);
       if (card) {
         card.classList.add('lunge-left');
@@ -1071,7 +1071,7 @@ function updateHsrBossHeader() {
     const eName = M._m3_enemy_name ? M.UTF8ToString(M._m3_enemy_name(target)) : 'SENTINEL UNIT 07';
     nameEl.textContent = eName.toUpperCase();
     const hp = M._m3_enemy_hp ? M._m3_enemy_hp(target) : 1000;
-    const maxHp = M._m3_enemy_max_hp ? M._m3_enemy_max_hp(target) : hp;
+    const maxHp = M._m3_enemy_hp_max ? M._m3_enemy_hp_max(target) : (M._m3_enemy_max_hp ? M._m3_enemy_max_hp(target) : hp);
     const hpPct = Math.max(0, Math.min(1, maxHp > 0 ? hp / maxHp : 0));
     const hpFill = $('hsrBossHpFill');
     if (hpFill) hpFill.style.width = (hpPct * 100).toFixed(1) + '%';
@@ -1079,15 +1079,38 @@ function updateHsrBossHeader() {
     if (hpText) hpText.textContent = `${Math.round(hp).toLocaleString()} / ${Math.round(maxHp).toLocaleString()}`;
 
     // Thanh sức bền trắng (Toughness / Break Stagger) chuẩn HSR
-    const stagger = M._m3_enemy_stagger ? M._m3_enemy_stagger(target) : 1;
-    const staggerMax = M._m3_enemy_stagger_max ? M._m3_enemy_stagger_max(target) : 1;
-    const stgPct = Math.max(0, Math.min(1, staggerMax > 0 ? stagger / staggerMax : 0));
+    const broken = M._m3_enemy_broken ? M._m3_enemy_broken(target) === 1 : false;
+    const stgPct = M._m3_enemy_stagger_pct ? M._m3_enemy_stagger_pct(target) : 1;
     const stgFill = $('hsrToughnessFill');
-    if (stgFill) stgFill.style.width = (stgPct * 100).toFixed(1) + '%';
+    if (stgFill) {
+      stgFill.style.width = (Math.max(0, Math.min(1, broken ? 1 : stgPct)) * 100).toFixed(1) + '%';
+      stgFill.style.background = broken ? '#ff1744' : '#ffffff';
+      stgFill.style.boxShadow = broken ? '0 0 8px #ff1744' : '0 0 6px #ffffff';
+    }
     const stgText = $('hsrToughnessText');
-    if (stgText) stgText.textContent = stgPct <= 0 ? 'WEAKNESS BROKEN' : `TOUGHNESS ${(stgPct * 100).toFixed(0)}%`;
+    if (stgText) {
+      if (broken) {
+        const breakTurns = M._m3_enemy_break_turns ? M._m3_enemy_break_turns(target) : 1;
+        stgText.textContent = `WEAKNESS BROKEN (${breakTurns} LƯỢT)`;
+        stgText.style.color = '#ff5252';
+      } else {
+        stgText.textContent = `TOUGHNESS ${(stgPct * 100).toFixed(0)}%`;
+        stgText.style.color = '#e0e0e0';
+      }
+    }
   }
 }
+
+// Cho phép người chơi click trực tiếp vào quái 3D trên đấu trường để đổi mục tiêu
+window.__on3DEnemyClick = (idx) => {
+  if (!M || M._m3_finished()) return;
+  if (M._m3_set_target_enemy(idx)) {
+    toast('Mục tiêu 3D: ' + M.UTF8ToString(M._m3_enemy_name(idx)), false);
+    render();
+  } else {
+    toast('Địch này đã gục - chọn mục tiêu khác.', false);
+  }
+};
 
 // ---------------------------------------------------------------------------
 // Vẽ trạng thái
@@ -1243,6 +1266,19 @@ function renderEnemies(enemyBuffs) {
   const target = M._m3_target_enemy ? M._m3_target_enemy() : 0;
 
   $('enemyAliveTag').textContent = `${alive} / ${count} địch`;
+
+  // Đồng bộ toàn bộ đội hình địch sang Đấu trường 3D (Minion, Elite, Boss)
+  const enemyList = [];
+  for (let i = 0; i < count; i++) {
+    enemyList.push({
+      index: i,
+      name: M.UTF8ToString(M._m3_enemy_name(i)),
+      tier: M._m3_enemy_tier(i),
+      alive: M._m3_enemy_alive(i),
+      hpPct: M._m3_enemy_hp_pct(i)
+    });
+  }
+  syncEnemies3D(enemyList, target);
 
   // Dựng lại thẻ nếu số lượng địch đổi (triệu hồi quái làm hàng địch dài ra).
   if (enemyLineEl.children.length !== count) {
