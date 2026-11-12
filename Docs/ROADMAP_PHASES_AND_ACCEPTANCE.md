@@ -51,10 +51,10 @@ Tài liệu này được lập căn cứ theo hiện trạng mã nguồn `D:\pr
   * *Concept Illustrator*: Bảng vẽ 4 Starter Heroes (Astra, Elysia, Lin, Boran), 1 Quái thường và 3 Boss; Thiết kế nhận diện 5 loại Block và 4 loại Obstacles (Ice, Rock, Crate, Chain).
   * *3D Sculpt & Animator*: Dựng Greybox 3D theo tỷ lệ anime PGR (7.5 - 8 đầu), gắn xương chuẩn 7-12 bones cho Astra và Boss Ch.1.
 * **Tiêu chuẩn nghiệm thu (Gate Checklist 2)**:
-  1. [ ] Kịch bản thoại Chương 1, 2, 3 hoàn chỉnh (kèm trigger hội thoại trước trận, giữa trận và sau chiến thắng).
-  2. [ ] Bộ tài liệu Level Design Brief 3 màn chơi kèm sơ đồ mặt bằng và góc nhìn Camera.
-  3. [ ] Bảng màu và Concept Art sheet chi tiết cho 4 Starter Heroes và 3 Boss.
-  4. [ ] File 3D Greybox (`.glb` / `.fbx`) được QA kiểm tra không bị memory leak skeleton và import mượt mà.
+  1. [x] Kịch bản thoại Chương 1, 2, 3 hoàn chỉnh (kèm trigger hội thoại trước trận, giữa trận và sau chiến thắng) — `Docs/PHASE_2_DIALOGUE_SCRIPTS_CH1_2_3.md`.
+  2. [x] Bộ tài liệu Level Design Brief 3 màn chơi kèm sơ đồ mặt bằng và góc nhìn Camera — `Docs/PHASE_2_LEVEL_DESIGN_LAYOUTS.md`.
+  3. [x] Bảng màu và Concept Art sheet chi tiết cho 4 Starter Heroes và 3 Boss — `Docs/PHASE_2_CONCEPT_ART_SHEETS.md`.
+  4. [x] File 3D Greybox (`.glb` / `.fbx`) được QA kiểm tra không bị memory leak skeleton và import mượt mà — `Content/Greybox/*.glb` và `Docs/PHASE_2_3D_GREYBOX_SPECIFICATIONS.md`.
 
 ---
 

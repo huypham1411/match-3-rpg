@@ -40,6 +40,16 @@
     * Màn 1: Khu định cư vùng biên Aster (Boss: Sentinel Unit 07).
     * Màn 2: Trạm kiểm soát Unmapped Rim (Boss: Warden Aegis).
     * Màn 3: Tàn tích Data Haven Beta (Boss: Null Sovereign).
+12. **Hình thức thoại In-Game**: **CHỐT Hộp thoại Visual Novel (VN Dialogue Box)** ở cạnh dưới màn hình, hiển thị Avatar/Portrait 2 bên màn hình (Hero vs Boss/Narrator), click hoặc bấm Space để qua câu. Phong cách anime hành động nghiêm túc.
+
+### Về Tương Tác Cấp Cao (Phê duyệt bổ sung Phase 2 & 3):
+13. **Special + Special Combos**: **CHỐT CÓ**. Khi người chơi đổi 2 khối đặc biệt kề nhau:
+    * *Line + Line*: Nổ hình chữ thập $(+)$ dọn sạch toàn bộ 1 hàng và 1 cột.
+    * *Line + Bomb*: Quét sạch dải 3 hàng ngang và 3 cột dọc.
+    * *Bomb + Bomb*: Nổ siêu xung kích $5 \times 5$.
+    * *SwapAll + Special*: Toàn bộ khối cùng màu với Special trên bàn cờ chuyển hóa thành Special đó rồi đồng loạt kích nổ dây chuyền.
+14. **Thời điểm xả Stack của Deflector**: **CHỐT Cuối lượt của người chơi** (trước khi Boss bước vào phase hành động) để bào thanh Stagger, giúp team có cơ hội kích hoạt Break trước khi Boss tung đòn tất sát.
+15. **Quy mô Đội hình Vertical Slice (Chương 1-3)**: **CHỐT Cố định 4 Starter Heroes** (Astra - Đỏ, Boran - Vàng, Elysia - Lam, Lin - Lục) để tập trung cốt truyện và cân bằng chặt chẽ cơ chế combat. Slot 5 & 6 (Counter & Deflector) sẽ mở khóa trong Phase 4 (Metagame & Gacha).
 
 ---
 
