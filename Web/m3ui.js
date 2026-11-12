@@ -970,8 +970,18 @@ function renderBoard() {
 
       const signature = `${color}-${kind}-${charges}-${variant}`;
       if (prevCells[index] !== signature) {
-        classes += (prevCells[index] && color > 0) ? ' drop' : ' pop';
+        const isDrop = prevCells[index] && color > 0;
+        classes += isDrop ? ' drop' : ' pop';
         prevCells[index] = signature;
+        if (isDrop) {
+          // Staggered cascade waterfall: hàng dưới tiếp đất trước, hàng trên rơi theo
+          const cascadeDelay = Math.min(260, (height - 1 - y) * 28 + (x % 3) * 8);
+          cell.style.animationDelay = `${cascadeDelay}ms`;
+        } else {
+          cell.style.animationDelay = `${(x + y) * 12}ms`;
+        }
+      } else {
+        cell.style.animationDelay = '0ms';
       }
 
       cell.className = classes;
@@ -979,37 +989,38 @@ function renderBoard() {
       let glyph = '';
       let cellTitle = '';
       if (kind === KIND_OBSTACLE) {
-        glyph = '▨';
+        glyph = '<span class="glyph-core glyph-obs">▨</span>';
         cellTitle = `[CHƯỚNG NGẠI ĐỊCH] Khối đá phong ấn (còn ${charges} lớp phá). Cần kỹ năng Supporter hoặc nổ bom kề bên để phá hủy.`;
       } else if (kind === KIND_LINE) {
         if (variant === 0) {
-          glyph = '═';
+          glyph = '<span class="glyph-core glyph-laser-h">━⚡━</span>';
           cellTitle = '[PHE TA - TIA SÉT XUYÊN HÀNG] Sinh từ match-4 dọc. Di chuyển tự do để quét sạch toàn bộ hàng ngang!';
         } else {
-          glyph = '║';
+          glyph = '<span class="glyph-core glyph-laser-v">┃⚡┃</span>';
           cellTitle = '[PHE TA - TIA SÉT XUYÊN CỘT] Sinh từ match-4 ngang. Di chuyển tự do để quét sạch toàn bộ cột dọc!';
         }
       } else if (kind === KIND_SQUARE) {
-        glyph = '✸';
+        glyph = '<span class="glyph-core glyph-rocket">⌖</span>';
         cellTitle = '[PHE TA - TÊN LỬA TẦM NHIỆT] Sinh từ match-4 vuông (2x2). Di chuyển tự do để bay đến phá hủy chướng ngại/bẫy của địch!';
       } else if (kind === KIND_RAINBOW) {
-        glyph = '✷';
+        glyph = '<span class="glyph-core glyph-rainbow">✦</span>';
         cellTitle = '[PHE TA - CẦU VỒNG TOÀN NĂNG] Sinh từ match-5 thẳng hàng. Đổi chỗ với màu bất kỳ để nổ toàn bộ block cùng màu trên bàn!';
       } else if (kind === KIND_TRAP) {
-        glyph = '☠️';
+        glyph = '<span class="glyph-core glyph-trap">☠️</span>';
         cellTitle = `[ĐỊCH - BẪY ĐẾM NGƯỢC] Bẫy nổ của địch (còn ${charges} lượt)! Hết giờ sẽ nổ gây sát thương cho toàn đội. Hãy match kề bên hoặc dùng kỹ năng Supporter để gỡ!`;
       } else if (kind === KIND_AREA_BOMB) {
-        glyph = '💣';
+        glyph = '<span class="glyph-core glyph-bomb">✹</span>';
         cellTitle = '[PHE TA - BOM KHỐI NĂNG LƯỢNG] Bom nổ 3x3 của phe ta (sinh từ combo 5 góc L/T)! Nhấn 2 lần (double-click) hoặc di chuyển tự do để kích nổ vùng 3x3, gây sát thương khủng!';
       } else if (color > 0) {
-        cellTitle = `Block màu ${color}`;
+        glyph = '<span class="prism-facet"></span>';
+        cellTitle = `Khối pha lê năng lượng màu ${color}`;
       }
 
       // Ô bị địch khoá (LockCells): vẽ lớp khoá riêng.
       const cellData = M._m3_cell_locked ? M._m3_cell_locked(x, y) : 0;
       if (cellData === 1) {
         cell.className += ' locked';
-        glyph = '🔒';
+        glyph = '<span class="glyph-core glyph-locked">🔒</span>';
         cellTitle = '[ĐỊCH - PHONG ẤN] Ô bị khoá, không đổi chỗ / không rơi được cho tới khi hết hạn.';
       }
 

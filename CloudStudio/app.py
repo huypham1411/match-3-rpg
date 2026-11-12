@@ -4,7 +4,10 @@ import asyncio
 import threading
 import time
 import requests
-import gradio as gr
+try:
+    import gradio as gr
+except ImportError:
+    gr = None
 
 # ZeroGPU Support for Hugging Face Spaces
 try:
@@ -281,83 +284,84 @@ if TELEGRAM_BOT_TOKEN:
     t.start()
 
 # --- Gradio UI Layout (Gradio 6.0+ Compliant) ---
-with gr.Blocks(title="RE:FRAY AI Studio") as demo:
-    gr.Markdown("# 🎮 RE:FRAY — Autonomous Cloud Game Dev Studio")
-    gr.Markdown("Hệ thống AI Agent điều phối và phát triển dự án **RE:FRAY (Match-3 RPG)** chạy 24/7 trên Cloud kết hợp **Antigravity Codebase Engine**.")
+if gr:
+    with gr.Blocks(title="RE:FRAY AI Studio") as demo:
+        gr.Markdown("# 🎮 RE:FRAY — Autonomous Cloud Game Dev Studio")
+        gr.Markdown("Hệ thống AI Agent điều phối và phát triển dự án **RE:FRAY (Match-3 RPG)** chạy 24/7 trên Cloud kết hợp **Antigravity Codebase Engine**.")
 
-    # TAB 1: PHÒNG HỌP BÀN TRÒN TỰ ĐỘNG
-    with gr.Tab("🏛️ Phòng Họp Bàn Tròn Tự Động (Autonomous Swarm Room)"):
-        gr.Markdown("""
-        ### Cuộc họp bàn tròn tự động giữa các bot & Antigravity
-        Nhập chủ đề bạn muốn các bot giải quyết. Các bot (PM, Game Dev, Lore, Art) và **Antigravity** sẽ tự thảo luận, tự giải đáp kỹ thuật, tự giải quyết vấn đề và xuất biên bản tổng kết gồm:
-        1. **Những điểm đã tự giải quyết & thống nhất 100%**.
-        2. **Kế hoạch triển khai kỹ thuật**.
-        3. **Chỉ những câu hỏi nghiệp vụ cần bạn (Anh Huy) xác nhận**.
-        """)
-        with gr.Row():
-            roundtable_topic = gr.Textbox(
-                value="Thiết kế chiêu thức & visual cho Boss Sentinel 07 và cân bằng sát thương màn 1-1",
-                label="Chủ đề cuộc họp",
-                scale=8
-            )
-            roundtable_btn = gr.Button("🚀 Khởi động cuộc họp tự động", variant="primary", scale=2)
+        # TAB 1: PHÒNG HỌP BÀN TRÒN TỰ ĐỘNG
+        with gr.Tab("🏛️ Phòng Họp Bàn Tròn Tự Động (Autonomous Swarm Room)"):
+            gr.Markdown("""
+            ### Cuộc họp bàn tròn tự động giữa các bot & Antigravity
+            Nhập chủ đề bạn muốn các bot giải quyết. Các bot (PM, Game Dev, Lore, Art) và **Antigravity** sẽ tự thảo luận, tự giải đáp kỹ thuật, tự giải quyết vấn đề và xuất biên bản tổng kết gồm:
+            1. **Những điểm đã tự giải quyết & thống nhất 100%**.
+            2. **Kế hoạch triển khai kỹ thuật**.
+            3. **Chỉ những câu hỏi nghiệp vụ cần bạn (Anh Huy) xác nhận**.
+            """)
+            with gr.Row():
+                roundtable_topic = gr.Textbox(
+                    value="Thiết kế chiêu thức & visual cho Boss Sentinel 07 và cân bằng sát thương màn 1-1",
+                    label="Chủ đề cuộc họp",
+                    scale=8
+                )
+                roundtable_btn = gr.Button("🚀 Khởi động cuộc họp tự động", variant="primary", scale=2)
 
-        roundtable_output = gr.Markdown("Bấm nút bên trên để các bot bắt đầu cuộc họp...")
-        roundtable_btn.click(run_autonomous_roundtable, inputs=[roundtable_topic], outputs=[roundtable_output])
+            roundtable_output = gr.Markdown("Bấm nút bên trên để các bot bắt đầu cuộc họp...")
+            roundtable_btn.click(run_autonomous_roundtable, inputs=[roundtable_topic], outputs=[roundtable_output])
 
-    # TAB 2: STUDIO CHAT ĐƠN LẺ
-    with gr.Tab("💬 Studio Chat (Từng Bot)"):
-        with gr.Row():
-            agent_dropdown = gr.Dropdown(
-                choices=list(AGENTS.keys()),
-                value="PM (Lead Director)",
-                label="Chọn AI Agent để làm việc"
-            )
-            api_key_input = gr.Textbox(
-                value=DEFAULT_OPENROUTER_KEY,
-                type="password",
-                label="OpenRouter API Key (Đã cấu hình sẵn)",
-                placeholder="sk-or-v1-..."
-            )
+        # TAB 2: STUDIO CHAT ĐƠN LẺ
+        with gr.Tab("💬 Studio Chat (Từng Bot)"):
+            with gr.Row():
+                agent_dropdown = gr.Dropdown(
+                    choices=list(AGENTS.keys()),
+                    value="PM (Lead Director)",
+                    label="Chọn AI Agent để làm việc"
+                )
+                api_key_input = gr.Textbox(
+                    value=DEFAULT_OPENROUTER_KEY,
+                    type="password",
+                    label="OpenRouter API Key (Đã cấu hình sẵn)",
+                    placeholder="sk-or-v1-..."
+                )
 
-        chatbot = gr.Chatbot(label="Hội thoại Studio", elem_id="chatbox")
-        with gr.Row():
-            msg_input = gr.Textbox(
-                placeholder="Nhập yêu cầu hoặc câu hỏi cho bot...",
-                label="Tin nhắn",
-                scale=8
-            )
-            send_btn = gr.Button("Gửi 🚀", variant="primary", scale=1)
+            chatbot = gr.Chatbot(label="Hội thoại Studio", elem_id="chatbox")
+            with gr.Row():
+                msg_input = gr.Textbox(
+                    placeholder="Nhập yêu cầu hoặc câu hỏi cho bot...",
+                    label="Tin nhắn",
+                    scale=8
+                )
+                send_btn = gr.Button("Gửi 🚀", variant="primary", scale=1)
 
-        clear_btn = gr.Button("Xóa lịch sử chat")
+            clear_btn = gr.Button("Xóa lịch sử chat")
 
-        send_btn.click(chat_response, inputs=[msg_input, chatbot, agent_dropdown, api_key_input], outputs=[msg_input, chatbot])
-        msg_input.submit(chat_response, inputs=[msg_input, chatbot, agent_dropdown, api_key_input], outputs=[msg_input, chatbot])
-        clear_btn.click(lambda: [], None, chatbot)
+            send_btn.click(chat_response, inputs=[msg_input, chatbot, agent_dropdown, api_key_input], outputs=[msg_input, chatbot])
+            msg_input.submit(chat_response, inputs=[msg_input, chatbot, agent_dropdown, api_key_input], outputs=[msg_input, chatbot])
+            clear_btn.click(lambda: [], None, chatbot)
 
-    # TAB 3: TIẾN ĐỘ & NGHIỆM THU
-    with gr.Tab("📊 Lộ Trình 5 Phase & Nghiệm Thu"):
-        gr.Markdown("""
-        ### LỘ TRÌNH DỰ ÁN & TIÊU CHUẨN NGHIỆM THU
-        * **Phase 1: Game Feel & Block Animation** [HOÀN THÀNH - GATE 1 PASS]
-          * AnimationStepQueue C++ & Easing, Squash & Stretch
-          * Host tests C++: **744/744 PASS 100%**
-        * **Phase 2: Narrative & Creative Worldbuilding** [ĐANG TRIỂN KHAI]
-          * Model 3D Astra phong cách PGR hoàn chỉnh trong `Content/Blender/Astra_PGR_Model.blend`
-          * 2 Action: Idle loop (60f) & Attack Slash (36f)
-          * Kịch bản 3 Chương & Boss Sentinel 07
-        * **Phase 3: 3-Stage Vertical Slice Integration** (Ghép 3 màn chơi hoàn chỉnh)
-        * **Phase 4: Metagame & Roster Progression** (Gacha, trang bị, menu đội hình)
-        * **Phase 5: Release Build Web WASM & Unreal Engine 5**
-        """)
+        # TAB 3: TIẾN ĐỘ & NGHIỆM THU
+        with gr.Tab("📊 Lộ Trình 5 Phase & Nghiệm Thu"):
+            gr.Markdown("""
+            ### LỘ TRÌNH DỰ ÁN & TIÊU CHUẨN NGHIỆM THU
+            * **Phase 1: Game Feel & Block Animation** [HOÀN THÀNH - GATE 1 PASS]
+              * AnimationStepQueue C++ & Easing, Squash & Stretch
+              * Host tests C++: **744/744 PASS 100%**
+            * **Phase 2: Narrative & Creative Worldbuilding** [ĐANG TRIỂN KHAI]
+              * Model 3D Astra phong cách PGR hoàn chỉnh trong `Content/Blender/Astra_PGR_Model.blend`
+              * 2 Action: Idle loop (60f) & Attack Slash (36f)
+              * Kịch bản 3 Chương & Boss Sentinel 07
+            * **Phase 3: 3-Stage Vertical Slice Integration** (Ghép 3 màn chơi hoàn chỉnh)
+            * **Phase 4: Metagame & Roster Progression** (Gacha, trang bị, menu đội hình)
+            * **Phase 5: Release Build Web WASM & Unreal Engine 5**
+            """)
 
-    # TAB 4: TELEGRAM
-    with gr.Tab("📱 Kết Nối Điện Thoại (Telegram 24/7)"):
-        gr.Markdown("""
-        ### Hướng dẫn kết nối Telegram Bot điều khiển trên điện thoại 24/7:
-        1. Gõ `/discuss <chủ đề>` trong Telegram để kích hoạt cuộc họp bàn tròn tự động từ xa.
-        2. Bot sẽ tự thảo luận và gửi bản tóm tắt quyết định về tin nhắn cho bạn!
-        """)
+        # TAB 4: TELEGRAM
+        with gr.Tab("📱 Kết Nối Điện Thoại (Telegram 24/7)"):
+            gr.Markdown("""
+            ### Hướng dẫn kết nối Telegram Bot điều khiển trên điện thoại 24/7:
+            1. Gõ `/discuss <chủ đề>` trong Telegram để kích hoạt cuộc họp bàn tròn tự động từ xa.
+            2. Bot sẽ tự thảo luận và gửi bản tóm tắt quyết định về tin nhắn cho bạn!
+            """)
 
-if __name__ == "__main__":
+if __name__ == "__main__" and gr:
     demo.launch(ssr_mode=False)
