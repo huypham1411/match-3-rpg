@@ -684,255 +684,412 @@ kbd {
 .story-lines li { margin-bottom: 2px; }
 
 /* ==========================================================================
-   HONKAI: STAR RAIL ACTION ORDER TIMELINE & PERSONA 5 STYLIZED BATTLE HUD
+   HONKAI: STAR RAIL COMBAT HUD & 3D POKÉMON DYNAMIC BATTLE VIEWPORT
    ========================================================================== */
 
-.timeline-container {
+.hsr-battle-section {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 8px 12px;
-  border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, rgba(8, 12, 20, 0.92), rgba(16, 22, 34, 0.85));
-  border: 1px solid rgba(0, 229, 255, 0.25);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), 0 0 12px rgba(0, 229, 255, 0.08) inset;
+  gap: 10px;
 }
 
-.timeline-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.timeline-sub {
-  font-size: 10px;
-  font-family: var(--font-mono);
-  color: var(--text-dim);
-  letter-spacing: 1.2px;
-}
-
-.timeline-track {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 4px 2px;
-  scrollbar-width: thin;
-}
-
-.timeline-chip {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  background: rgba(18, 24, 38, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 4px;
-  transform: skewX(-10deg);
-  transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1), border-color 0.2s ease, box-shadow 0.25s ease;
-  cursor: pointer;
-  user-select: none;
-}
-
-.timeline-chip > * {
-  transform: skewX(10deg); /* Counter-skew text/icons for readability */
-}
-
-.timeline-chip.is-hero {
-  border-left: 3px solid #00e5ff;
-}
-
-.timeline-chip.is-enemy {
-  border-left: 3px solid #ff1744;
-}
-
-.timeline-chip.is-active {
-  background: linear-gradient(135deg, rgba(0, 229, 255, 0.25), rgba(255, 23, 68, 0.18));
-  border-color: #00e5ff;
-  box-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
-  transform: skewX(-10deg) scale(1.08);
-}
-
-.timeline-chip-icon {
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.timeline-chip-name {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  white-space: nowrap;
-}
-
-.timeline-chip-speed {
-  font-size: 9.5px;
-  font-family: var(--font-mono);
-  color: #ffd700;
-  padding: 1px 4px;
-  background: rgba(0, 0, 0, 0.4);
-  border-radius: 3px;
-}
-
-/* ==========================================================================
-   DYNAMIC 3D BATTLE ARENA (CAMERA CHOREOGRAPHY: FORMATION / ACTION / ENEMY POV)
-   ========================================================================== */
-
-.battle-stage {
-  perspective: 1200px;
-  transform-style: preserve-3d;
-  transition: transform 0.48s cubic-bezier(0.22, 1, 0.36, 1), filter 0.35s ease;
+/* 3D WebGL Viewport Container */
+.battle3d-stage {
   position: relative;
+  width: 100%;
+  height: 460px;
+  min-height: 420px;
   border-radius: var(--radius);
-  padding: 12px;
-  background: radial-gradient(circle at 50% 20%, rgba(20, 28, 48, 0.4), rgba(7, 10, 16, 0.95));
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  overflow: visible;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 20%, #101420 0%, #06080d 100%);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 16px rgba(0, 229, 255, 0.08) inset;
 }
 
-.stage-grid-floor {
+.battle-canvas-3d {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Floating Honkai: Star Rail HUD Overlay */
+.hsr-hud-overlay {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background-image: 
-    linear-gradient(rgba(0, 229, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 229, 255, 0.04) 1px, transparent 1px);
-  background-size: 24px 24px;
-  mask-image: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 1) 30%, transparent 80%);
-  -webkit-mask-image: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 1) 30%, transparent 80%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px 12px;
+  z-index: 5;
 }
 
-/* 1. MẶC ĐỊNH: FORMATION VIEW (Top-down Isometric toàn cảnh đội hình & địch) */
-.battle-stage.cam-formation {
-  transform: perspective(1200px) rotateX(6deg) rotateY(-3deg) translateZ(0);
+.hsr-hud-overlay > * {
+  pointer-events: auto;
 }
 
-/* 2. CẬN CẢNH: ACTION ZOOM-IN (Góc thấp kịch tính khi phe ta xuất chiêu) */
-.battle-stage.cam-action {
-  transform: perspective(1200px) rotateX(2deg) rotateY(-12deg) scale(1.05) translateY(10px) translateZ(25px);
-  filter: contrast(1.1) brightness(1.08);
+/* Top: HSR Boss & Target Header */
+.hsr-boss-header {
+  background: linear-gradient(180deg, rgba(14, 18, 28, 0.9), rgba(8, 10, 18, 0.8));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  max-width: 100%;
 }
 
-/* 3. GÓC NHÌN ĐỊCH: ENEMY POV (Quay ra sau quái / Boss ra đòn như Pokemon) */
-.battle-stage.cam-enemy-pov {
-  transform: perspective(1200px) rotateX(12deg) rotateY(14deg) scale(1.06) translateY(-12px) translateZ(20px);
-  filter: drop-shadow(0 0 20px rgba(255, 23, 68, 0.2));
-}
-
-/* 4. ULTIMATE / ALL-OUT ATTACK (Góc nghiêng truyện tranh Persona 5) */
-.battle-stage.cam-all-out {
-  transform: perspective(1200px) rotateZ(-3deg) scale(1.06) translateZ(35px);
-  filter: contrast(1.22) saturate(1.25) brightness(1.12);
-}
-
-/* Persona 5 Badges & Headers */
-.p5-badge {
-  display: inline-block;
-  padding: 2px 7px;
-  background: #ff1744;
-  color: #ffffff;
-  font-size: 10px;
-  font-weight: 900;
-  font-style: italic;
-  letter-spacing: 1px;
-  transform: skewX(-12deg);
-  border-radius: 2px;
-  box-shadow: 0 0 8px rgba(255, 23, 68, 0.6);
-}
-
-.p5-badge-alert {
-  background: linear-gradient(135deg, #ff1744, #d50000);
-}
-
-.p5-slash {
-  position: relative;
-  border-left: 3.5px solid #ff1744;
-  padding-left: 8px;
-}
-
-.p5-hint {
-  font-size: 10.5px;
-  color: #00e5ff;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-}
-
-/* ==========================================================================
-   PERSONA 5 / HSR STYLIZED SQUAD CARDS & COMBAT FEEDBACK
-   ========================================================================== */
-
-.member {
+.hsr-boss-meta {
   display: flex;
   align-items: center;
-  gap: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-left: 4px solid var(--accent);
-  border-radius: var(--radius-sm);
-  background: linear-gradient(90deg, rgba(16, 22, 34, 0.95), rgba(12, 16, 26, 0.9));
-  padding: 8px 10px;
-  transform: skewX(-4deg);
-  transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1), border-color 0.2s ease, box-shadow 0.25s ease;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.member > * {
-  transform: skewX(4deg); /* Counter-skew nội dung bên trong */
+.hsr-target-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  background: #ff1744;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  border-radius: 2px;
+}
+
+.hsr-boss-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.4px;
+}
+
+.hsr-weakness-icons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.weak-badge {
+  font-size: 9.5px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  white-space: nowrap;
+}
+
+.weak-fire { border-color: rgba(255, 23, 68, 0.4); color: #ff8a80; }
+.weak-ice { border-color: rgba(0, 229, 255, 0.4); color: #80d8ff; }
+.weak-volt { border-color: rgba(255, 215, 0, 0.4); color: #ffe57f; }
+.weak-wind { border-color: rgba(0, 230, 118, 0.4); color: #b9f6ca; }
+
+/* HSR Toughness (Break / Stagger) White Bar */
+.hsr-toughness-wrap {
+  margin-top: 6px;
+  position: relative;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.hsr-toughness-bar {
+  width: 100%;
+  height: 100%;
+}
+
+.hsr-toughness-bar i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: #ffffff;
+  box-shadow: 0 0 6px #ffffff;
+  transition: width 0.22s ease;
+}
+
+.hsr-toughness-text {
+  position: absolute;
+  right: 0;
+  top: -12px;
+  font-size: 8.5px;
+  font-family: var(--font-mono);
+  color: #e0e0e0;
+}
+
+/* HSR Boss HP Bar */
+.hsr-boss-hp-wrap {
+  margin-top: 5px;
+  position: relative;
+  height: 7px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.hsr-boss-hp-bar {
+  width: 100%;
+  height: 100%;
+}
+
+.hsr-boss-hp-bar i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #ff1744, #ff5252);
+  transition: width 0.22s ease;
+}
+
+.hsr-boss-hp-text {
+  position: absolute;
+  right: 0;
+  top: -12px;
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: #ffd700;
+}
+
+/* HSR Enemy Target List (Dạng Compact) */
+.hsr-enemy-line {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.hsr-enemy-line .enemy-card {
+  padding: 4px 8px;
+  min-width: 90px;
+  background: rgba(14, 18, 28, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+
+/* HSR Story Floating Panel */
+.hsr-story {
+  margin: 6px 0;
+  max-width: 80%;
+  background: rgba(10, 14, 24, 0.88);
+  backdrop-filter: blur(8px);
+}
+
+/* Bottom: Honkai Star Rail 4-Character Squad HUD */
+.hsr-squad-panel {
+  margin-top: auto;
+  background: linear-gradient(0deg, rgba(8, 11, 18, 0.95), rgba(12, 16, 26, 0.82));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 229, 255, 0.22);
+  border-radius: 10px;
+  padding: 6px 8px;
+}
+
+.hsr-squad-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 5px;
+  padding: 0 4px;
+}
+
+.hsr-squad-title {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #00e5ff;
+}
+
+.hsr-squad-hint {
+  font-size: 9px;
+  color: var(--text-dim);
+}
+
+.hsr-team {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+@media (max-width: 900px) {
+  .hsr-team { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Thẻ nhân vật chuẩn phong cách Honkai: Star Rail */
+.member {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(18, 24, 38, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 6px 6px;
+  transition: all 0.2s ease;
+  position: relative;
+  text-align: center;
 }
 
 .member:hover {
-  transform: skewX(-4deg) translateY(-2px);
-  border-color: rgba(0, 229, 255, 0.4);
+  border-color: rgba(0, 229, 255, 0.5);
+  background: rgba(22, 30, 48, 0.95);
 }
 
-/* Khi nhân vật đang hành động theo màu block match-3 */
 .member.acting {
   border-color: #00e5ff !important;
-  box-shadow: 0 0 20px rgba(0, 229, 255, 0.8), 0 0 10px rgba(255, 255, 255, 0.5) inset;
-  transform: skewX(-4deg) scale(1.04) translateX(8px);
-  background: linear-gradient(90deg, rgba(0, 229, 255, 0.22), rgba(16, 22, 34, 0.95));
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.8);
+  transform: translateY(-3px);
 }
 
-.member.down { opacity: .45; filter: grayscale(.7); }
-.member.targeted-by-enemy { border-color: var(--danger); box-shadow: 0 0 0 1px rgba(239, 68, 68, .5) inset; }
-
-.member-art { flex: 0 0 auto; display: flex; align-items: center; }
-.member-info { flex: 1 1 auto; min-width: 0; }
-.member-head { display: flex; align-items: baseline; gap: 8px; }
-.member-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.3px; }
-.member-role { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .6px; font-weight: 600; }
-
-.member-bars { margin-top: 5px; display: flex; flex-direction: column; gap: 3px; }
-.mini-bar { height: 7px; border-radius: 999px; background: #0a0d15; border: 1px solid var(--line); overflow: hidden; }
-.mini-bar i { display: block; height: 100%; width: 0; transition: width .28s ease; }
-.mini-hp i { background: linear-gradient(90deg, #22c55e, #15803d); }
-.mini-ult i { background: linear-gradient(90deg, #a78bfa, #6d28d9); }
-
-/* Bộc phá Ultimate sẵn sàng (HSR Burst Ready Glow) */
-.mini-ult.ult-ready {
-  box-shadow: 0 0 8px #a78bfa;
-}
-.mini-ult.ult-ready i {
-  background: linear-gradient(90deg, #e0aaff, #c77dff, #7b2cbf);
-  animation: ultPulse 1.2s infinite alternate;
+.member.down {
+  opacity: 0.45;
+  filter: grayscale(0.8);
 }
 
-@keyframes ultPulse {
-  0% { filter: brightness(1.0); }
-  100% { filter: brightness(1.45) drop-shadow(0 0 4px #c77dff); }
+/* Vòng tròn Avatar kèm Thanh Năng Lượng Ultimate xoay tròn (HSR Ultimate Ring) */
+.hsr-avatar-slot {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 4px;
+  cursor: pointer;
 }
 
-.member-actions { flex: 0 0 auto; display: flex; flex-direction: column; gap: 5px; }
-.member-actions .btn {
-  padding: 5px 8px;
+.hsr-ring-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.hsr-ring-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.14);
+  stroke-width: 3.5;
+}
+
+.hsr-ring-fill {
+  fill: none;
+  stroke: #00e5ff;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.3s ease;
+}
+
+/* Khi Ultimate đầy 100%: vòng tròn phát sáng rực rỡ và xoay xung nhịp */
+.member.ult-ready .hsr-ring-fill {
+  stroke: #ffd700;
+  filter: drop-shadow(0 0 6px #ffd700);
+  animation: hsrUltSpin 2s linear infinite;
+}
+
+@keyframes hsrUltSpin {
+  0% { filter: drop-shadow(0 0 4px #ffd700) brightness(1.1); }
+  50% { filter: drop-shadow(0 0 10px #ff0055) brightness(1.5); }
+  100% { filter: drop-shadow(0 0 4px #ffd700) brightness(1.1); }
+}
+
+.hsr-avatar-art {
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0a0d15;
+}
+
+.hsr-ult-num {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  font-size: 8.5px;
+  font-family: var(--font-mono);
+  background: #000;
+  color: #ffd700;
+  border: 1px solid #ffd700;
+  border-radius: 3px;
+  padding: 0 3px;
+}
+
+.member-info {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.member-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.member-name {
   font-size: 11px;
-  max-width: 190px;
+  font-weight: 700;
+  color: #ffffff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transform: skewX(-8deg);
+  max-width: 100%;
+}
+
+.member-role {
+  font-size: 9px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.member-bars {
+  width: 100%;
+  margin-top: 3px;
+}
+
+.mini-bar {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.mini-hp i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #00e676, #00b0ff);
+  transition: width 0.25s ease;
+}
+
+.mini-ult {
+  display: none; /* Đã chuyển sang vòng xoay SVG tròn chuẩn HSR */
+}
+
+.member-actions {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.member-actions .btn {
+  width: 100%;
+  padding: 3px 4px;
+  font-size: 9.5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
   border-radius: 3px;
   font-weight: 600;
 }

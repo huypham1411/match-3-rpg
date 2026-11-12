@@ -342,21 +342,35 @@ function createBossSentinel07() {
 }
 
 // ---------------------------------------------------------------------------
-// 3D COMBAT EVENT TRIGGERS (Invoked by m3ui.js on WASM Events)
+// ĐẠO DIỄN CAMERA 3D ĐỘNG (POKÉMON DYNAMIC BATTLE CAMERA SYSTEM)
+// Camera liên tục lượn quanh đội hình (Party Orbit Idle), khi ra chiêu thì
+// lia cận cảnh nhân vật (Hero Action), và đổi góc nhìn về phía địch (Enemy POV).
 // ---------------------------------------------------------------------------
+let camMode = 'POKEMON_IDLE'; // 'POKEMON_IDLE', 'HERO_ACTION', 'ENEMY_HIT', 'ENEMY_ATTACK', 'ULTIMATE'
+let camTargetPos = new THREE.Vector3(0, 3.4, 7.8);
+let camTargetLook = new THREE.Vector3(0, 1.1, 0);
+let currentCamLook = new THREE.Vector3(0, 1.1, 0);
+let camActionTimer = null;
 
 export function trigger3DAttack(memberIdx, enemyIdx) {
   if (!isInitialized) return;
   const hero = getHeroByIndex(memberIdx);
   if (!hero) return;
 
-  const targetPos = bossMesh ? bossMesh.position : new THREE.Vector3(1.5, 0, 0);
+  const targetPos = bossMesh ? bossMesh.position : new THREE.Vector3(2.2, 0, 0);
   const startPos = hero.userData.originalPos || hero.position.clone();
 
-  // 1. Lunge Forward towards boss
+  // Chuyển Camera sang góc cận cảnh nhân vật (Hero Action Zoom kiểu Pokémon)
+  camMode = 'HERO_ACTION';
+  camTargetPos.set(hero.position.x - 1.2, 1.6, hero.position.z + 2.2);
+  camTargetLook.set(targetPos.x, 1.2, targetPos.z);
+
+  if (camActionTimer) clearTimeout(camActionTimer);
+
+  // 1. Lao lên chém địch
   const forwardPos = new THREE.Vector3(
-    startPos.x + (targetPos.x - startPos.x) * 0.55,
-    startPos.y + 0.2,
+    startPos.x + (targetPos.x - startPos.x) * 0.65,
+    startPos.y + 0.15,
     startPos.z
   );
 
@@ -365,17 +379,56 @@ export function trigger3DAttack(memberIdx, enemyIdx) {
     step++;
     if (step <= 5) {
       hero.position.lerp(forwardPos, 0.45);
-      if (hero.name === "astra") {
-        hero.rotation.y = Math.PI * 0.5;
-      }
     } else if (step === 6) {
-      // Spawn 3D Energy Slash Arc
       spawn3DSlash(forwardPos);
+      trigger3DEnemyHit(false);
+      // Chuyển camera lia sang hướng địch trúng đòn (Enemy Hit Snap)
+      camMode = 'ENEMY_HIT';
+      camTargetPos.set(targetPos.x + 1.2, 2.0, targetPos.z + 3.2);
+      camTargetLook.set(targetPos.x, 1.4, targetPos.z);
     } else if (step <= 12) {
       hero.position.lerp(startPos, 0.35);
     } else {
       hero.position.copy(startPos);
       clearInterval(animInterval);
+      // Trả lại camera về chế độ Pokémon Idle lượn quanh đội hình
+      camActionTimer = setTimeout(() => {
+        camMode = 'POKEMON_IDLE';
+      }, 350);
+    }
+  }, 25);
+}
+
+export function trigger3DEnemyAttack() {
+  if (!isInitialized || !bossMesh) return;
+  const orig = bossMesh.userData.originalPos || bossMesh.position.clone();
+
+  // Chuyển camera về phía sau lưng Địch nhìn sang phe ta (Enemy POV góc Pokémon)
+  camMode = 'ENEMY_ATTACK';
+  camTargetPos.set(orig.x + 1.6, 2.4, orig.z + 1.8);
+  camTargetLook.set(-2.0, 1.0, 0);
+
+  if (camActionTimer) clearTimeout(camActionTimer);
+
+  // Boss lao lên tấn công
+  const strikePos = new THREE.Vector3(orig.x - 1.4, orig.y + 0.2, orig.z);
+  let step = 0;
+  const attackInterval = setInterval(() => {
+    step++;
+    if (step <= 6) {
+      bossMesh.position.lerp(strikePos, 0.4);
+      if (bossCoreMesh) bossCoreMesh.material.emissiveIntensity = 3.0;
+    } else if (step === 7) {
+      // Nổ shockwave phía phe ta
+      spawn3DShockwave(new THREE.Vector3(-1.5, 0.2, 0));
+    } else if (step <= 14) {
+      bossMesh.position.lerp(orig, 0.3);
+    } else {
+      bossMesh.position.copy(orig);
+      clearInterval(attackInterval);
+      camActionTimer = setTimeout(() => {
+        camMode = 'POKEMON_IDLE';
+      }, 400);
     }
   }, 25);
 }
@@ -385,8 +438,12 @@ export function trigger3DSkill(memberIdx, enemyIdx) {
   const hero = getHeroByIndex(memberIdx);
   if (!hero) return;
 
-  // Expanding Magic Ring below hero in 3D
-  const ringGeo = new THREE.RingGeometry(0.2, 0.8, 24);
+  camMode = 'HERO_ACTION';
+  camTargetPos.set(hero.position.x - 1.0, 1.8, hero.position.z + 2.0);
+  camTargetLook.set(hero.position.x, 1.1, hero.position.z);
+
+  // Vòng ma thuật nở rộ dưới chân nhân vật trong 3D
+  const ringGeo = new THREE.RingGeometry(0.2, 0.9, 24);
   const ringMat = new THREE.MeshBasicMaterial({ color: 0x00d2ff, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
   const ring = new THREE.Mesh(ringGeo, ringMat);
   ring.rotation.x = -Math.PI / 2;
@@ -403,6 +460,10 @@ export function trigger3DSkill(memberIdx, enemyIdx) {
       fxGroup.remove(ring);
     }
   }, 30);
+
+  setTimeout(() => {
+    trigger3DAttack(memberIdx, enemyIdx);
+  }, 180);
 }
 
 export function trigger3DUltimate(memberIdx, enemyIdx) {
@@ -410,16 +471,11 @@ export function trigger3DUltimate(memberIdx, enemyIdx) {
   const hero = getHeroByIndex(memberIdx);
   if (!hero) return;
 
-  // Camera Dynamic Action Zoom
-  if (camera) {
-    const origCamPos = camera.position.clone();
-    camera.position.set(0, 2.2, 5.2);
-    setTimeout(() => {
-      camera.position.lerp(origCamPos, 0.5);
-    }, 450);
-  }
+  camMode = 'ULTIMATE';
+  camTargetPos.set(hero.position.x - 0.8, 1.2, hero.position.z + 1.6);
+  camTargetLook.set(hero.position.x, 1.4, hero.position.z);
 
-  // Multi-burst slashes
+  // Chuỗi chém 3 phát bộc phá liên tiếp
   trigger3DAttack(memberIdx, enemyIdx);
   setTimeout(() => trigger3DAttack(memberIdx, enemyIdx), 220);
   setTimeout(() => trigger3DAttack(memberIdx, enemyIdx), 440);
@@ -429,7 +485,6 @@ export function trigger3DEnemyHit(isBig) {
   if (!isInitialized || !bossMesh) return;
   const orig = bossMesh.userData.originalPos || bossMesh.position.clone();
 
-  // Boss recoil & shake
   let frame = 0;
   const shakeTimer = setInterval(() => {
     frame++;
@@ -437,22 +492,42 @@ export function trigger3DEnemyHit(isBig) {
     bossMesh.position.set(orig.x + offset, orig.y, orig.z + offset);
 
     if (bossCoreMesh) {
-      bossCoreMesh.material.emissiveIntensity = 2.5;
+      bossCoreMesh.material.emissiveIntensity = 2.8;
     }
 
     if (frame >= 8) {
       clearInterval(shakeTimer);
       bossMesh.position.copy(orig);
-      if (bossCoreMesh) bossCoreMesh.material.emissiveIntensity = 1.5;
+      if (bossCoreMesh) bossCoreMesh.material.emissiveIntensity = 1.4;
+    }
+  }, 30);
+}
+
+function spawn3DShockwave(pos) {
+  const waveGeo = new THREE.RingGeometry(0.3, 1.8, 32);
+  const waveMat = new THREE.MeshBasicMaterial({ color: 0xff1744, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
+  const wave = new THREE.Mesh(waveGeo, waveMat);
+  wave.rotation.x = -Math.PI / 2;
+  wave.position.set(pos.x, 0.05, pos.z);
+  fxGroup.add(wave);
+
+  let scale = 1.0;
+  const timer = setInterval(() => {
+    scale += 0.2;
+    wave.scale.set(scale, scale, 1);
+    wave.material.opacity -= 0.1;
+    if (wave.material.opacity <= 0) {
+      clearInterval(timer);
+      fxGroup.remove(wave);
     }
   }, 30);
 }
 
 function spawn3DSlash(pos) {
-  const arcGeo = new THREE.TorusGeometry(0.65, 0.06, 6, 16, Math.PI * 0.8);
-  const arcMat = new THREE.MeshBasicMaterial({ color: 0xff2e55, transparent: true, opacity: 0.95 });
+  const arcGeo = new THREE.TorusGeometry(0.75, 0.08, 6, 20, Math.PI * 0.85);
+  const arcMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.95 });
   const arc = new THREE.Mesh(arcGeo, arcMat);
-  arc.position.set(pos.x + 0.8, pos.y + 1.2, pos.z);
+  arc.position.set(pos.x + 0.6, pos.y + 1.2, pos.z);
   arc.rotation.y = Math.PI * 0.5;
   fxGroup.add(arc);
 
@@ -484,21 +559,49 @@ function onResize() {
 function animate() {
   requestAnimationFrame(animate);
 
-  const t = performance.now() * 0.002;
+  const t = performance.now() * 0.001;
 
-  // Gentle idle animation
+  // 1. CHUYỂN ĐỘNG CAMERA ĐỘNG KIỂU POKÉMON (POKÉMON DYNAMIC CAMERA ORBIT)
+  if (camera) {
+    if (camMode === 'POKEMON_IDLE') {
+      // Camera lượn sóng nhịp nhàng quanh đội hình (party orbit góc 3/4 qua vai)
+      const partyCenterX = -2.2;
+      const partyCenterZ = 0.0;
+      const orbitAngle = Math.sin(t * 0.35) * 0.28 + 0.15; // Dao động nhẹ ~18 độ
+      const camX = partyCenterX + Math.sin(orbitAngle) * 3.8 + 0.8;
+      const camZ = partyCenterZ + Math.cos(orbitAngle) * 4.2 + 1.2;
+      const camY = 2.4 + Math.sin(t * 0.7) * 0.18; // Thở nhẹ theo phương đứng
+
+      camTargetPos.set(camX, camY, camZ);
+      camTargetLook.set(0.6, 1.15, 0.0); // Nhìn hướng qua vai đội hình về phía địch
+    }
+
+    // Lerp camera mượt mà tới vị trí mục tiêu
+    camera.position.lerp(camTargetPos, 0.08);
+    currentCamLook.lerp(camTargetLook, 0.1);
+    camera.lookAt(currentCamLook);
+  }
+
+  // 2. Chuyển động thở của các nhân vật 3D
   if (astraMesh) {
-    astraMesh.position.y = Math.sin(t * 1.5) * 0.04;
+    astraMesh.position.y = Math.sin(t * 2.2) * 0.035;
+  }
+  if (boranMesh) {
+    boranMesh.position.y = Math.sin(t * 1.8 + 0.5) * 0.025;
   }
   if (elysiaMesh) {
-    const cat = elysiaMesh.getObjectByName("catalyst");
-    if (cat) cat.rotation.z += 0.03;
+    elysiaMesh.position.y = Math.sin(t * 2.0 + 1.0) * 0.04;
+  }
+  if (linMesh) {
+    linMesh.position.y = Math.sin(t * 2.4 + 1.5) * 0.03;
+  }
+  if (bossMesh) {
+    bossMesh.position.y = Math.sin(t * 1.6) * 0.05;
   }
   if (bossCoreMesh) {
-    bossCoreMesh.material.emissiveIntensity = 1.2 + Math.sin(t * 3.0) * 0.4;
+    bossCoreMesh.material.emissiveIntensity = 1.3 + Math.sin(t * 3.5) * 0.5;
   }
 
-  if (controls) controls.update();
   if (renderer && scene && camera) {
     renderer.render(scene, camera);
   }

@@ -11,7 +11,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>RE:FRAY — Match-3 RPG (PGR Tactical Edition)</title>
-<link rel="stylesheet" href="style.css?v=20261112_2155" />
+<link rel="stylesheet" href="style.css?v=20261112_2245" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
@@ -61,44 +62,64 @@
     <button id="btnEndTurn" class="btn btn-primary btn-wide" type="button">Kết thúc turn <kbd>Tab</kbd></button>
   </section>
 
-  <!-- ============ NỬA PHẢI: TOÀN CẢNH TRẬN CHIẾN (PERSONA 5 / HSR STYLIZED 3D BATTLE) ============ -->
-  <section class="half battle-half">
+  <!-- ============ NỬA PHẢI: TOÀN CẢNH TRẬN CHIẾN (3D BATTLE ARENA & HONKAI: STAR RAIL HUD) ============ -->
+  <section class="half battle-half hsr-battle-section">
 
-    <!-- Action Order Timeline (Honkai: Star Rail Style) -->
-    <div class="timeline-container">
-      <div class="timeline-head">
-        <span class="p5-badge">ACTION ORDER</span>
-        <span class="timeline-sub">THỨ TỰ HÀNH ĐỘNG // OCULUS-7 ARCHIVE STREAM</span>
+    <!-- 3D BATTLE VIEWPORT (Three.js WebGL & Pokémon Dynamic Orbit Camera) -->
+    <div id="battle3dStage" class="battle3d-stage">
+      <canvas id="battleCanvas3d" class="battle-canvas-3d"></canvas>
+
+      <!-- HSR Floating Combat HUD Overlay -->
+      <div class="hsr-hud-overlay">
+
+        <!-- Top: HSR Boss & Target Status (Toughness Break + HP + Weakness) -->
+        <div class="hsr-boss-header" id="hsrBossHeader">
+          <div class="hsr-boss-meta">
+            <span class="hsr-target-tag">TARGET LOCK</span>
+            <span class="hsr-boss-name" id="hsrBossName">SENTINEL UNIT 07 // CORRUPTED MECH</span>
+            <div class="hsr-weakness-icons">
+              <span class="weak-badge weak-fire" title="Yếu điểm: Lửa (Match Đỏ)">🔴 LỬA</span>
+              <span class="weak-badge weak-ice" title="Yếu điểm: Băng (Match Xanh Dương)">🔵 BĂNG</span>
+              <span class="weak-badge weak-volt" title="Yếu điểm: Điện (Match Vàng)">🟡 ĐIỆN</span>
+              <span class="weak-badge weak-wind" title="Yếu điểm: Gió (Match Xanh Lá)">🟢 GIÓ</span>
+            </div>
+            <span id="enemyAliveTag" class="badge">1 địch</span>
+          </div>
+
+          <!-- Toughness / Break Stagger Bar (Thanh Sức Bền màu trắng chuẩn HSR) -->
+          <div class="hsr-toughness-wrap">
+            <div class="hsr-toughness-bar"><i id="hsrToughnessFill"></i></div>
+            <span class="hsr-toughness-text" id="hsrToughnessText">TOUGHNESS 100%</span>
+          </div>
+
+          <!-- Boss HP Bar -->
+          <div class="hsr-boss-hp-wrap">
+            <div class="hsr-boss-hp-bar"><i id="hsrBossHpFill"></i></div>
+            <span class="hsr-boss-hp-text" id="hsrBossHpText">12,000 / 12,000</span>
+          </div>
+        </div>
+
+        <!-- Hàng địch chọn lọc (Thu gọn dạng target list) -->
+        <div id="enemyLine" class="enemy-line hsr-enemy-line" aria-label="Hàng địch"></div>
+
+        <!-- Story của màn: chương / tiêu đề / thoại mở màn -->
+        <div id="storyPanel" class="story-panel hsr-story" hidden>
+          <div class="story-chapter" id="storyChapter"></div>
+          <div class="story-title" id="storyTitle"></div>
+          <p class="story-brief" id="storyBrief"></p>
+          <ul class="story-lines" id="storyLines"></ul>
+        </div>
+
+        <!-- Bottom: Honkai Star Rail 4-Character Squad HUD (Vòng tròn Ultimate Burst) -->
+        <div class="hsr-squad-panel">
+          <div class="hsr-squad-head">
+            <span class="hsr-squad-title">CONSTRUCT SQUAD</span>
+            <span class="hsr-squad-hint">Click vòng tròn Avatar hoặc bấm Num1..4 để bộc phá Ultimate · Phím 1..4 để dùng Skill</span>
+          </div>
+          <div id="team" class="team hsr-team"></div>
+        </div>
+
       </div>
-      <div id="timelineTrack" class="timeline-track" aria-label="Thanh thứ tự hành động"></div>
-    </div>
-
-    <!-- 3D BATTLE ARENA (Camera Choreography: Formation / Action / Enemy POV) -->
-    <div id="battleStage" class="battle-stage cam-formation">
-      <div class="stage-grid-floor"></div>
-
-      <!-- Hàng địch: nhiều quái / nhiều boss -->
-      <div class="battle-head p5-slash">
-        <h2>QUÂN ĐOÀN ĐỊCH // TARGET LOCK</h2>
-        <span id="enemyAliveTag" class="badge p5-badge-alert">0 địch</span>
-      </div>
-
-      <div id="enemyLine" class="enemy-line" aria-label="Hàng địch"></div>
-
-      <!-- Story của màn: chương / tiêu đề / thoại mở màn -->
-      <div id="storyPanel" class="story-panel" hidden>
-        <div class="story-chapter" id="storyChapter"></div>
-        <div class="story-title" id="storyTitle"></div>
-        <p class="story-brief" id="storyBrief"></p>
-        <ul class="story-lines" id="storyLines"></ul>
-      </div>
-
-      <!-- Đội hình người chơi: Persona 5 / HSR Stylized Construct Cards -->
-      <div class="panel-head sub p5-slash">
-        <h2>ĐỘI HÌNH CONSTRUCT // SQUAD RESONANCE</h2>
-        <span class="hint p5-hint">Phím 1..4 = Kỹ năng · NumPad 1..4 = Bộc phá Ultimate</span>
-      </div>
-      <div id="team" class="team"></div>
     </div>
 
     <!-- ------------------------------------------------------------------
@@ -155,6 +176,6 @@
   </div>
 </div>
 
-<script type="module" src="m3ui.js?v=20261112_2155"></script>
+<script type="module" src="m3ui.js?v=20261112_2245"></script>
 </body>
 </html>

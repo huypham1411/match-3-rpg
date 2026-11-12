@@ -12,6 +12,7 @@
 import createModule from './dist/m3core.mjs';
 import { spriteKeyForTier, drawSprite, ANIM_FRAMES } from './pixelart.js';
 import { ENEMY_SET, STAGE_LINEUPS, TIER_NAMES, validateEnemySet } from './enemies.js';
+import { initBattle3D, trigger3DAttack, trigger3DSkill, trigger3DUltimate, trigger3DEnemyHit, trigger3DEnemyAttack } from './battle3d.js';
 
 // Truyền chuỗi từ JS vào lõi C++: cấp phát trong bộ nhớ WASM rồi giải phóng sau khi gọi.
 function withCString(text, fn) {
@@ -243,16 +244,16 @@ async function playEvent(e) {
           poseSprite(findSprite(actingCard.querySelector('.member-art')), 'attack', 360, 0.3);
           setTimeout(() => actingCard.classList.remove('acting'), 420);
         }
+        trigger3DAttack(actingIdx, 0);
       }
-      setCameraMode('cam-action', 380);
       return 180;
     }
 
     case EV.PartyAttack: {
-      // Đòn đánh thường: nhân vật lao lên, camera zoom cận cảnh, vệt chém bay sang địch.
+      // Đòn đánh thường: nhân vật lao lên, camera 3D zoom cận cảnh, vệt chém bay sang địch.
       const card = memberCard(e.member);
       const target = e.enemy >= 0 ? enemyCard(e.enemy) : null;
-      setCameraMode('cam-action', 420);
+      trigger3DAttack(e.member, e.enemy);
       if (card) {
         card.classList.add('acting');
         card.classList.add('lunge-right');
@@ -266,16 +267,15 @@ async function playEvent(e) {
         spawnProjectile(card, target, 'slash', 300);
         setTimeout(() => {
           impactSpark(target, 'hit');
-          // Camera nảy nhẹ về phía địch khi trúng đòn
-          setCameraMode('cam-enemy-pov', 200);
+          trigger3DEnemyHit(false);
         }, 280);
       }
       return 260;
     }
 
     case EV.Skill: {
-      // Kỹ năng: Camera cận cảnh + vòng sáng dưới chân + tên chiêu + luồng năng lượng bay tới địch.
-      setCameraMode('cam-action', 520);
+      // Kỹ năng: Camera 3D cận cảnh + vòng sáng ma thuật + tên chiêu + tia năng lượng.
+      trigger3DSkill(e.member, e.enemy);
       const card = memberCard(e.member);
       if (card) {
         card.classList.add('acting');
@@ -291,14 +291,17 @@ async function playEvent(e) {
       const target = e.enemy >= 0 ? enemyCard(e.enemy) : null;
       if (target) {
         spawnProjectile(card, target, 'bolt', 340);
-        setTimeout(() => impactSpark(target, 'magic'), 340);
+        setTimeout(() => {
+          impactSpark(target, 'magic');
+          trigger3DEnemyHit(true);
+        }, 340);
       }
       return 430;
     }
 
     case EV.Ultimate: {
-      // Ultimate: Camera góc nghiêng Persona 5 All-Out + cắt cảnh + 3 nhát liên tiếp lên địch.
-      setCameraMode('cam-all-out', 960);
+      // Ultimate: Camera 3D bộc phá + cắt cảnh + chuỗi chém 3 nhát liên tiếp.
+      trigger3DUltimate(e.member, e.enemy);
       const card = memberCard(e.member);
       const target = e.enemy >= 0 ? enemyCard(e.enemy) : null;
       const who = (M._m3_member_name && e.member >= 0) ? M.UTF8ToString(M._m3_member_name(e.member)) : '';
@@ -314,8 +317,8 @@ async function playEvent(e) {
         }, 900);
       }
 
-      cutIn(e.text || 'ALL-OUT ATTACK // BỘC PHÁ', who, 900);
-      bigCallout(e.value > 1 ? `FULL BURST x${e.value}` : 'PRISM OVERDRIVE', 'ultimate');
+      cutIn(e.text || 'ULTIMATE BURST // BỘC PHÁ', who, 900);
+      bigCallout(e.value > 1 ? `FULL BURST x${e.value}` : 'ULTIMATE', 'ultimate');
       screenShake(e.value > 1 ? 2 : 1);
 
       if (target) {
@@ -323,6 +326,7 @@ async function playEvent(e) {
           setTimeout(() => {
             spawnProjectile(card, target, 'bolt', 220);
             impactSpark(target, 'magic');
+            trigger3DEnemyHit(true);
           }, 260 + i * 150);
         }
       }
@@ -330,6 +334,7 @@ async function playEvent(e) {
     }
 
     case EV.EnemyDamaged: {
+      trigger3DEnemyHit(e.big);
       const card = enemyCard(e.enemy);
       if (card) {
         card.classList.add('hit');
@@ -364,8 +369,8 @@ async function playEvent(e) {
     }
 
     case EV.EnemyAction: {
-      // Địch tấn công: Camera chuyển sang góc nhìn địch (Enemy POV) như Pokemon
-      setCameraMode('cam-enemy-pov', 500);
+      // Địch tấn công: Camera 3D chuyển sang góc nhìn địch (Enemy POV) như Pokémon
+      trigger3DEnemyAttack();
       const card = enemyCard(e.enemy);
       if (card) {
         card.classList.add('lunge-left');
@@ -508,6 +513,7 @@ async function boot() {
   buildEnemySetPanel();
 
   M._m3_init(0, 20261008);
+  initBattle3D();
   render();
 
   $('engineText').textContent = 'WebAssembly: đã nạp lõi luật chơi (' + width + 'x' + height + ')';
@@ -1054,72 +1060,33 @@ function getActiveEffects() {
 }
 
 // ---------------------------------------------------------------------------
-// Vẽ thanh thứ tự hành động (Honkai: Star Rail Action Order Bar)
+// Cập nhật thanh Boss & Mục tiêu chuẩn Honkai: Star Rail (Toughness + HP)
 // ---------------------------------------------------------------------------
-function renderTimeline() {
-  const track = $('timelineTrack');
-  if (!track || !M) return;
-  track.innerHTML = '';
+function updateHsrBossHeader() {
+  const nameEl = $('hsrBossName');
+  if (!nameEl || !M) return;
+  const count = M._m3_enemy_count ? M._m3_enemy_count() : 1;
+  const target = M._m3_target_enemy ? M._m3_target_enemy() : 0;
+  if (target >= 0 && target < count) {
+    const eName = M._m3_enemy_name ? M.UTF8ToString(M._m3_enemy_name(target)) : 'SENTINEL UNIT 07';
+    nameEl.textContent = eName.toUpperCase();
+    const hp = M._m3_enemy_hp ? M._m3_enemy_hp(target) : 1000;
+    const maxHp = M._m3_enemy_max_hp ? M._m3_enemy_max_hp(target) : hp;
+    const hpPct = Math.max(0, Math.min(1, maxHp > 0 ? hp / maxHp : 0));
+    const hpFill = $('hsrBossHpFill');
+    if (hpFill) hpFill.style.width = (hpPct * 100).toFixed(1) + '%';
+    const hpText = $('hsrBossHpText');
+    if (hpText) hpText.textContent = `${Math.round(hp).toLocaleString()} / ${Math.round(maxHp).toLocaleString()}`;
 
-  const memberCount = M._m3_member_count ? M._m3_member_count() : 4;
-  const enemyCount = M._m3_enemy_count ? M._m3_enemy_count() : 1;
-  const targetEnemy = M._m3_target_enemy ? M._m3_target_enemy() : 0;
-
-  const participants = [];
-
-  // Đội hình Construct (phe ta)
-  for (let i = 0; i < memberCount; i++) {
-    if (M._m3_member_alive && M._m3_member_alive(i) === 0) continue;
-    const name = M._m3_member_name ? M.UTF8ToString(M._m3_member_name(i)) : `Hero ${i + 1}`;
-    const roleId = M._m3_member_role_id ? M._m3_member_role_id(i) : 0;
-    const ultPct = M._m3_member_ultimate_pct ? M._m3_member_ultimate_pct(i) : 0;
-    participants.push({
-      type: 'hero',
-      index: i,
-      name: name,
-      icon: ['⚔️', '✨', '🌿', '🛡️'][roleId % 4] || '⚔️',
-      speed: 105 - i * 6,
-      isUltReady: ultPct >= 100
-    });
+    // Thanh sức bền trắng (Toughness / Break Stagger) chuẩn HSR
+    const stagger = M._m3_enemy_stagger ? M._m3_enemy_stagger(target) : 1;
+    const staggerMax = M._m3_enemy_stagger_max ? M._m3_enemy_stagger_max(target) : 1;
+    const stgPct = Math.max(0, Math.min(1, staggerMax > 0 ? stagger / staggerMax : 0));
+    const stgFill = $('hsrToughnessFill');
+    if (stgFill) stgFill.style.width = (stgPct * 100).toFixed(1) + '%';
+    const stgText = $('hsrToughnessText');
+    if (stgText) stgText.textContent = stgPct <= 0 ? 'WEAKNESS BROKEN' : `TOUGHNESS ${(stgPct * 100).toFixed(0)}%`;
   }
-
-  // Quân đoàn địch
-  for (let j = 0; j < enemyCount; j++) {
-    if (M._m3_enemy_alive && M._m3_enemy_alive(j) === 0) continue;
-    const eName = M._m3_enemy_name ? M.UTF8ToString(M._m3_enemy_name(j)) : `Địch ${j + 1}`;
-    participants.push({
-      type: 'enemy',
-      index: j,
-      name: eName,
-      icon: j === targetEnemy ? '🎯' : '👾',
-      speed: 95 - j * 8,
-      isTarget: j === targetEnemy
-    });
-  }
-
-  // Sắp xếp thứ tự hành động theo speed
-  participants.sort((a, b) => b.speed - a.speed);
-
-  participants.forEach((p, rank) => {
-    const chip = document.createElement('div');
-    const isActive = rank === 0;
-    chip.className = `timeline-chip ${p.type === 'hero' ? 'is-hero' : 'is-enemy'} ${isActive ? 'is-active' : ''}`;
-    chip.title = `${p.name} (Tốc độ hành động: ${p.speed})`;
-    chip.innerHTML = `
-      <span class="timeline-chip-icon">${p.icon}</span>
-      <span class="timeline-chip-name">${p.name}</span>
-      <span class="timeline-chip-speed">SPD ${p.speed}</span>
-    `;
-    if (p.type === 'enemy') {
-      chip.addEventListener('click', () => {
-        if (M._m3_set_target_enemy) {
-          M._m3_set_target_enemy(p.index);
-          render();
-        }
-      });
-    }
-    track.appendChild(chip);
-  });
 }
 
 // ---------------------------------------------------------------------------
@@ -1128,7 +1095,7 @@ function renderTimeline() {
 function render() {
   const effects = getActiveEffects();
   renderBoard();
-  renderTimeline();
+  updateHsrBossHeader();
   renderEnemies(effects.enemyBuffs);
   renderTeam(effects.memberBuffs);
   renderStory();
@@ -1400,7 +1367,14 @@ function renderTeam(memberBuffs) {
       const card = document.createElement('div');
       card.className = 'member';
       card.innerHTML = `
-        <div class="member-art"></div>
+        <div class="hsr-avatar-slot" data-ult="${i}" title="Nhấn để bộc phá Ultimate (Num${i + 1})">
+          <svg class="hsr-ring-svg" viewBox="0 0 44 44">
+            <circle class="hsr-ring-bg" cx="22" cy="22" r="19"></circle>
+            <circle class="hsr-ring-fill" cx="22" cy="22" r="19" stroke-dasharray="119.4" stroke-dashoffset="119.4"></circle>
+          </svg>
+          <div class="hsr-avatar-art member-art"></div>
+          <span class="hsr-ult-num">Num${i + 1}</span>
+        </div>
         <div class="member-info">
           <div class="member-head">
             <span class="member-name"></span>
@@ -1408,7 +1382,6 @@ function renderTeam(memberBuffs) {
           </div>
           <div class="member-bars">
             <div class="mini-bar mini-hp"><i></i></div>
-            <div class="mini-bar mini-ult"><i></i></div>
           </div>
           <div class="member-buffs buff-list"></div>
         </div>
@@ -1416,15 +1389,12 @@ function renderTeam(memberBuffs) {
           <button type="button" class="btn btn-skill" data-skill="${i}">
             <span class="label"></span> <kbd>${i + 1}</kbd>
           </button>
-          <button type="button" class="btn btn-ult" data-ult="${i}">
-            <span class="label"></span> <kbd>Num${i + 1}</kbd>
-          </button>
         </div>`;
       card.addEventListener('click', (e) => {
-        if (!e.target.closest('button')) { onMemberCardClick(i); }
+        if (!e.target.closest('button') && !e.target.closest('.hsr-avatar-slot')) { onMemberCardClick(i); }
       });
+      card.querySelector('.hsr-avatar-slot').addEventListener('click', () => act(() => M._m3_use_ultimate(i)));
       card.querySelector('[data-skill]').addEventListener('click', () => onSkillButtonClick(i));
-      card.querySelector('[data-ult]').addEventListener('click', () => act(() => M._m3_use_ultimate(i)));
       teamEl.appendChild(card);
     }
   }
@@ -1451,9 +1421,14 @@ function renderTeam(memberBuffs) {
     card.querySelector('.member-name').textContent = name;
     card.querySelector('.member-role').textContent = role;
     card.querySelector('.mini-hp i').style.width = (Math.max(0, Math.min(1, hp)) * 100).toFixed(1) + '%';
-    card.querySelector('.mini-ult i').style.width = Math.max(0, Math.min(100, ultPct)) + '%';
-    const ultBar = card.querySelector('.mini-ult');
-    if (ultBar) { ultBar.classList.toggle('ult-ready', ultPct >= 100); }
+    
+    // Cập nhật vòng năng lượng tròn chuẩn Honkai: Star Rail (SVG Ultimate Burst Ring)
+    card.classList.toggle('ult-ready', ultPct >= 100);
+    const ringFill = card.querySelector('.hsr-ring-fill');
+    if (ringFill) {
+      const dashoffset = 119.4 * (1 - Math.max(0, Math.min(100, ultPct)) / 100);
+      ringFill.style.strokeDashoffset = dashoffset;
+    }
 
     const buffsEl = card.querySelector('.member-buffs');
     buffsEl.innerHTML = '';
@@ -1465,11 +1440,8 @@ function renderTeam(memberBuffs) {
     });
 
     const skillBtn = card.querySelector('[data-skill]');
-    const ultBtn = card.querySelector('[data-ult]');
     skillBtn.querySelector('.label').textContent = cool > 0 ? `Hồi ${cool}` : M.UTF8ToString(M._m3_member_skill(i));
-    ultBtn.querySelector('.label').textContent = M.UTF8ToString(M._m3_member_ultimate(i));
     skillBtn.disabled = !alive || cool > 0;
-    ultBtn.disabled = !alive || ultPct < 100;
   }
 }
 
