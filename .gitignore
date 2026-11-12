@@ -21,3 +21,6 @@ Saved/
 __pycache__/
 *.code-workspace
 .vscode/compileCommands*
+.env
+*.env
+local_secrets.*
