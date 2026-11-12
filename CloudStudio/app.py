@@ -138,14 +138,16 @@ def run_telegram_bot(token):
         async def status_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
             status_text = (
                 "📋 *TIẾN ĐỘ DỰ ÁN RE:FRAY*\n\n"
-                "🟢 *Phase 1: Game Feel & Block Animation* (Đang triển khai)\n"
-                "  - AnimationStepQueue C++: Đang dựng\n"
-                "  - Host Tests: PASS 738/738 (100%)\n\n"
-                "🟢 *Phase 2: Narrative & Creative Ch.1-3* (Đã có kịch bản khung)\n"
-                "  - Ch.1: Khu Aster & Sentinel 07\n"
-                "  - Ch.2: Unmapped Rim & Warden Aegis\n"
-                "  - Ch.3: Archive Beta & Null Sovereign\n\n"
-                "⚪ *Phase 3: Vertical Slice (Chờ Gate 1 & 2)*\n"
+                "✅ *Phase 1: Game Feel & Block Animation* (HOÀN THÀNH - GATE 1 PASS)\n"
+                "  - AnimationStepQueue C++: Hoàn tất (140ms->100ms->120ms->180ms->160ms)\n"
+                "  - Easing, Squash & Stretch (-15% Z, +8% XY) & Invalid Swap (120ms)\n"
+                "  - Host Tests: PASS 744/744 (100%) trên nhánh `dev/phase-1-game-feel`\n\n"
+                "🟢 *Phase 2: Narrative & Creative Ch.1-3* (ĐANG TRIỂN KHAI)\n"
+                "  - Lore Writer: Kịch bản thoại in-game 3 Chương\n"
+                "  - Environment: Level layout Khu Aster, Unmapped Rim, Data Haven Beta\n"
+                "  - Concept Art: 4 Starter Heroes (Astra, Boran, Elysia, Lin) & 3 Boss\n"
+                "  - 3D Sculpt: Greybox 3D Astra & Boss Sentinel 07\n\n"
+                "⚪ *Phase 3: Vertical Slice (Chờ Gate 2)*\n"
                 "⚪ *Phase 4: Metagame & Roster*\n"
                 "⚪ *Phase 5: Release Build*"
             )
@@ -215,11 +217,11 @@ with gr.Blocks(title="RE:FRAY AI Studio") as demo:
     with gr.Tab("📊 Lộ Trình 5 Phase & Nghiệm Thu"):
         gr.Markdown("""
         ### LỘ TRÌNH DỰ ÁN & TIÊU CHUẨN NGHIỆM THU
-        * **Phase 1: Game Feel & Block Animation**
+        * **Phase 1: Game Feel & Block Animation** [HOÀN THÀNH - GATE 1 PASS]
           * Hàng đợi `AnimationStepQueue` tuần tự trong C++
-          * Easing & Squash & Stretch khi rơi tiếp đất
-          * Host tests C++: **738/738 PASS 100%**
-        * **Phase 2: Narrative & Creative Worldbuilding**
+          * Easing & Squash & Stretch (-15% Z, +8% XY) & Invalid Swap
+          * Host tests C++: **744/744 PASS 100%** trên nhánh `dev/phase-1-game-feel`
+        * **Phase 2: Narrative & Creative Worldbuilding** [ĐANG TRIỂN KHAI]
           * Chương 1: Khu phế liệu Aster & Boss Sentinel Unit 07
           * Chương 2: Trạm kiểm soát Unmapped Rim & Boss Warden Aegis
           * Chương 3: Tàn tích Data Haven Beta & Boss Null Sovereign
