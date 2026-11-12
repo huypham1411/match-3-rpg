@@ -2,23 +2,16 @@
 <!-- ==========================================================================
      index.html - Bản chơi web của Match-3 RPG
      --------------------------------------------------------------------------
-     Bố cục CHIA ĐÔI MÀN (bạn yêu cầu):
+     Bố cục CHIA ĐÔI MÀN:
        - Nửa TRÁI : bàn match-3 (khu vực thao tác nối block)
        - Nửa PHẢI : toàn cảnh trận chiến (hàng địch + đội hình + story + nhật ký)
-
-     Nhân vật / quái / boss được vẽ bằng PIXEL ART (Web/pixelart.js), không dùng
-     asset animation. Trang này KHÔNG chứa luật chơi: luật nằm ở Source/Match3Core
-     đã biên dịch sang WebAssembly (dist/m3core.mjs + .wasm) nên web và Unreal dùng
-     chung một nguồn luật.
      ========================================================================== -->
 <html lang="vi">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>RE:FRAY — Match-3 RPG (Cyberpunk 3D Edition)</title>
+<title>Match-3 RPG</title>
 <link rel="stylesheet" href="style.css" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
 
@@ -31,59 +24,17 @@
     </div>
   </div>
   <div class="topbar-actions">
-    <div class="mode-switcher">
-      <button id="btnModeOverworld" class="btn btn-mode active" type="button">🗺️ Phiêu Lưu (Chibi Overworld)</button>
-      <button id="btnModeBattle" class="btn btn-mode" type="button">⚔️ Giao Chiến (Match-3 Battle)</button>
-    </div>
     <label class="select-wrap">
       <span>Màn</span>
       <select id="stageSelect"></select>
     </label>
     <button id="btnHint" class="btn btn-ghost" type="button">Gợi ý nước đi <kbd>H</kbd></button>
     <button id="btnRestart" class="btn btn-ghost" type="button">Chơi lại <kbd>R</kbd></button>
-    <a href="showcase.html" class="btn btn-ghost" style="text-decoration:none; display:inline-flex; align-items:center; gap:0.4rem; border:1px solid #00d2ff; color:#00d2ff;">🎨 3D & Lore Showcase</a>
   </div>
 </header>
 
-<!-- ===================== CHẾ ĐỘ 1: THÁM HIỂM (OVERWORLD CHIBI) ===================== -->
-<section id="overworldView" class="overworld-view">
-  <div id="overworldContainer" class="overworld-container">
-    <canvas id="overworldCanvas"></canvas>
-    
-    <div class="ow-hud">
-      <div class="ow-top-left">
-        <div class="ow-map-badge">
-          <span class="ow-radar-dot"></span>
-          <div>
-            <strong class="ow-area-title">Khu Định Cư Aster &bull; Vành Đai Sector 7</strong>
-            <div class="ow-area-sub">Chế độ: Thám hiểm Chibi tự do</div>
-          </div>
-        </div>
-        <div class="ow-quest-box">
-          <div class="ow-quest-title">📜 Nhiệm vụ chính</div>
-          <div class="ow-quest-desc">Gặp Boran & Mở rương tiếp tế trước khi chạm trán Sentinel 07</div>
-        </div>
-      </div>
-
-      <div class="ow-top-right">
-        <div class="ow-currency">
-          <span>💎 Aether: 1,250</span>
-          <span>⚙️ Hợp kim: 800</span>
-        </div>
-      </div>
-
-      <div class="ow-controls-hint">
-        ⌨️ Dùng <strong>W A S D</strong> hoặc <strong>Phím Mũi Tên</strong> để chạy &bull; Phím <strong>E</strong> để mở rương/nói chuyện &bull; Chạm vào <strong>Sentinel 07</strong> để vào trận giao chiến!
-      </div>
-
-      <div id="overworldPrompt" class="ow-prompt"></div>
-      <div id="encounterFlash" class="encounter-flash"></div>
-    </div>
-  </div>
-</section>
-
-<!-- ===================== CHẾ ĐỘ 2: GIAO CHIẾN (COMBAT BATTLE + MATCH-3) ===================== -->
-<main id="battleSplit" class="split" style="display: none;">
+<!-- ===================== BỐ CỤC CHIA ĐÔI MÀN ===================== -->
+<main class="split">
 
   <!-- ============ NỬA TRÁI: BÀN MATCH-3 ============ -->
   <section class="half board-half">
@@ -115,17 +66,8 @@
 
     <!-- Hàng địch: nhiều quái / nhiều boss, mỗi con một thẻ pixel art -->
     <div class="battle-head">
-      <h2>Toàn cảnh trận chiến (3D Stage & Chiến Trường)</h2>
+      <h2>Toàn cảnh trận chiến</h2>
       <span id="enemyAliveTag" class="badge">0 địch</span>
-    </div>
-
-    <!-- 3D BATTLEFIELD DIORAMA STAGE (Three.js WebGL) -->
-    <div id="battle3dStage" class="battle-3d-stage">
-      <canvas id="battleCanvas3d"></canvas>
-      <div class="stage-3d-overlay">
-        <div class="stage-tag">⚔️ 3D DIORAMA STAGE &bull; HEROES vs SENTINEL 07</div>
-        <div class="stage-hint">🖱️ Kéo để xoay 3D &bull; Lăn chuột zoom</div>
-      </div>
     </div>
 
     <div id="enemyLine" class="enemy-line" aria-label="Hàng địch"></div>
