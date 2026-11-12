@@ -377,14 +377,19 @@ async function playEventTimeline() {
 
   playing = true;
   document.body.classList.add('playing');
-  for (const e of events) {
-    const wait = await playEvent(e);
+  try {
+    for (const e of events) {
+      const wait = await playEvent(e);
+      render();
+      await sleep(wait);
+    }
+  } catch (err) {
+    console.error("Lỗi khi phát animation timeline:", err);
+  } finally {
+    playing = false;
+    document.body.classList.remove('playing');
     render();
-    await sleep(wait);
   }
-  playing = false;
-  document.body.classList.remove('playing');
-  render();
 }
 
 // ---------------------------------------------------------------------------
@@ -549,6 +554,29 @@ function cycleTarget() {
 // ---------------------------------------------------------------------------
 // Hành động trên bàn nối
 // ---------------------------------------------------------------------------
+function triggerSwapBump(fromX, fromY, toX, toY) {
+  const cellA = boardEl.children[fromY * width + fromX];
+  const cellB = boardEl.children[toY * width + toX];
+  const dx = toX - fromX;
+  const dy = toY - fromY;
+  if (cellA) {
+    cellA.style.setProperty('--swap-x', dx);
+    cellA.style.setProperty('--swap-y', dy);
+    cellA.classList.remove('swap-bump');
+    void cellA.offsetWidth;
+    cellA.classList.add('swap-bump');
+    setTimeout(() => cellA.classList.remove('swap-bump'), 320);
+  }
+  if (cellB) {
+    cellB.style.setProperty('--swap-x', -dx);
+    cellB.style.setProperty('--swap-y', -dy);
+    cellB.classList.remove('swap-bump');
+    void cellB.offsetWidth;
+    cellB.classList.add('swap-bump');
+    setTimeout(() => cellB.classList.remove('swap-bump'), 320);
+  }
+}
+
 function onCellClick(x, y) {
   if (playing) { return; }               // đang diễn hoạ -> chờ xem hết cảnh đã
   if (M._m3_finished()) { return; }
@@ -569,6 +597,7 @@ function onCellClick(x, y) {
     return;
   }
 
+  // Click lại vào chính ô đang chọn -> Hủy chọn
   if (selected.x === x && selected.y === y) {
     selected = null;
     render();
@@ -576,16 +605,46 @@ function onCellClick(x, y) {
   }
 
   const fromX = selected.x, fromY = selected.y;
+  const dist = Math.abs(fromX - x) + Math.abs(fromY - y);
+
+  // Nếu click vào một ô không kề nhau (khoảng cách > 1):
+  // Chuyển vùng chọn sang ô mới thay vì báo lỗi vô lý!
+  if (dist > 1) {
+    selected = { x, y };
+    render();
+    return;
+  }
+
+  // Đổi chỗ 2 ô kề nhau (dist === 1)
+  const kindA = M._m3_cell_kind(fromX, fromY);
+  const kindB = M._m3_cell_kind(x, y);
+  const lockedA = M._m3_cell_locked ? M._m3_cell_locked(fromX, fromY) : 0;
+  const lockedB = M._m3_cell_locked ? M._m3_cell_locked(x, y) : 0;
+
+  if (kindA === KIND_OBSTACLE || kindB === KIND_OBSTACLE) {
+    toast('Khối đá chướng ngại không thể đổi chỗ! Hãy phá bằng combo kề bên hoặc kỹ năng.', true);
+    triggerSwapBump(fromX, fromY, x, y);
+    selected = null;
+    render();
+    return;
+  }
+
+  if (lockedA === 1 || lockedB === 1) {
+    toast('Ô này đang bị phong ấn khoá! Không thể đổi chỗ.', true);
+    triggerSwapBump(fromX, fromY, x, y);
+    selected = null;
+    render();
+    return;
+  }
+
   const before = M._m3_event_seq ? M._m3_event_seq() : -1;
   const ok = M._m3_try_swap(fromX, fromY, x, y);
   selected = null;
+
   if (!ok) {
     const err = M._m3_last_error ? M.UTF8ToString(M._m3_last_error()) : '';
-    toast(err || 'Nước đi không tạo được đường nối nào - thử chỗ khác.', false);
-    const cellA = boardEl.children[fromY * width + fromX];
-    const cellB = boardEl.children[y * width + x];
-    if (cellA) { cellA.classList.add('invalid-swap'); setTimeout(() => cellA.classList.remove('invalid-swap'), 260); }
-    if (cellB) { cellB.classList.add('invalid-swap'); setTimeout(() => cellB.classList.remove('invalid-swap'), 260); }
+    toast(err || 'Đổi chỗ không hợp lệ: Cần tạo thành cụm 3 ô cùng màu kề nhau!', true);
+    triggerSwapBump(fromX, fromY, x, y);
   } else {
     render();
     if (M._m3_event_seq && M._m3_event_seq() > before) { playEventTimeline(); return; }
