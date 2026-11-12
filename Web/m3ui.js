@@ -12,6 +12,7 @@
 import createModule from './dist/m3core.mjs';
 import { spriteKeyForTier, drawSprite, ANIM_FRAMES } from './pixelart.js';
 import { ENEMY_SET, STAGE_LINEUPS, TIER_NAMES, validateEnemySet } from './enemies.js';
+import { initBattle3D, trigger3DAttack, trigger3DSkill, trigger3DUltimate, trigger3DEnemyHit } from './battle3d.js';
 
 // Truyền chuỗi từ JS vào lõi C++: cấp phát trong bộ nhớ WASM rồi giải phóng sau khi gọi.
 function withCString(text, fn) {
@@ -212,6 +213,7 @@ async function playEvent(e) {
 
     case EV.PartyAttack: {
       // Đòn đánh thường: nhân vật lao lên, vệt chém bay sang địch, tia lửa tại đích.
+      try { trigger3DAttack(e.member, e.enemy); } catch (_) {}
       const card = memberCard(e.member);
       const target = e.enemy >= 0 ? enemyCard(e.enemy) : null;
       if (card) {
@@ -228,6 +230,7 @@ async function playEvent(e) {
 
     case EV.Skill: {
       // Kỹ năng: vòng sáng dưới chân + tên chiêu + luồng năng lượng bay tới địch.
+      try { trigger3DSkill(e.member, e.enemy); } catch (_) {}
       const card = memberCard(e.member);
       if (card) {
         card.classList.add('cast-glow');
@@ -246,6 +249,7 @@ async function playEvent(e) {
 
     case EV.Ultimate: {
       // Ultimate: cắt cảnh + tên tuyệt kĩ, rồi 3 nhát liên tiếp lên địch.
+      try { trigger3DUltimate(e.member, e.enemy); } catch (_) {}
       const card = memberCard(e.member);
       const target = e.enemy >= 0 ? enemyCard(e.enemy) : null;
       const who = (M._m3_member_name && e.member >= 0) ? M.UTF8ToString(M._m3_member_name(e.member)) : '';
@@ -273,6 +277,7 @@ async function playEvent(e) {
     }
 
     case EV.EnemyDamaged: {
+      try { trigger3DEnemyHit(e.big); } catch (_) {}
       const card = enemyCard(e.enemy);
       if (card) {
         card.classList.add('hit');
@@ -445,6 +450,7 @@ async function boot() {
 
   M._m3_init(0, 20261008);
   render();
+  try { initBattle3D(); } catch (err) { console.warn("3D initialization skipped:", err); }
 
   $('engineText').textContent = 'WebAssembly: đã nạp lõi luật chơi (' + width + 'x' + height + ')';
   toast('Click 2 ô kề nhau để đổi chỗ. Click thẻ địch để đổi mục tiêu. Phím 1..6 = kỹ năng, NumPad 1..6 = ultimate.', false);
@@ -574,12 +580,17 @@ function onCellClick(x, y) {
     return;
   }
 
+  const fromX = selected.x, fromY = selected.y;
   const before = M._m3_event_seq ? M._m3_event_seq() : -1;
-  const ok = M._m3_try_swap(selected.x, selected.y, x, y);
+  const ok = M._m3_try_swap(fromX, fromY, x, y);
   selected = null;
   if (!ok) {
     const err = M._m3_last_error ? M.UTF8ToString(M._m3_last_error()) : '';
     toast(err || 'Nước đi không tạo được đường nối nào - thử chỗ khác.', false);
+    const cellA = boardEl.children[fromY * width + fromX];
+    const cellB = boardEl.children[y * width + x];
+    if (cellA) { cellA.classList.add('invalid-swap'); setTimeout(() => cellA.classList.remove('invalid-swap'), 260); }
+    if (cellB) { cellB.classList.add('invalid-swap'); setTimeout(() => cellB.classList.remove('invalid-swap'), 260); }
   } else {
     render();
     if (M._m3_event_seq && M._m3_event_seq() > before) { playEventTimeline(); return; }

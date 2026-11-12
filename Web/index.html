@@ -15,8 +15,10 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Match-3 RPG - bản chơi trên web</title>
+<title>RE:FRAY — Match-3 RPG (Cyberpunk 3D Edition)</title>
 <link rel="stylesheet" href="style.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
 
@@ -72,8 +74,17 @@
 
     <!-- Hàng địch: nhiều quái / nhiều boss, mỗi con một thẻ pixel art -->
     <div class="battle-head">
-      <h2>Toàn cảnh trận chiến</h2>
+      <h2>Toàn cảnh trận chiến (3D Stage & Chiến Trường)</h2>
       <span id="enemyAliveTag" class="badge">0 địch</span>
+    </div>
+
+    <!-- 3D BATTLEFIELD DIORAMA STAGE (Three.js WebGL) -->
+    <div id="battle3dStage" class="battle-3d-stage">
+      <canvas id="battleCanvas3d"></canvas>
+      <div class="stage-3d-overlay">
+        <div class="stage-tag">⚔️ 3D DIORAMA STAGE &bull; HEROES vs SENTINEL 07</div>
+        <div class="stage-hint">🖱️ Kéo để xoay 3D &bull; Lăn chuột zoom</div>
+      </div>
     </div>
 
     <div id="enemyLine" class="enemy-line" aria-label="Hàng địch"></div>
