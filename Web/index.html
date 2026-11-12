@@ -11,7 +11,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>RE:FRAY — Match-3 RPG (PGR Tactical Edition)</title>
-<link rel="stylesheet" href="style.css?v=20261112_2055" />
+<link rel="stylesheet" href="style.css?v=20261112_2155" />
 </head>
 <body>
 
@@ -61,31 +61,45 @@
     <button id="btnEndTurn" class="btn btn-primary btn-wide" type="button">Kết thúc turn <kbd>Tab</kbd></button>
   </section>
 
-  <!-- ============ NỬA PHẢI: TOÀN CẢNH TRẬN CHIẾN ============ -->
+  <!-- ============ NỬA PHẢI: TOÀN CẢNH TRẬN CHIẾN (PERSONA 5 / HSR STYLIZED 3D BATTLE) ============ -->
   <section class="half battle-half">
 
-    <!-- Hàng địch: nhiều quái / nhiều boss, mỗi con một thẻ pixel art -->
-    <div class="battle-head">
-      <h2>Toàn cảnh trận chiến</h2>
-      <span id="enemyAliveTag" class="badge">0 địch</span>
+    <!-- Action Order Timeline (Honkai: Star Rail Style) -->
+    <div class="timeline-container">
+      <div class="timeline-head">
+        <span class="p5-badge">ACTION ORDER</span>
+        <span class="timeline-sub">THỨ TỰ HÀNH ĐỘNG // OCULUS-7 ARCHIVE STREAM</span>
+      </div>
+      <div id="timelineTrack" class="timeline-track" aria-label="Thanh thứ tự hành động"></div>
     </div>
 
-    <div id="enemyLine" class="enemy-line" aria-label="Hàng địch"></div>
+    <!-- 3D BATTLE ARENA (Camera Choreography: Formation / Action / Enemy POV) -->
+    <div id="battleStage" class="battle-stage cam-formation">
+      <div class="stage-grid-floor"></div>
 
-    <!-- Story của màn: chương / tiêu đề / thoại mở màn -->
-    <div id="storyPanel" class="story-panel" hidden>
-      <div class="story-chapter" id="storyChapter"></div>
-      <div class="story-title" id="storyTitle"></div>
-      <p class="story-brief" id="storyBrief"></p>
-      <ul class="story-lines" id="storyLines"></ul>
-    </div>
+      <!-- Hàng địch: nhiều quái / nhiều boss -->
+      <div class="battle-head p5-slash">
+        <h2>QUÂN ĐOÀN ĐỊCH // TARGET LOCK</h2>
+        <span id="enemyAliveTag" class="badge p5-badge-alert">0 địch</span>
+      </div>
 
-    <!-- Đội hình người chơi: pixel art theo class -->
-    <div class="panel-head sub">
-      <h2>Đội hình</h2>
-      <span class="hint">1..6 = kỹ năng · NumPad 1..6 = ultimate</span>
+      <div id="enemyLine" class="enemy-line" aria-label="Hàng địch"></div>
+
+      <!-- Story của màn: chương / tiêu đề / thoại mở màn -->
+      <div id="storyPanel" class="story-panel" hidden>
+        <div class="story-chapter" id="storyChapter"></div>
+        <div class="story-title" id="storyTitle"></div>
+        <p class="story-brief" id="storyBrief"></p>
+        <ul class="story-lines" id="storyLines"></ul>
+      </div>
+
+      <!-- Đội hình người chơi: Persona 5 / HSR Stylized Construct Cards -->
+      <div class="panel-head sub p5-slash">
+        <h2>ĐỘI HÌNH CONSTRUCT // SQUAD RESONANCE</h2>
+        <span class="hint p5-hint">Phím 1..4 = Kỹ năng · NumPad 1..4 = Bộc phá Ultimate</span>
+      </div>
+      <div id="team" class="team"></div>
     </div>
-    <div id="team" class="team"></div>
 
     <!-- ------------------------------------------------------------------
          BỘ ĐỊCH (dữ liệu riêng trong Web/enemies.js)
@@ -141,6 +155,6 @@
   </div>
 </div>
 
-<script type="module" src="m3ui.js?v=20261112_2055"></script>
+<script type="module" src="m3ui.js?v=20261112_2155"></script>
 </body>
 </html>

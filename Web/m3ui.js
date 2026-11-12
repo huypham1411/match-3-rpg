@@ -201,6 +201,24 @@ const EV = {
   LockCells: 11, Scramble: 12, Drain: 13, Skill: 14, Ultimate: 15, Victory: 16, Defeat: 17,
 };
 
+// ---------------------------------------------------------------------------
+// ĐIỀU PHỐI CAMERA 3D LINH HOẠT (CAMERA DIRECTING SYSTEM - CDS)
+// Các mode: cam-formation (toàn cảnh), cam-action (cận cảnh phe ta), cam-enemy-pov (địch/boss)
+// ---------------------------------------------------------------------------
+let camTimer = null;
+function setCameraMode(mode, durationMs = 0) {
+  const stage = $('battleStage');
+  if (!stage) return;
+  if (camTimer) { clearTimeout(camTimer); camTimer = null; }
+  stage.className = 'battle-stage ' + mode;
+  if (durationMs > 0) {
+    camTimer = setTimeout(() => {
+      if (stage) stage.className = 'battle-stage cam-formation';
+      camTimer = null;
+    }, durationMs);
+  }
+}
+
 // Diễn hoạ MỘT nhịp; trả về thời gian chờ trước nhịp kế tiếp.
 async function playEvent(e) {
   switch (e.kind) {
@@ -214,33 +232,60 @@ async function playEvent(e) {
         setTimeout(() => bWrap.classList.remove('match-burst'), 260);
       }
       screenShake(e.big ? 2 : 1);
+
+      // Đồng bộ 1-1: Màu block match-3 kích hoạt nhân vật tương ứng hành động
+      // Màu 1 (Đỏ) = Astra (Striker); Màu 2 (Xanh dương) = Mage; Màu 3 (Xanh lá) = Healer; Màu 4 (Vàng) = Defender
+      if (e.color >= 1 && e.color <= 4) {
+        const actingIdx = e.color - 1;
+        const actingCard = memberCard(actingIdx);
+        if (actingCard) {
+          actingCard.classList.add('acting');
+          poseSprite(findSprite(actingCard.querySelector('.member-art')), 'attack', 360, 0.3);
+          setTimeout(() => actingCard.classList.remove('acting'), 420);
+        }
+      }
+      setCameraMode('cam-action', 380);
       return 180;
     }
 
     case EV.PartyAttack: {
-      // Đòn đánh thường: nhân vật lao lên, vệt chém bay sang địch, tia lửa tại đích.
+      // Đòn đánh thường: nhân vật lao lên, camera zoom cận cảnh, vệt chém bay sang địch.
       const card = memberCard(e.member);
       const target = e.enemy >= 0 ? enemyCard(e.enemy) : null;
+      setCameraMode('cam-action', 420);
       if (card) {
+        card.classList.add('acting');
         card.classList.add('lunge-right');
         poseSprite(findSprite(card.querySelector('.member-art')), 'attack', 320, 0.25);
-        setTimeout(() => card.classList.remove('lunge-right'), 320);
+        setTimeout(() => {
+          card.classList.remove('acting');
+          card.classList.remove('lunge-right');
+        }, 360);
       }
       if (target) {
         spawnProjectile(card, target, 'slash', 300);
-        setTimeout(() => impactSpark(target, 'hit'), 300);
+        setTimeout(() => {
+          impactSpark(target, 'hit');
+          // Camera nảy nhẹ về phía địch khi trúng đòn
+          setCameraMode('cam-enemy-pov', 200);
+        }, 280);
       }
-      return 250;
+      return 260;
     }
 
     case EV.Skill: {
-      // Kỹ năng: vòng sáng dưới chân + tên chiêu + luồng năng lượng bay tới địch.
+      // Kỹ năng: Camera cận cảnh + vòng sáng dưới chân + tên chiêu + luồng năng lượng bay tới địch.
+      setCameraMode('cam-action', 520);
       const card = memberCard(e.member);
       if (card) {
+        card.classList.add('acting');
         card.classList.add('cast-glow');
         poseSprite(findSprite(card.querySelector('.member-art')), 'cast', 520, 0.45);
         castRing(card, 520);
-        setTimeout(() => card.classList.remove('cast-glow'), 520);
+        setTimeout(() => {
+          card.classList.remove('acting');
+          card.classList.remove('cast-glow');
+        }, 520);
       }
       if (e.text) { bigCallout(e.text.toUpperCase(), 'skill'); }
       const target = e.enemy >= 0 ? enemyCard(e.enemy) : null;
@@ -252,20 +297,25 @@ async function playEvent(e) {
     }
 
     case EV.Ultimate: {
-      // Ultimate: cắt cảnh + tên tuyệt kĩ, rồi 3 nhát liên tiếp lên địch.
+      // Ultimate: Camera góc nghiêng Persona 5 All-Out + cắt cảnh + 3 nhát liên tiếp lên địch.
+      setCameraMode('cam-all-out', 960);
       const card = memberCard(e.member);
       const target = e.enemy >= 0 ? enemyCard(e.enemy) : null;
       const who = (M._m3_member_name && e.member >= 0) ? M.UTF8ToString(M._m3_member_name(e.member)) : '';
 
       if (card) {
+        card.classList.add('acting');
         card.classList.add('cast-glow');
         poseSprite(findSprite(card.querySelector('.member-art')), 'cast', 900, 0.6);
         castRing(card, 760);
-        setTimeout(() => card.classList.remove('cast-glow'), 900);
+        setTimeout(() => {
+          card.classList.remove('acting');
+          card.classList.remove('cast-glow');
+        }, 900);
       }
 
-      cutIn(e.text || 'ULTIMATE', who, 900);
-      bigCallout(e.value > 1 ? `FULL BURST x${e.value}` : 'ULTIMATE', 'ultimate');
+      cutIn(e.text || 'ALL-OUT ATTACK // BỘC PHÁ', who, 900);
+      bigCallout(e.value > 1 ? `FULL BURST x${e.value}` : 'PRISM OVERDRIVE', 'ultimate');
       screenShake(e.value > 1 ? 2 : 1);
 
       if (target) {
@@ -314,6 +364,8 @@ async function playEvent(e) {
     }
 
     case EV.EnemyAction: {
+      // Địch tấn công: Camera chuyển sang góc nhìn địch (Enemy POV) như Pokemon
+      setCameraMode('cam-enemy-pov', 500);
       const card = enemyCard(e.enemy);
       if (card) {
         card.classList.add('lunge-left');
@@ -1002,11 +1054,81 @@ function getActiveEffects() {
 }
 
 // ---------------------------------------------------------------------------
+// Vẽ thanh thứ tự hành động (Honkai: Star Rail Action Order Bar)
+// ---------------------------------------------------------------------------
+function renderTimeline() {
+  const track = $('timelineTrack');
+  if (!track || !M) return;
+  track.innerHTML = '';
+
+  const memberCount = M._m3_member_count ? M._m3_member_count() : 4;
+  const enemyCount = M._m3_enemy_count ? M._m3_enemy_count() : 1;
+  const targetEnemy = M._m3_target_enemy ? M._m3_target_enemy() : 0;
+
+  const participants = [];
+
+  // Đội hình Construct (phe ta)
+  for (let i = 0; i < memberCount; i++) {
+    if (M._m3_member_alive && M._m3_member_alive(i) === 0) continue;
+    const name = M._m3_member_name ? M.UTF8ToString(M._m3_member_name(i)) : `Hero ${i + 1}`;
+    const roleId = M._m3_member_role_id ? M._m3_member_role_id(i) : 0;
+    const ultPct = M._m3_member_ultimate_pct ? M._m3_member_ultimate_pct(i) : 0;
+    participants.push({
+      type: 'hero',
+      index: i,
+      name: name,
+      icon: ['⚔️', '✨', '🌿', '🛡️'][roleId % 4] || '⚔️',
+      speed: 105 - i * 6,
+      isUltReady: ultPct >= 100
+    });
+  }
+
+  // Quân đoàn địch
+  for (let j = 0; j < enemyCount; j++) {
+    if (M._m3_enemy_alive && M._m3_enemy_alive(j) === 0) continue;
+    const eName = M._m3_enemy_name ? M.UTF8ToString(M._m3_enemy_name(j)) : `Địch ${j + 1}`;
+    participants.push({
+      type: 'enemy',
+      index: j,
+      name: eName,
+      icon: j === targetEnemy ? '🎯' : '👾',
+      speed: 95 - j * 8,
+      isTarget: j === targetEnemy
+    });
+  }
+
+  // Sắp xếp thứ tự hành động theo speed
+  participants.sort((a, b) => b.speed - a.speed);
+
+  participants.forEach((p, rank) => {
+    const chip = document.createElement('div');
+    const isActive = rank === 0;
+    chip.className = `timeline-chip ${p.type === 'hero' ? 'is-hero' : 'is-enemy'} ${isActive ? 'is-active' : ''}`;
+    chip.title = `${p.name} (Tốc độ hành động: ${p.speed})`;
+    chip.innerHTML = `
+      <span class="timeline-chip-icon">${p.icon}</span>
+      <span class="timeline-chip-name">${p.name}</span>
+      <span class="timeline-chip-speed">SPD ${p.speed}</span>
+    `;
+    if (p.type === 'enemy') {
+      chip.addEventListener('click', () => {
+        if (M._m3_set_target_enemy) {
+          M._m3_set_target_enemy(p.index);
+          render();
+        }
+      });
+    }
+    track.appendChild(chip);
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Vẽ trạng thái
 // ---------------------------------------------------------------------------
 function render() {
   const effects = getActiveEffects();
   renderBoard();
+  renderTimeline();
   renderEnemies(effects.enemyBuffs);
   renderTeam(effects.memberBuffs);
   renderStory();
@@ -1330,6 +1452,8 @@ function renderTeam(memberBuffs) {
     card.querySelector('.member-role').textContent = role;
     card.querySelector('.mini-hp i').style.width = (Math.max(0, Math.min(1, hp)) * 100).toFixed(1) + '%';
     card.querySelector('.mini-ult i').style.width = Math.max(0, Math.min(100, ultPct)) + '%';
+    const ultBar = card.querySelector('.mini-ult');
+    if (ultBar) { ultBar.classList.toggle('ult-ready', ultPct >= 100); }
 
     const buffsEl = card.querySelector('.member-buffs');
     buffsEl.innerHTML = '';

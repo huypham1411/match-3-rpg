@@ -683,27 +683,226 @@ kbd {
 .story-lines { margin: 0; padding-left: 16px; font-size: 12.5px; color: #dbe3f4; }
 .story-lines li { margin-bottom: 2px; }
 
-/* ---------------------------- Đội hình ---------------------------- */
-.team { display: flex; flex-direction: column; gap: 8px; }
+/* ==========================================================================
+   HONKAI: STAR RAIL ACTION ORDER TIMELINE & PERSONA 5 STYLIZED BATTLE HUD
+   ========================================================================== */
+
+.timeline-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, rgba(8, 12, 20, 0.92), rgba(16, 22, 34, 0.85));
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), 0 0 12px rgba(0, 229, 255, 0.08) inset;
+}
+
+.timeline-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timeline-sub {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  letter-spacing: 1.2px;
+}
+
+.timeline-track {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px;
+  scrollbar-width: thin;
+}
+
+.timeline-chip {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(18, 24, 38, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  transform: skewX(-10deg);
+  transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1), border-color 0.2s ease, box-shadow 0.25s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.timeline-chip > * {
+  transform: skewX(10deg); /* Counter-skew text/icons for readability */
+}
+
+.timeline-chip.is-hero {
+  border-left: 3px solid #00e5ff;
+}
+
+.timeline-chip.is-enemy {
+  border-left: 3px solid #ff1744;
+}
+
+.timeline-chip.is-active {
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.25), rgba(255, 23, 68, 0.18));
+  border-color: #00e5ff;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
+  transform: skewX(-10deg) scale(1.08);
+}
+
+.timeline-chip-icon {
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.timeline-chip-name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.timeline-chip-speed {
+  font-size: 9.5px;
+  font-family: var(--font-mono);
+  color: #ffd700;
+  padding: 1px 4px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 3px;
+}
+
+/* ==========================================================================
+   DYNAMIC 3D BATTLE ARENA (CAMERA CHOREOGRAPHY: FORMATION / ACTION / ENEMY POV)
+   ========================================================================== */
+
+.battle-stage {
+  perspective: 1200px;
+  transform-style: preserve-3d;
+  transition: transform 0.48s cubic-bezier(0.22, 1, 0.36, 1), filter 0.35s ease;
+  position: relative;
+  border-radius: var(--radius);
+  padding: 12px;
+  background: radial-gradient(circle at 50% 20%, rgba(20, 28, 48, 0.4), rgba(7, 10, 16, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  overflow: visible;
+}
+
+.stage-grid-floor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: 
+    linear-gradient(rgba(0, 229, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 1) 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 1) 30%, transparent 80%);
+}
+
+/* 1. MẶC ĐỊNH: FORMATION VIEW (Top-down Isometric toàn cảnh đội hình & địch) */
+.battle-stage.cam-formation {
+  transform: perspective(1200px) rotateX(6deg) rotateY(-3deg) translateZ(0);
+}
+
+/* 2. CẬN CẢNH: ACTION ZOOM-IN (Góc thấp kịch tính khi phe ta xuất chiêu) */
+.battle-stage.cam-action {
+  transform: perspective(1200px) rotateX(2deg) rotateY(-12deg) scale(1.05) translateY(10px) translateZ(25px);
+  filter: contrast(1.1) brightness(1.08);
+}
+
+/* 3. GÓC NHÌN ĐỊCH: ENEMY POV (Quay ra sau quái / Boss ra đòn như Pokemon) */
+.battle-stage.cam-enemy-pov {
+  transform: perspective(1200px) rotateX(12deg) rotateY(14deg) scale(1.06) translateY(-12px) translateZ(20px);
+  filter: drop-shadow(0 0 20px rgba(255, 23, 68, 0.2));
+}
+
+/* 4. ULTIMATE / ALL-OUT ATTACK (Góc nghiêng truyện tranh Persona 5) */
+.battle-stage.cam-all-out {
+  transform: perspective(1200px) rotateZ(-3deg) scale(1.06) translateZ(35px);
+  filter: contrast(1.22) saturate(1.25) brightness(1.12);
+}
+
+/* Persona 5 Badges & Headers */
+.p5-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  background: #ff1744;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 1px;
+  transform: skewX(-12deg);
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(255, 23, 68, 0.6);
+}
+
+.p5-badge-alert {
+  background: linear-gradient(135deg, #ff1744, #d50000);
+}
+
+.p5-slash {
+  position: relative;
+  border-left: 3.5px solid #ff1744;
+  padding-left: 8px;
+}
+
+.p5-hint {
+  font-size: 10.5px;
+  color: #00e5ff;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   PERSONA 5 / HSR STYLIZED SQUAD CARDS & COMBAT FEEDBACK
+   ========================================================================== */
 
 .member {
   display: flex;
   align-items: center;
   gap: 10px;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 4px solid var(--accent);
   border-radius: var(--radius-sm);
-  background: var(--panel-2);
-  padding: 8px;
-  transition: border-color .16s ease, opacity .2s ease;
+  background: linear-gradient(90deg, rgba(16, 22, 34, 0.95), rgba(12, 16, 26, 0.9));
+  padding: 8px 10px;
+  transform: skewX(-4deg);
+  transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1), border-color 0.2s ease, box-shadow 0.25s ease;
 }
+
+.member > * {
+  transform: skewX(4deg); /* Counter-skew nội dung bên trong */
+}
+
+.member:hover {
+  transform: skewX(-4deg) translateY(-2px);
+  border-color: rgba(0, 229, 255, 0.4);
+}
+
+/* Khi nhân vật đang hành động theo màu block match-3 */
+.member.acting {
+  border-color: #00e5ff !important;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.8), 0 0 10px rgba(255, 255, 255, 0.5) inset;
+  transform: skewX(-4deg) scale(1.04) translateX(8px);
+  background: linear-gradient(90deg, rgba(0, 229, 255, 0.22), rgba(16, 22, 34, 0.95));
+}
+
 .member.down { opacity: .45; filter: grayscale(.7); }
 .member.targeted-by-enemy { border-color: var(--danger); box-shadow: 0 0 0 1px rgba(239, 68, 68, .5) inset; }
 
 .member-art { flex: 0 0 auto; display: flex; align-items: center; }
 .member-info { flex: 1 1 auto; min-width: 0; }
 .member-head { display: flex; align-items: baseline; gap: 8px; }
-.member-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.member-role { font-size: 10.5px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .4px; }
+.member-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.3px; }
+.member-role { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .6px; font-weight: 600; }
 
 .member-bars { margin-top: 5px; display: flex; flex-direction: column; gap: 3px; }
 .mini-bar { height: 7px; border-radius: 999px; background: #0a0d15; border: 1px solid var(--line); overflow: hidden; }
@@ -711,8 +910,35 @@ kbd {
 .mini-hp i { background: linear-gradient(90deg, #22c55e, #15803d); }
 .mini-ult i { background: linear-gradient(90deg, #a78bfa, #6d28d9); }
 
+/* Bộc phá Ultimate sẵn sàng (HSR Burst Ready Glow) */
+.mini-ult.ult-ready {
+  box-shadow: 0 0 8px #a78bfa;
+}
+.mini-ult.ult-ready i {
+  background: linear-gradient(90deg, #e0aaff, #c77dff, #7b2cbf);
+  animation: ultPulse 1.2s infinite alternate;
+}
+
+@keyframes ultPulse {
+  0% { filter: brightness(1.0); }
+  100% { filter: brightness(1.45) drop-shadow(0 0 4px #c77dff); }
+}
+
 .member-actions { flex: 0 0 auto; display: flex; flex-direction: column; gap: 5px; }
-.member-actions .btn { padding: 5px 8px; font-size: 11px; max-width: 190px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.member-actions .btn {
+  padding: 5px 8px;
+  font-size: 11px;
+  max-width: 190px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transform: skewX(-8deg);
+  border-radius: 3px;
+  font-weight: 600;
+}
+.member-actions .btn > * {
+  transform: skewX(8deg);
+}
 
 /* ---------------------------- Buff / Debuff ---------------------------- */
 .buff-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
