@@ -201,6 +201,12 @@ static void Test_Match3AndTriggerCount()
 
 	CHECK(Outcome.bMoveAccepted);
 	CHECK(Outcome.Steps.Num() >= 1);
+	CHECK(Outcome.SwappedA.X == 4 && Outcome.SwappedA.Y == 3);
+	CHECK(Outcome.SwappedB.X == 4 && Outcome.SwappedB.Y == 4);
+	if (Outcome.Steps.Num() >= 1)
+	{
+		CHECK(Outcome.Steps[0].BoardSnapshot.Num() == Board.GetCellCount());
+	}
 
 	const FTriggerEvent* Red = Outcome.FindTrigger(EBlockColor::Red);
 	CHECK(Red != nullptr);
@@ -316,6 +322,12 @@ static void Test_Line4CreatesStripedBlock()
 
 	CHECK(Outcome.bMoveAccepted);
 	CHECK(Outcome.Steps.Num() >= 1);
+	CHECK(Outcome.SwappedA.X == 4 && Outcome.SwappedA.Y == 3);
+	CHECK(Outcome.SwappedB.X == 4 && Outcome.SwappedB.Y == 4);
+	if (Outcome.Steps.Num() >= 1)
+	{
+		CHECK(Outcome.Steps[0].BoardSnapshot.Num() == Board.GetCellCount());
+	}
 	if (Outcome.Steps.Num() >= 1)
 	{
 		const FResolveStepResult& Step = Outcome.Steps[0];

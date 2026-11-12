@@ -31,15 +31,15 @@ Tài liệu này được lập căn cứ theo hiện trạng mã nguồn `D:\pr
   * *Game Developer*: Tách `Sim.TrySwap()` thành hàng đợi bước (`AnimationStepQueue`), đồng bộ `FResolveOutcome.Steps` với Actor.
   * *Animator*: Thiết kế VFX nổ nguyên tố (Đỏ, Lam, Lục, Vàng, Tím) và hiệu ứng khối đặc biệt (Line/Bomb/Square/SwapAll).
 * **Tiêu chuẩn nghiệm thu (Gate Checklist 1)**:
-  1. [ ] **Step-by-Step Playback**: Người chơi nhìn thấy rõ ràng từng pha: Trượt đổi chỗ (140ms) -> Nhấp nháy match (100ms) -> Nổ vỡ ô (120ms) -> Rơi trọng lực có nảy (180ms) -> Refill từ trên (160ms) -> Cascade kế tiếp.
-  2. [ ] **Invalid Swap Feedback**: Khi đổi 2 ô không tạo match, hai ô trượt sang nhau rồi tự động đàn hồi trượt ngược về (Slide Back & Shake nhẹ) trong 120ms, không trừ số lượt.
-  3. [ ] **Squash & Stretch**: Khối chạm đáy nén nhẹ trục Z (-15%) và bè ngang (+8%) trong 40ms trước khi về kích thước chuẩn.
-  4. [ ] **Special Block Feedback**:
-     * *LineRow / LineCol*: Tia laser quét ngang/dọc dọn sạch hàng.
-     * *AreaBomb*: Vòng xung kích 3x3 gây rung camera (4px trong 80ms).
-     * *SquareBreaker*: Vòng sóng âm nứt vỡ các vật cản xung quanh.
-     * *SwapAll*: Luồng sét phóng tới tất cả các khối cùng màu trên toàn bàn cờ.
-  5. [ ] **Regression Test**: 738/738 host tests trong `Tools/host_tests/` tiếp tục PASS 100%.
+  1. [x] **Step-by-Step Playback**: Người chơi nhìn thấy rõ ràng từng pha: Trượt đổi chỗ (140ms) -> Nhấp nháy match (100ms) -> Nổ vỡ ô (120ms) -> Rơi trọng lực có nảy (180ms) -> Refill từ trên (160ms) -> Cascade kế tiếp.
+  2. [x] **Invalid Swap Feedback**: Khi đổi 2 ô không tạo match, hai ô trượt sang nhau rồi tự động đàn hồi trượt ngược về (Slide Back & Shake nhẹ) trong 120ms, không trừ số lượt.
+  3. [x] **Squash & Stretch**: Khối chạm đáy nén nhẹ trục Z (-15%) và bè ngang (+8%) trong 40ms trước khi về kích thước chuẩn.
+  4. [x] **Special Block Feedback**:
+     * *LineRow / LineCol*: Tia laser quét ngang/dọc dọn sạch hàng (Laser Blue pulse).
+     * *AreaBomb*: Vòng xung kích 3x3 gây rung camera (4px trong 80ms) + Fiery Orange shockwave.
+     * *SquareBreaker*: Vòng sóng âm nứt vỡ các vật cản xung quanh (Acoustic Cyan pulse).
+     * *SwapAll*: Luồng sét phóng tới tất cả các khối cùng màu trên toàn bàn cờ (Electric Gold pulse).
+  5. [x] **Regression Test**: 744/744 host tests trong `Tools/host_tests/` tiếp tục PASS 100%.
 
 ---
 

@@ -41,12 +41,43 @@ if exist "C:\mingw64\bin\g++.exe" (
   goto :have_compiler
 )
 
+rem Thu tim MSVC thong qua vswhere
+set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+if exist "%VSWHERE%" (
+  for /f "usebackq tokens=*" %%i in (`"%VSWHERE%" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (
+    if exist "%%i\VC\Auxiliary\Build\vcvars64.bat" (
+      call "%%i\VC\Auxiliary\Build\vcvars64.bat" >nul 2>nul
+      goto :compile_msvc
+    )
+  )
+)
+
 echo.
-echo Khong tim thay trinh bien dich C++ (g++ hoac clang++).
-echo Cai MinGW-w64 / w64devkit, hoac dat bien MRPG_CXX tro toi g++.exe.
+echo Khong tim thay trinh bien dich C++ (g++, clang++, hoac MSVC).
+echo Cai MinGW-w64 / w64devkit / Visual Studio C++, hoac dat bien MRPG_CXX tro toi g++.exe.
 echo.
 popd
 exit /b 127
+
+:compile_msvc
+echo Trinh bien dich: MSVC cl.exe
+cl /nologo /std:c++17 /O2 /EHsc /W3 /DMATCHRPG_STANDALONE_CORE ^
+  /I"Source\MatchRPG\Public" /I"Source\MatchRPG\Private" ^
+  "Tools\host_tests\main.cpp" ^
+  "Source\MatchRPG\Private\Core\MatchTypes.cpp" ^
+  "Source\MatchRPG\Private\Core\MatchBoardCore.cpp" ^
+  "Source\MatchRPG\Private\Core\MatchFinderCore.cpp" ^
+  "Source\MatchRPG\Private\Core\CombatMathCore.cpp" ^
+  "Source\MatchRPG\Private\Core\ContentCore.cpp" ^
+  "Source\MatchRPG\Private\Core\BattleSimCore.cpp" ^
+  /Fe:"%OUT_DIR%\matchrpg_tests.exe" /Fo:"%OUT_DIR%\\"
+if errorlevel 1 (
+  echo.
+  echo Bien dich THAT BAI - xem loi o tren.
+  popd
+  exit /b 1
+)
+goto :run_tests
 
 :have_compiler
 echo Trinh bien dich: %CXX%
@@ -70,6 +101,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
+:run_tests
 if not "%MRPG_BUILD_ONLY%"=="" (
   echo Da build xong: %OUT_DIR%\matchrpg_tests.exe
   popd

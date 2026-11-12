@@ -51,6 +51,8 @@ struct FResolveStepResult
 	bool bSwapAllDetonation = false;
 	/** Which obstacle types were removed this step, for objective bookkeeping. */
 	TArray<EObstacleType> DestroyedObstacleTypes;
+	/** Board snapshot after this step has resolved its clear, gravity and refill. */
+	TArray<FBlockCell> BoardSnapshot;
 };
 
 /** Accumulated result of a full player move, including all cascades. */
@@ -58,6 +60,8 @@ struct FResolveOutcome
 {
 	TArray<FResolveStepResult> Steps;
 	bool bMoveAccepted = false;
+	FIntPoint SwappedA = FIntPoint(-1, -1);
+	FIntPoint SwappedB = FIntPoint(-1, -1);
 	int32 TotalBlocksCleared = 0;
 	int32 ObstaclesDestroyed = 0;
 	int32 SpecialsCreated = 0;

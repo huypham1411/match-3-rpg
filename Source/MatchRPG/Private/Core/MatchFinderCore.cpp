@@ -679,6 +679,7 @@ FResolveStepResult FMatchResolver::ProcessStep(FMatchBoardCore& Board, const FEf
 	Board.ApplyGravity();
 	Board.Refill();
 
+	Step.BoardSnapshot = Board.GetCells();
 	Step.TotalBlocksCleared = Step.ClearedCells.Num();
 	return Step;
 }
@@ -725,9 +726,13 @@ FResolveOutcome FMatchResolver::ResolveSwap(FMatchBoardCore& Board, const FIntPo
 	if (!Board.TrySwapAndValidate(A, B))
 	{
 		Outcome.bMoveAccepted = false;
+		Outcome.SwappedA = A;
+		Outcome.SwappedB = B;
 		return Outcome;
 	}
 	Outcome.bMoveAccepted = true;
+	Outcome.SwappedA = A;
+	Outcome.SwappedB = B;
 
 	const int32 MaxSteps = FMath::Max(1, Board.GetRules().MaxCascadeDepth);
 	for (int32 StepIndex = 0; StepIndex < MaxSteps; ++StepIndex)
