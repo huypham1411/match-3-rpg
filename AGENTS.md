@@ -1,75 +1,62 @@
-# AGENTS.md — quy ước làm việc trong repo Match-3 RPG
+# AGENTS.md — quy ước làm việc trong MatchRPG
 
-## Ngôn ngữ & phong cách
+## Bố cục
 
-- Comment và tài liệu viết bằng **tiếng Việt**, giữ thuật ngữ kỹ thuật gốc khi cần
-  (`match-3`, `stagger`, `cascade`, `ultimate`).
-- Đặt tên biến/hàm/lớp bằng **tiếng Anh**; tiền tố `M3` cho mọi thứ thuộc game này.
-- Mỗi file mở đầu bằng khối comment `// ===...` nói rõ file làm gì và nên đọc từ đâu.
+- `Source/MatchRPG/Public/Core/` + `Source/MatchRPG/Private/Core/` — **lõi luật chơi**, không
+  tham chiếu `UObject`/`AActor`/`CoreMinimal.h` trực tiếp; chỉ đi qua `Core/MatchCoreCompat.h`.
+- `Source/MatchRPG/Public|Private/{Blocks,Board,Content,Game,Battle}` — tầng Unreal: hiển thị,
+  input, DataAsset.
+- `Tools/host_tests/` — bộ test biên dịch lại chính các file lõi ở chế độ standalone.
+- `Tools/playground/` — chương trình gõ lệnh để học và gỡ lỗi luật chơi, không cần Unreal.
+- `Docs/` — hướng dẫn học, thiết kế, và cách thay asset.
+- `.vscode/` — task build + cấu hình gỡ lỗi từng bước cho phần lõi.
 
-## Ranh giới quan trọng: lõi vs Unreal
+## Quy tắc bắt buộc
 
-| Nơi | Được phép | Không được phép |
-|---|---|---|
-| `Source/Match3Core/**` | C++ chuẩn (`std::vector`, `std::string`), thuật toán, luật chơi | UObject/UCLASS, `FString`, `TArray`, bất kỳ API nào của UE |
-| `Source/Match3RPG/**` | UObject/AActor/UCLASS, UE API, hình ảnh, input, HUD | Cài đặt luật chơi (phải gọi xuống lõi) |
-| `Tests/Core/**` | Test lõi + script build bằng `cl.exe` | Phụ thuộc UE |
+1. **Luật chơi chỉ nằm trong `Core/`.** Không viết luật match-3 hay công thức sát thương
+   trong actor, GameMode hay HUD.
+2. **Lõi phải biên dịch được ở cả hai môi trường.** Sau mọi thay đổi trong `Core/`, chạy:
+   ```bash
+   Tools/host_tests/build_and_run.sh
+   ```
+   Chỉ dùng các API shim đang có (`Num`, `Add`, `Emplace`, `Reset`, `SetNum`, `RemoveAt`,
+   `Insert`, `Find`, `Last`, `IsValidIndex`, `Reserve`, `operator[]`) và vòng lặp theo chỉ số.
+   Không dùng `FString`, `UE_LOG`, `check()` trong `Core/`.
+3. **Không dùng `TArray<bool>`.** Ngoài engine nó là `std::vector<bool>` dạng bitfield, khác
+   hành vi so với UE. Dùng `TArray<uint8>` với 0/1.
+4. **Không hard-code asset của project.** Chỉ được trỏ tới `/Engine/BasicShapes/...`. Model
+   thật đi qua `TSoftObjectPtr` trong DataAsset.
+5. **Không thêm `.uasset` bắt buộc để chạy.** Project phải bấm Play được trong một level
+   trống sau khi clone. Mọi DataAsset chỉ là lớp override tuỳ chọn.
+6. **Mọi hàm trong `Core/` phải suy diễn được từ `(stage, roster, formation, seed)`.** Không
+   dùng `FMath::RandRange` hay thời gian thực; mọi ngẫu nhiên đi qua `FMatchRng` để trận đấu
+   tái lập được (test `Determinism` canh điều này).
+7. **Tinh chỉnh cân bằng sửa ở `ContentCore::BuildDefaultScales()` / `BuildDefaultBoardRules()`**,
+   không rải hằng số vào nơi dùng.
+8. **Tên class UCLASS**: GameMode là `AMatchRPGMode` (khớp `Config/DefaultEngine.ini`). Đổi tên
+   thì phải sửa cả ini.
 
-Lý do: giữ lõi test được độc lập và không lệ thuộc asset. Nếu cần một chức năng mới
-thuộc về luật chơi, hãy thêm vào `Match3Core` rồi để lớp UE gọi xuống.
+## Kiểm thử
 
-Quy tắc DLL: mọi lớp/struct trong lõi có hàm định nghĩa ngoài header phải được đánh
-dấu `MATCH3CORE_API` (xem khối giải thích trong `Public/M3Types.h`).
+- Luật chơi: `Tools/host_tests/build_and_run.sh` (không cần Unreal). Thêm khẳng định mới vào
+  `Tools/host_tests/main.cpp` mỗi khi sửa luật.
+- Trong editor: `Automation RunTests MatchRPG` (xem `Source/MatchRPG/Private/Tests/MatchCoreTests.cpp`).
+- Không có test nào cho tầng Unreal; thay đổi ở actor/HUD phải tự kiểm bằng cách bấm Play.
 
-## Lệnh thường dùng
+## Ghi chú về Unity Build của Unreal
 
-```bash
-# Test luật chơi (không cần mở UE) - chạy cái này trước sau mỗi thay đổi luật
-Tests\Core\build_and_run.bat
+`Private/Core/*.cpp` được Unreal gộp thành một translation unit. Vì vậy mọi hàm trợ giúp
+trong `namespace { ... }` phải có tên duy nhất trên toàn bộ thư mục `Core/` — đặt tên cụ thể
+(`FStepTriggerBoard`, `MakeEvent`, `ColorLetter`…) thay vì tên chung chung như `Helper`.
 
-# Build editor (Win64, Development)
-"C:\Program Files\Epic Games\UE_5.6\Engine\Build\BatchFiles\Build.bat" ^
-  Match3RPGEditor Win64 Development -Project="D:\self\match-3-rpg\Match3RPG.uproject" -WaitMutex
+## Chỉ thị & Lộ trình 5 Phase
 
-# Build bản WEB (WebAssembly) từ cùng lõi luật chơi - cần Emscripten SDK
-Web\build_web.bat
-node Web\smoke_test.mjs      # kiểm tra tự động bản WASM
-```
+Dự án đang được chỉ đạo trực tiếp bởi **Executive Producer & Game Director** theo lộ trình 5 Phase. Toàn bộ bot và kỹ sư bắt buộc phải đọc và tuân thủ các tài liệu chỉ đạo sau:
+1. `Docs/EXECUTIVE_DIRECTIVE_AND_DECISIONS.md` — Phán quyết tối cao giải quyết 12 điểm đang mở, phân quyền tự chủ cho PM và giao việc trực tiếp cho 10 bot.
+2. `Docs/ROADMAP_PHASES_AND_ACCEPTANCE.md` — Tiêu chuẩn nghiệm thu chi tiết từng Phase (Gate Checklist).
+3. `Docs/NARRATIVE_CHAPTERS_1_2_3.md` — Kịch bản phân cảnh 3 Chương và chỉ dẫn cho bộ tứ sáng tạo (Lore, Environment, Concept, 3D Sculpt).
 
-## Quy tắc khi sửa
+## Việc cần thực hiện ngay
 
-1. **Luật chơi mới → thêm test trước** trong `Tests/Core/M3BoardTests.cpp` (bàn/special)
-   hoặc `M3BattleTests.cpp` (combat). Test dùng bàn thiết kế sẵn trong `M3TestHelpers.h`
-   (`DesignHorizontalRun`, `DesignLShapeFive`, `FillCleanBoard`) để kết quả tất định.
-2. **Con số cân bằng** chỉ được sửa trong `M3Balance.h`. Không rải hằng số vào .cpp.
-3. **Nội dung** (nhân vật, trang bị, map, challenge) nằm ở `M3Content.cpp`; về sau thay
-   bằng Data Asset thì giữ nguyên API `FContentLibrary` để không phải sửa gameplay.
-4. **Asset** không commit file `.uasset` sinh tự động; bộ hình mặc định dựng bằng code
-   (`UM3VisualSet::CreateDefaultVisualSet`) để project luôn chạy được sau khi clone.
-5. Đổi hành vi hiển thị → chỉ sửa `Match3RPG` (`M3BoardActor`, `M3BossActor`,
-   `M3PartyMemberActor`, `M3HUD`, `M3VisualSet`).
-
-## Bản chơi web
-
-UE 5.6 không có target trình duyệt, nên bản web được tạo bằng cách biên dịch
-`Source/Match3Core` sang WebAssembly (xem `Web/build_web.bat`) rồi bọc giao diện trong
-`Web/`. Vì vậy:
-
-- `Web/m3_web_api.cpp` **chỉ được là lớp vỏ** chuyển tiếp `int/float/char*` — không thêm
-  luật chơi vào đây; mọi thay đổi luật phải nằm ở `Match3Core`.
-- Sửa luật xong phải chạy lại cả hai bộ kiểm tra: `Tests\Core\build_and_run.bat` (lõi,
-  nhanh) và `node Web\smoke_test.mjs` (bản WASM, chạy sau `Web\build_web.bat`).
-- `Web/dist/*` là file sinh tự động, có thể bỏ khỏi git và chỉ giữ lại script build.
-
-## Cách UI đọc dữ liệu
-
-`UM3CombatSubsystem` là nguồn dữ liệu duy nhất cho UI/actor: đọc trực tiếp
-(`GetBattle()`, các `Get*()`) hoặc gọi hành động (`TrySwap`, `UseBasicSkill`,
-`UseUltimate`, `EndTurn`). Sau mỗi hành động subsystem tăng `Revision`; actor/HUD
-so sánh revision để biết khi nào cần vẽ lại — không cần tick nặng mỗi frame.
-
-## Kiểm tra trước khi báo hoàn thành
-
-- `Tests\Core\build_and_run.bat` phải **0 FAIL**.
-- Nếu sửa file trong `Source/Match3RPG/**` hoặc `Source/Match3Core/Public/*.h`: chạy
-  build editor ở trên phải `Result: Succeeded`.
+- **Mũi nhọn 1 (Phase 1)**: Cải thiện animation block match-3 trong `BoardGridActor` và `BlockVisualActor` (hàng đợi từng bước `AnimationStepQueue`, easing, squash & stretch khi rơi tiếp đất).
+- **Mũi nhọn 2 (Phase 2)**: Hoàn thiện kịch bản thoại, concept art sheets và greybox 3D cho 3 Chương theo kịch bản chuẩn.

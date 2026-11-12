@@ -1,0 +1,49 @@
+{
+  // Các lệnh build sẵn cho VS Code. Không cần Unreal Engine.
+  // MRPG_BUILD_ONLY=1 để chỉ biên dịch, không chạy — dùng khi gỡ lỗi từng bước.
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build core tests",
+      "type": "shell",
+      "command": "${workspaceFolder}/Tools/host_tests/build_and_run.bat",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": { "MRPG_BUILD_ONLY": "1" }
+      },
+      "problemMatcher": ["$gcc"],
+      "group": "build",
+      "presentation": { "reveal": "silent", "clear": true }
+    },
+    {
+      "label": "Run core tests",
+      "type": "shell",
+      "command": "${workspaceFolder}/Tools/host_tests/build_and_run.bat",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": ["$gcc"],
+      "group": { "kind": "test", "isDefault": true },
+      "presentation": { "reveal": "always", "clear": true }
+    },
+    {
+      "label": "Build playground",
+      "type": "shell",
+      "command": "${workspaceFolder}/Tools/playground/build_and_run.bat",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": { "MRPG_BUILD_ONLY": "1" }
+      },
+      "problemMatcher": ["$gcc"],
+      "group": "build",
+      "presentation": { "reveal": "silent", "clear": true }
+    },
+    {
+      "label": "Run playground demo",
+      "type": "shell",
+      "command": "${workspaceFolder}/Tools/playground/build_and_run.bat",
+      "args": ["--demo"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "clear": true }
+    }
+  ]
+}

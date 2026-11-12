@@ -1,32 +1,23 @@
-# Unreal Engine generated folders & files
-.vs/
-.orthex/
+# Unreal Engine generated
 Binaries/
-
+Build/
 DerivedDataCache/
 Intermediate/
 Saved/
-Build/
+.vs/
+# .vscode/ is intentionally NOT ignored: tasks.json + launch.json are how a
+# beginner runs the core tests and the playground (F5 to debug) without Unreal.
+.vscode/*.log
+*.VC.db
+*.opensdf
+*.sdf
 *.sln
-*.vcxproj
-*.vcxproj.filters
-*.user
 *.suo
-.idea/
-.vscode/
+*.xcodeproj
+*.xcworkspace
+
+# Local / agent scratch
+.orthex/tmp/
+__pycache__/
 *.code-workspace
-.ignore
-
-# Web generated artifacts (commit để host Vercel / GitHub Pages)
-# Web/dist/
-
-
-# Scratch & temporary test binaries
-*.exe
-*.obj
-*.pdb
-*.ilk
-*.idb
-*.exp
-*.lib
-Tests/Core/*.exe
+.vscode/compileCommands*

@@ -1,0 +1,26 @@
+{
+  // Cấu hình này để VS Code hiểu code phần LÕI (Source/MatchRPG/**/Core).
+  //
+  // Lõi được biên dịch ở chế độ "standalone" giống như bộ test và sân chơi, nên
+  // IntelliSense hoạt động đầy đủ: gợi ý, nhảy tới định nghĩa, xem kiểu biến.
+  //
+  // Lưu ý: tầng Unreal (Blocks/Board/Game/Content) KHÔNG nằm trong cấu hình này vì
+  // nó cần header của engine. Muốn IntelliSense cho tầng đó thì phải generate project
+  // files từ Unreal rồi mở bằng Visual Studio / Rider.
+  "version": 4,
+  "configurations": [
+    {
+      "name": "MatchRPG - lõi luật chơi (chạy ngoài Unreal)",
+      "includePath": [
+        "${workspaceFolder}/Source/MatchRPG/Public",
+        "${workspaceFolder}/Source/MatchRPG/Private"
+      ],
+      "defines": [
+        "MATCHRPG_STANDALONE_CORE"
+      ],
+      "cStandard": "c17",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "windows-gcc-x64"
+    }
+  ]
+}

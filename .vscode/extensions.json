@@ -1,0 +1,9 @@
+{
+  // VS Code sẽ gợi ý cài những extension này khi bạn mở dự án.
+  //
+  // C/C++ là thứ duy nhất thực sự cần: nó cho bạn IntelliSense cho phần lõi, và
+  // nút F5 để chạy từng bước với breakpoint (xem .vscode/launch.json).
+  "recommendations": [
+    "ms-vscode.cpptools"
+  ]
+}

@@ -1,226 +1,142 @@
-# Match-3 Turn-based RPG (Unreal Engine 5.6, C++)
+# MatchRPG
 
-Game match-3 theo lượt (kiểu Candy Crush) kết hợp RPG đánh boss theo turn, đội hình
-gacha. Toàn bộ **luật chơi nằm ở lớp C++ thuần**, lớp Unreal chỉ lo hình ảnh, input và UI —
-nhờ vậy bạn thay model/asset thoải mái mà không phải động vào gameplay.
+Game match-3 turn-based RPG cho Unreal Engine 5.3, viết bằng C++. Toàn bộ luật chơi
+nằm trong một tầng logic thuần (không phụ thuộc engine), nên có thể kiểm thử bằng
+trình biên dịch C++ thường, còn tầng Unreal chỉ lo hiển thị và nhận input.
 
-## 1. Trạng thái hiện tại
+Điểm quan trọng: project **không có file `.uasset` nào**. Mọi hình ảnh là hình khối
+cơ bản của engine và được dựng bằng code lúc chạy, nên mở lên là chơi được ngay;
+sau đó thay model 3D thật chỉ là sửa dữ liệu, không phải sửa code.
 
-| Hạng mục | Kết quả |
-|---|---|
-| Build Unreal Engine 5.6 (Editor, Win64, Development) | Thành công (`Result: Succeeded`) |
-| Bộ test luật chơi chạy độc lập (không cần UE) | 61/61 PASS |
-| Bản chơi trên web (WebAssembly, dùng chung lõi luật chơi) | Thành công — 51/51 test WASM PASS |
-| Chơi được trong level trống | Có (GameMode tự dựng sàn, đèn, bàn nối, boss, đội hình) |
-| Asset 3D | Dùng hình cơ bản của engine, thay thế được qua Data Asset |
-| Đã kiểm chứng bằng mắt (hình ảnh trong Editor) | Chưa — cần bạn mở Editor và bấm Play |
+---
 
-## 2. Yêu cầu môi trường
+## Chạy thử
 
-- **Unreal Engine 5.6** (mặc định tại `C:\Program Files\Epic Games\UE_5.6`)
-- **Visual Studio 2022** (hoặc VS Build Tools 2022) kèm gói C++ Game Development
-- Không cần plugin hay asset trả phí nào
+Yêu cầu: Unreal Engine 5.3 và Visual Studio 2022 (workload "Game development with C++").
 
-## 3. Cách mở và phát triển (Dành cho học source code & làm game)
+1. Chuột phải `MatchRPG.uproject` → **Generate Visual Studio project files**.
+2. Mở `MatchRPG.sln`, build cấu hình **Development Editor**.
+3. Mở `MatchRPG.uproject` bằng Unreal Editor.
+4. Trong editor: **File → New Level → Empty Level** (project không kèm `.umap` nào).
+5. Bấm **Play**.
 
-### 3.1. Cách 1 — Mở trực tiếp bằng Unreal Editor (Nhanh nhất)
-1. Double-click file `Match3RPG.uproject`.
-2. Nếu xuất hiện hộp thoại:
-   > *"The following modules are missing or built with a different engine version: Match3Core, Match3RPG. Would you like to rebuild them now?"*
-   → Bấm **Yes**. Engine sẽ tự động biên dịch các module C++ và khởi động Editor.
-3. Khi Editor mở lên: Tạo level trống (`File > New Level > Empty Level`) hoặc mở bất kỳ level nào, rồi bấm **Play** (PIE).
-   - GameMode (`AM3GameMode`) sẽ tự dựng bàn chơi 8x8, ánh sáng, boss, camera và đội hình mà không cần sắp xếp thủ công.
+Game mode tự dựng sân khấu: camera cố định nhìn vào bàn 8×8, hai đèn chiếu, bàn khối
+và một khối cầu lớn làm chỗ đứng tạm cho boss. Không cần đặt tay actor nào trong level.
 
-### 3.2. Cách 2 — Đọc code và Debug bằng Visual Studio 2022
-1. Chạy file `GenerateProjectFiles.bat` ở thư mục gốc (hoặc click chuột phải vào `Match3RPG.uproject` chọn **Generate Visual Studio project files**).
-2. Mở file `Match3RPG.sln` vừa sinh ra bằng **Visual Studio 2022**.
-3. Chọn configuration **Development Editor** và platform **Win64**.
-4. Nhấn **F5** (hoặc Debug > Start Debugging) để vừa đọc code C++, vừa đặt breakpoint debug trực tiếp khi game chạy.
+### Phím điều khiển
 
-### 3.3. Cách 3 — 1-Click Build Editor bằng Script
-Nếu bạn muốn build lại toàn bộ C++ module từ terminal mà không cần mở Visual Studio:
-```cmd
-BuildEditor.bat
+| Thao tác | Phím |
+| --- | --- |
+| Chọn ô, rồi bấm ô kề để đổi chỗ | Chuột trái |
+| Kết thúc lượt sớm (kích hoạt nội tại Defender) | `Space` |
+| Bắn ultimate của ô đội hình 1–6 (chain thành Full Burst) | `1`–`6` |
+| Dùng kỹ năng cơ bản của ô 1–6 | `Q` `W` `E` `T` `Y` `U` |
+| Gợi ý nước đi (tự thực hiện luôn) | `H` |
+| Quay gacha 10 lượt (debug) | `G` |
+| Chơi lại màn hiện tại | `R` |
+
+---
+
+## Học và gỡ lỗi (bắt đầu ở đây nếu bạn mới làm game)
+
+Luật chơi nằm ở tầng logic thuần, chạy được **không cần Unreal Engine**, nên bạn học và
+gỡ lỗi được ngay trên máy này:
+
+```bat
+Tools\playground\build_and_run.bat
 ```
-Script này tự động gọi UnrealBuildTool biên dịch target `Match3RPGEditor Win64 Development`.
 
-### 3.4. Chạy bộ test luật chơi độc lập (1 giây, không cần mở UE)
-```cmd
-Tests\Core\build_and_run.bat
-```
-Script này biên dịch module lõi bằng `cl.exe` và chạy toàn bộ **41 test** luật chơi (dò match, bom vùng, bom hàng/cột, combo cascade, đổi chỗ block tự do, hồi sinh, phase boss, WuWa skill tree...). Bạn có thể chỉnh sửa luật ở `Source/Match3Core` và chạy test này để kiểm tra kết quả ngay trong 1-2 giây!
+Sân chơi mở ra một bàn cờ in bằng ký tự và chờ bạn gõ lệnh (`help` để xem danh sách). Mỗi
+lệnh đều in ra chuyện gì vừa xảy ra và vì sao — ví dụ `groups` cho biết bộ dò match tìm thấy
+nhóm nào, hình dạng gì, sẽ sinh khối đặc biệt nào. Gõ `rules` để xem toàn bộ con số đang chạy,
+đối chiếu trực tiếp với code.
 
-### 3.5. Bản chơi trên web (WebAssembly)
+Muốn **đặt breakpoint và chạy từng bước**: cài extension C/C++ trong VS Code rồi bấm `F5`
+và chọn *Gỡ lỗi: sân chơi (gdb)*. Cấu hình đã có sẵn trong `.vscode/`.
 
-Unreal Engine 5.6 **không có nền tảng web**: trong bản cài này `Engine/Platforms` chỉ có
-`Android, IOS, VisionOS, Windows`, UnrealBuildTool cũng không có platform HTML5/Web —
-Epic đã bỏ target trình duyệt từ UE 4.24. Vì vậy bản web được làm theo cách khác, đúng
-tinh thần của kiến trúc: **biên dịch chính lõi luật chơi (`Source/Match3Core`) sang
-WebAssembly bằng Emscripten**, rồi bọc một giao diện web mỏng. Luật chơi vẫn chỉ có một
-bản duy nhất, web và Unreal dùng chung.
+Hướng dẫn đầy đủ — đọc code theo thứ tự nào, chạy tay một hàm ra sao, bài tập từ dễ tới khó,
+và một ca gỡ lỗi thật làm ví dụ — nằm ở **[Docs/HOC-LAP-TRINH-GAME.md](Docs/HOC-LAP-TRINH-GAME.md)**.
+
+---
+
+## Kiểm thử phần lõi (không cần Unreal)
+
+Luật match-3, công thức sát thương, thanh stagger và cả vòng turn được kiểm thử
+bằng cách biên dịch chính những file mà module Unreal dùng:
 
 ```bash
-# 1) Cài Emscripten SDK (một lần)
-git clone https://github.com/emscripten-core/emsdk.git %USERPROFILE%\emsdk
-cd %USERPROFILE%\emsdk && emsdk.bat install latest && emsdk.bat activate latest
-
-# 2) Biên dịch lõi sang WASM -> Web\dist\m3core.mjs + m3core.wasm
-Web\build_web.bat
-
-# 3) (tuỳ chọn) kiểm tra tự động bản WASM bằng Node
-node Web\smoke_test.mjs
-
-# 4) Mở server tĩnh rồi vào http://127.0.0.1:8765/
-py -3 -m http.server 8765 --bind 127.0.0.1 --directory Web
+Tools/host_tests/build_and_run.sh
+# hoặc chỉ định compiler:
+MRPG_CXX=/path/to/g++ Tools/host_tests/build_and_run.sh
 ```
 
-Trong bản web: click 2 ô kề nhau để đổi chỗ, phím `1`..`6` là kỹ năng, `NumPad 1`..`6`
-là ultimate, `Tab` kết thúc turn, `H` xem gợi ý, `R` chơi lại, chọn map ở góc trên phải.
+Trên Windows chạy bằng Git Bash / MSYS2 (một bản MinGW-w64 g++ bất kỳ là đủ; w64devkit
+là lựa chọn gọn nhẹ). Bộ test phủ: sinh bàn không có match sẵn, trọng lực + refill,
+nhận diện match-3/4/5 và ô vuông 2×2, tạo khối đặc biệt, sức chịu của vật cản, leo
+thang sát thương theo combo, heal theo cấp số nhân, pity gacha, một trận đấu đầy đủ,
+nội tại Defender, nạp/kích hoạt Deflector, điều kiện của Counter, chain ultimate và
+tính tái lập theo seed.
 
-Lưu ý: bản web tái hiện phần **luật chơi** (bàn nối, 6 role, stagger/BREAK, ultimate
-chain, vật cản, challenge); hình ảnh là CSS/DOM chứ không phải render 3D của Unreal.
-Muốn "game Unreal chạy trong trình duyệt" đúng nghĩa render 3D thì phải dùng
-**Pixel Streaming** (đóng gói bản Win64, bật plugin Pixel Streaming rồi nhúng web player),
-vì UE không tự sinh target web được nữa.
+Trong editor cũng có bộ automation test tương ứng:
+`UnrealEditor-Cmd.exe "<đường dẫn>/MatchRPG.uproject" -ExecCmds="Automation RunTests MatchRPG" -unattended -nullrhi`
 
-## 4. Điều khiển
+---
 
-| Thao tác | Chức năng |
-|---|---|
-| Click ô 1 rồi click ô kề bên | Đổi chỗ 2 block = 1 lượt nối |
-| Click lại ô đang chọn | Bỏ chọn |
-| Phím `1`..`6` | Kỹ năng chủ động của nhân vật 1..6 |
-| `NumPad 1`..`6` | Ultimate của nhân vật 1..6 |
-| `Tab` / `Enter` / `Space` | Kết thúc turn sớm |
-| `R` | Chơi lại map hiện tại |
-| `N` | Sang map kế tiếp |
-| Click nút trên HUD | Tương đương phím tắt tương ứng |
-
-## 5. Kiến trúc
+## Cấu trúc project
 
 ```text
-match-3-rpg/
-├─ Match3RPG.uproject
-├─ Config/                       DefaultEngine / DefaultGame / DefaultInput
-├─ Source/
-│  ├─ Match3Core/                LÕI LUẬT CHƠI - C++ thuần, KHÔNG dùng API của UE
-│  │  ├─ Public/M3Types.h        màu block, loại block, role, kết quả hành động
-│  │  ├─ Public/M3Balance.h      toàn bộ con số cân bằng
-│  │  ├─ Public/M3Board.h        bàn nối, swap, rơi/refill, vật cản
-│  │  ├─ Public/M3Matcher.h      dò run >= 3, ô vuông 2x2, chọn special
-│  │  ├─ Public/M3Resolver.h     xoá -> kích special -> rơi -> cascade
-│  │  ├─ Public/M3Team.h         nhân vật, trang bị, pet, buff/debuff đội
-│  │  ├─ Public/M3Skills.h       bảng kỹ năng + ultimate theo role
-│  │  ├─ Public/M3Battle.h       vòng chơi turn-based (trái tim của game)
-│  │  └─ Public/M3Content.h      nội dung mẫu: 6 nhân vật, trang bị, 3 map
-│  └─ Match3RPG/                 LỚP UNREAL: hình ảnh, input, HUD
-│     ├─ M3CombatSubsystem.*     cầu nối UE <-> lõi (BlueprintCallable)
-│     ├─ M3BoardActor.*          vẽ bàn nối bằng mesh 3D, chọn ô
-│     ├─ M3BossActor.*           hình boss (to/nhỏ theo máu, xoay khi BREAK)
-│     ├─ M3PartyMemberActor.*    hình nhân vật (Skeletal Mesh thay được)
-│     ├─ M3VisualSet.*           DATA ASSET chứa mesh/material/màu - chỗ thay asset
-│     ├─ M3HUD.*                 giao diện vẽ bằng code (thay bằng UMG nếu muốn)
-│     ├─ M3PlayerController.*    input: chọn ô, phím tắt
-│     ├─ M3PlayerPawn.*          camera nhìn xuống bàn
-│     └─ M3GameMode.*            tự dựng thế giới tối thiểu
-├─ Tests/Core/                   test luật chơi + script build bằng cl.exe
-├─ Web/                          bản chơi web dùng chung lõi luật chơi
-│  ├─ m3_web_api.cpp             cầu nối C cho JavaScript (chỉ chuyển tiếp, không chứa luật)
-│  ├─ index.html / style.css / m3ui.js    giao diện bản web
-│  ├─ build_web.bat              biên dịch lõi sang WebAssembly bằng Emscripten
-│  ├─ smoke_test.mjs             test bản WASM bằng Node
-│  └─ dist/                      m3core.mjs + m3core.wasm (kết quả build)
-└─ Build/                        log build (không cần commit)
+MatchRPG.uproject
+Config/                      DefaultEngine/Game/Input.ini (không cần asset)
+Source/MatchRPG/
+  Public/Core/               LÕI THUẦN: không có kiểu Unreal nào ngoài shim
+    MatchCoreCompat.h        cầu nối để lõi biên dịch được cả trong lẫn ngoài UE
+    MatchTypes.h             enum + struct + bảng tra (vật cản, trạng thái, luật bàn)
+    MatchBoardCore.h/.cpp    lưới, trọng lực, refill, khoá/jam, gợi ý nước đi
+    MatchFinderCore.h/.cpp   dò match, tạo khối đặc biệt, lan truyền trigger, cascade
+    CombatMathCore.h/.cpp    mọi công thức sát thương/heal/stagger (bảng tinh chỉnh)
+    SkillCore.h              định nghĩa kỹ năng và ultimate (dạng dữ liệu)
+    ContentCore.h/.cpp       roster mặc định, thư viện kỹ năng, pool gacha, màn demo
+    BattleSimCore.h/.cpp     máy trạng thái trận đấu + AI boss (chạy headless)
+  Public/Blocks/             ABlockVisualActor - một khối 3D
+  Public/Board/              ABoardGridActor - bàn chơi, chọn ô, đổi chỗ
+  Public/Content/            DataAsset thay thế được: bảng màu, nhân vật, màn
+  Public/Game/               GameMode, HUD (Canvas), PlayerController
+  Private/Battle/            FMatchRPGSimHost - bọc phiên chơi quanh lõi
+.vscode/                     F5 để gỡ lỗi từng bước, task build sẵn (không cần Unreal)
+Tools/host_tests/            bộ test tự động cho phần lõi (738 khẳng định)
+Tools/playground/            sân chơi gõ lệnh, in bàn cờ bằng ký tự
+Docs/HOC-LAP-TRINH-GAME.md   hướng dẫn học + bài tập + cách gỡ lỗi
+Docs/DESIGN.md               thiết kế hệ thống, ánh xạ yêu cầu sang code
+Docs/ASSET_SWAP_GUIDE.md     cách thay model 3D
 ```
 
-### 5.1. Vì sao tách lõi ra khỏi UE?
+Lõi nằm trong `Private/Core/` và `Public/Core/`, không tham chiếu `UObject` nào. Nhờ vậy
+`Tools/host_tests` biên dịch lại đúng những file đó với `-DMATCHRPG_STANDALONE_CORE`,
+và `MatchCoreCompat.h` cấp các tên `TArray`/`FIntPoint`/`FMath` tương đương khi ở ngoài engine.
 
-- Luật chơi test được **không cần mở Editor** (chạy vài giây thay vì vài phút).
-- Luật chơi không lệ thuộc asset → thay model, thay UI, thậm chí port sang engine khác đều dễ.
-- Bug cân bằng (sát thương, hồi máu, stagger) tìm được bằng test thay vì ngồi chơi tay.
+---
 
-## 6. Luật chơi đã cài đặt ↔ vị trí trong code
+## Đã có gì
 
-| Thiết kế của bạn | Đã cài đặt | Nơi đọc code |
-|---|---|---|
-| Match-3 cơ bản như Candy Crush | swap 2 ô kề, xoá run >= 3, rơi lấp, cascade | `M3Board.cpp`, `M3Resolver.cpp` |
-| Nối màu Attacker → sát thương boss | `ERole::Attacker`, sát thương theo số block × combo | `M3Battle.cpp::ComputeMatchDamage` |
-| Nối màu Supporter → buff/debuff | stack tăng theo số block, tăng hệ số + số turn | `M3Battle.cpp::ApplySupportEffect` |
-| Nối màu Healer → hồi máu | hồi theo **cấp số nhân**: `Atk × 0.2 × 1.55^(blocks-3)` (có chặn trần) | `M3Battle.cpp::ComputeHealAmount` |
-| Match-4 vuông → tự phá vật cản/chướng ngại | nhóm 2x2 sinh `SquareBomb` + tự quét vật cản quanh cả khối 2x2 | `M3Matcher.cpp`, `M3Resolver.cpp` |
-| Match-4 hàng/cột | sinh `LineClear` nổ cả hàng (hoặc cột) theo hướng run | `M3Matcher.cpp::FindMatches` |
-| Match-5 → kích hoạt toàn bộ block đổi chỗ với nó | sinh `ColorBomb`; đổi chỗ với block nào thì kích hoạt **toàn bộ màu đó**; số block trigger càng nhiều → sát thương/buff/heal càng lớn | `M3Resolver.cpp::ResolveSwap_ColorBombKick` |
-| Thanh stagger giảm khi boss nhận sát thương; debuff làm tăng lượng stagger | `StaggerPerDamage`, buff `StaggerPerStack` của Supporter | `M3Battle.cpp::ReduceStagger` |
-| Counter chỉ kích hoạt khi stagger vỡ | tự động phản kích ngay khi BREAK; kỹ năng chủ động yêu cầu `bBroken` | `M3Battle.cpp::CheckStaggerBreak`, `UseBasicSkill` |
-| Deflecter tích 4 lần match-4, cuối turn mới phát động | `DeflectStacks` 0..4, `EndTurn` phá thêm 25% stagger tối đa | `M3Battle.cpp::AdvanceTurn` |
-| Defender: end turn mà không làm gì → giảm sát thương boss | buff giảm 50% sát thương khi turn không có hành động | `M3Battle.cpp::AdvanceTurn` |
-| Mỗi turn có số lượt match nhất định | `Balance.MovesPerTurn` (mặc định 4) | `M3Balance.h` |
-| Mỗi nhân vật có 1 kỹ năng cơ bản bấm tay | 6 role × 1 kỹ năng, có hồi chiêu, 1 lần/role/turn | `M3Battle.cpp::UseBasicSkill`, `M3Skills.cpp` |
-| Ultimate nạp theo turn + theo block đúng màu | `UltimateChargePerTurn=12`, `+3/block`, đầy ở 100 | `M3Battle.h`, `M3Battle.cpp` |
-| Ultimate chain nhau, có full burst | chain ×1.25 mỗi ultimate trong cùng turn; cả đội tung → FULL BURST | `M3Battle.cpp::UseUltimate` |
-| Đội hình tối đa 6, mỗi người 3 trang bị, 1 pet | `FParty`: `kMaxMembers=6`, `kMaxEquipmentPerMember=3`, `UnlockPet` | `M3Team.h/.cpp` |
-| Boss tạo vật cản lên bàn, AoE đội | 3 hành động luân phiên: AoE / tạo vật cản / debuff | `M3Battle.cpp::BossAction` |
-| Challenge ảnh hưởng rating qua ải | 4 loại challenge → số sao 1..3 | `M3Battle.cpp::UpdateChallenges`, `EvaluateStars` |
-| Gacha nhân vật | chưa có (đã tách `FCharacterDef` + `UnlockTier` để nối sau) | `M3Team.h` |
+- Bàn match-3 8×8 vận hành đầy đủ: đổi chỗ, dò match, nổ dây chuyền, trọng lực, refill,
+  tự xáo bàn khi hết nước đi.
+- Khối đặc biệt: match-4 → khối xoá hàng/cột, ô vuông 2×2 → SquareBreaker (phá vật cản),
+  chữ L/T → bom vùng, match-5 → SwapAll kích hoạt mọi khối cùng màu với khối nó đổi chỗ.
+- Vật cản do boss thả xuống: Ice, Rock, Crate, Chain, mỗi loại có luật sát thương riêng.
+- 6 vai trò: Attacker, Supporter, Healer, Defender, Counter, Deflector — đúng mô tả thiết kế.
+- Thanh stagger có phá (break), Counter chỉ phát huy khi boss đã vỡ stagger.
+- Thanh nạp ultimate, chain ultimate và Full Burst; mỗi nhân vật có 1 kỹ năng thủ công
+  và 1 ultimate; hiệu ứng kỹ năng định nghĩa bằng dữ liệu.
+- Đội hình 6 slot, mỗi nhân vật 3 slot trang bị (có bonus theo thuộc tính), 1 slot pet đã
+  chừa chỗ nhưng chưa mở.
+- Gacha có pity cứng và soft pity; quay 10 lượt bằng phím `G`.
+- Màn chơi có mục tiêu challenge → quyết định số sao (1–3).
+- HUD Canvas vẽ toàn bộ thông tin trận đấu bằng code, không cần asset UI.
 
-## 7. Thay model / asset 3D
+## Chưa có
 
-### 7.1. Cách nhanh (không cần sửa code)
-
-1. Trong Editor: `Content Browser > Chuột phải > Miscellaneous > Data Asset > M3VisualSet`
-   → đặt tên, ví dụ `DA_VisualSet_Fantasy`.
-2. Trong đó gán cho từng màu block: `Mesh`, `Material`, `Tint`, `Scale`, `ZOffset`
-   (material nào có tham số vector tên `Color` thì màu sẽ được truyền vào).
-   Gán tương tự cho `ObstacleVisual`, `LineClearVisual`, `SquareBombVisual`, `ColorBombVisual`,
-   `BossVisual`, `FloorVisual`, `PartyMesh`.
-3. Chọn actor `M3BoardActor` (hoặc `M3BossActor`, `M3GameMode`) trong level và gán Data Asset
-   vào property `VisualSet`. Không có asset nào được gán thì game tự dùng hình cơ bản của engine.
-
-### 7.2. Đổi model nhân vật
-
-- Chưa có model: `M3VisualSet.PartyMesh` (mesh tĩnh) là chỗ đứng tạm.
-- Có model: gán `SkeletalMeshToUse` + `AnimationBlueprintClass` cho từng
-  `AM3PartyMemberActor` (hoặc mở rộng `M3GameMode::LayoutPartyActors` để sinh actor từ
-  Blueprint con của bạn). Toàn bộ logic vẫn đọc từ `UM3CombatSubsystem`, không phụ thuộc mesh.
-
-### 7.3. Đổi bàn cho đẹp hơn
-
-`AM3BoardActor` đang dùng 1 `UStaticMeshComponent` cho mỗi ô (8x8 = 64). Muốn đẹp hơn:
-thay bằng `UInstancedStaticMeshComponent` (1 draw call/màu) hoặc Niagara khi block nổ —
-chỉ cần sửa `M3BoardActor.cpp`, phần luật chơi không đổi.
-
-## 8. Chỉnh cân bằng
-
-Mọi con số nằm ở `Source/Match3Core/Public/M3Balance.h`:
-
-```text
-DamagePerBlock        0.14   sát thương mỗi block của Attacker
-ComboBonusPerCascade  0.20   mỗi tầng cascade +20% sát thương (trần x3)
-HealPerBlock          0.20   hồi máu cơ bản
-HealExpBase           1.55   hệ số cấp số nhân của Healer
-StaggerPerDamage      0.35   bao nhiêu stagger bị trừ cho mỗi sát thương
-BreakDurationTurns    2      số turn boss ngất khi vỡ stagger
-DeflectStacksRequired 4      số stack match-4 của Deflecter
-UltimateAttackerPower 3.0    hệ số Atk cho ultimate Attacker
-MovesPerTurn          4      số lượt nối mỗi turn
-```
-
-Sửa xong chạy lại `Tests\Core\build_and_run.bat` để xem các con số thay đổi thế nào
-(bộ test có in ra sát thương/hồi máu thực tế ở vài test).
-
-## 9. Thêm nội dung
-
-- Thêm nhân vật: sửa `FContentLibrary::StarterCharacters()` / `ExtraCharacters()` trong `M3Content.cpp`
-  (hoặc về sau thay bằng Data Asset). Nhớ 4 role cơ bản phải có màu block; Defender/Counter/Deflecter
-  để `MatchColor = EColor::None`.
-- Thêm map: sửa `FContentLibrary::CampaignStages()` (máu boss, số vật cản, số lượt, đội hình).
-- Thêm loại challenge mới: mở rộng `FChallenge::EKind` + `FBattle::UpdateChallenges()`.
-- Thêm loại block mới: mở rộng `EBlockKind` rồi xử lý trong `M3Resolver.cpp::ExpandWithSpecials`.
-
-## 10. Việc còn lại (gợi ý bước tiếp theo)
-
-- Giao diện UMG thay cho HUD vẽ bằng code (dữ liệu đã sẵn qua `UM3CombatSubsystem`).
-- Animation: khi `MarkChanged`/hành động thì phát animation (hiện chỉ nhún/nhấp nháy).
-- Gacha, pet, trang bị có hiệu ứng đặc biệt, save/load.
-- Chuyển nội dung từ `M3Content.cpp` sang Data Asset để designer chỉnh không cần build C++.
-- Âm thanh, hiệu ứng nổ block, camera shake khi BREAK.
+- Lưu game, màn hình ngoài trận, chuyển màn, thư viện nhân vật.
+- Pet, nâng cấp trang bị, chỉ số theo cấp.
+- Model/animation thật: hiện dùng hình khối engine (xem `Docs/ASSET_SWAP_GUIDE.md`).
+- Một số hiệu ứng hình ảnh của khối đặc biệt mới chỉ là "khối to hơn", chưa có VFX.
+- Âm thanh.
