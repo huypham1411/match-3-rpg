@@ -206,8 +206,15 @@ async function playEvent(e) {
   switch (e.kind) {
     case EV.MatchClear: {
       if (e.value >= 2) { bigCallout(`COMBO x${e.value}`, 'combo'); }
-      if (e.big) { screenShake(1); }
-      return 150;
+      const bWrap = $('boardWrap');
+      if (bWrap) {
+        bWrap.classList.remove('match-burst');
+        void bWrap.offsetWidth;
+        bWrap.classList.add('match-burst');
+        setTimeout(() => bWrap.classList.remove('match-burst'), 260);
+      }
+      screenShake(e.big ? 2 : 1);
+      return 180;
     }
 
     case EV.PartyAttack: {
@@ -577,7 +584,7 @@ function triggerSwapBump(fromX, fromY, toX, toY) {
   }
 }
 
-function onCellClick(x, y) {
+async function onCellClick(x, y) {
   if (playing) { return; }               // đang diễn hoạ -> chờ xem hết cảnh đã
   if (M._m3_finished()) { return; }
 
@@ -637,17 +644,60 @@ function onCellClick(x, y) {
     return;
   }
 
+  const cellA = boardEl.children[fromY * width + fromX];
+  const cellB = boardEl.children[y * width + x];
+  selected = null;
+  playing = true;
+
+  // Tính khoảng cách pixel giữa 2 ô để trượt mượt mà
+  const transX = cellB.offsetLeft - cellA.offsetLeft;
+  const transY = cellB.offsetTop - cellA.offsetTop;
+
+  cellA.style.transition = 'transform 0.16s cubic-bezier(0.25, 1, 0.5, 1)';
+  cellB.style.transition = 'transform 0.16s cubic-bezier(0.25, 1, 0.5, 1)';
+  cellA.style.zIndex = '15';
+  cellB.style.zIndex = '14';
+  cellA.style.transform = `translate(${transX}px, ${transY}px)`;
+  cellB.style.transform = `translate(${-transX}px, ${-transY}px)`;
+
+  await sleep(160);
+
   const before = M._m3_event_seq ? M._m3_event_seq() : -1;
   const ok = M._m3_try_swap(fromX, fromY, x, y);
-  selected = null;
 
   if (!ok) {
+    // Không tạo được match -> Trượt lùi trở lại vị trí ban đầu
+    cellA.style.transform = 'translate(0px, 0px)';
+    cellB.style.transform = 'translate(0px, 0px)';
+    await sleep(160);
+    cellA.style.transition = '';
+    cellB.style.transition = '';
+    cellA.style.transform = '';
+    cellB.style.transform = '';
+    cellA.style.zIndex = '';
+    cellB.style.zIndex = '';
+    playing = false;
+
     const err = M._m3_last_error ? M.UTF8ToString(M._m3_last_error()) : '';
-    toast(err || 'Đổi chỗ không hợp lệ: Cần tạo thành cụm 3 ô cùng màu kề nhau!', true);
+    toast(err || 'Đổi chỗ không tạo được cụm 3 ô cùng màu!', true);
     triggerSwapBump(fromX, fromY, x, y);
-  } else {
     render();
-    if (M._m3_event_seq && M._m3_event_seq() > before) { playEventTimeline(); return; }
+    return;
+  }
+
+  // Đổi chỗ thành công -> Reset transform và render trạng thái mới của bàn
+  cellA.style.transition = '';
+  cellB.style.transition = '';
+  cellA.style.transform = '';
+  cellB.style.transform = '';
+  cellA.style.zIndex = '';
+  cellB.style.zIndex = '';
+  playing = false;
+
+  render();
+  if (M._m3_event_seq && M._m3_event_seq() > before) {
+    playEventTimeline();
+    return;
   }
   render();
 }
@@ -1039,6 +1089,9 @@ function renderBoard() {
         } else {
           cell.style.animationDelay = `${(x + y) * 12}ms`;
         }
+        cell.style.animation = 'none';
+        void cell.offsetWidth;
+        cell.style.animation = '';
       } else {
         cell.style.animationDelay = '0ms';
       }
