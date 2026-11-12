@@ -13,6 +13,7 @@ import createModule from './dist/m3core.mjs';
 import { spriteKeyForTier, drawSprite, ANIM_FRAMES } from './pixelart.js';
 import { ENEMY_SET, STAGE_LINEUPS, TIER_NAMES, validateEnemySet } from './enemies.js';
 import { initBattle3D, trigger3DAttack, trigger3DSkill, trigger3DUltimate, trigger3DEnemyHit } from './battle3d.js';
+import { initOverworld, setOverworldActive } from './overworld.js';
 
 // Truyền chuỗi từ JS vào lõi C++: cấp phát trong bộ nhớ WASM rồi giải phóng sau khi gọi.
 function withCString(text, fn) {
@@ -450,7 +451,10 @@ async function boot() {
 
   M._m3_init(0, 20261008);
   render();
-  try { initBattle3D(); } catch (err) { console.warn("3D initialization skipped:", err); }
+  try {
+    initBattle3D();
+    initOverworld('overworldCanvas', 'overworldContainer', () => switchToBattleMode());
+  } catch (err) { console.warn("3D initialization skipped:", err); }
 
   $('engineText').textContent = 'WebAssembly: đã nạp lõi luật chơi (' + width + 'x' + height + ')';
   toast('Click 2 ô kề nhau để đổi chỗ. Click thẻ địch để đổi mục tiêu. Phím 1..6 = kỹ năng, NumPad 1..6 = ultimate.', false);
@@ -497,7 +501,37 @@ function buildStageSelect() {
   select.addEventListener('change', () => startStage(Number(select.value)));
 }
 
+function switchToBattleMode() {
+  const ow = $('overworldView');
+  const bt = $('battleSplit');
+  const btnOw = $('btnModeOverworld');
+  const btnBt = $('btnModeBattle');
+  if (ow) ow.style.display = 'none';
+  if (bt) bt.style.display = 'grid';
+  if (btnOw) btnOw.classList.remove('active');
+  if (btnBt) btnBt.classList.add('active');
+  setOverworldActive(false);
+  render();
+}
+
+function switchToOverworldMode() {
+  const ow = $('overworldView');
+  const bt = $('battleSplit');
+  const btnOw = $('btnModeOverworld');
+  const btnBt = $('btnModeBattle');
+  if (ow) ow.style.display = 'block';
+  if (bt) bt.style.display = 'none';
+  if (btnOw) btnOw.classList.add('active');
+  if (btnBt) btnBt.classList.remove('active');
+  setOverworldActive(true);
+}
+
 function bindControls() {
+  const btnOw = $('btnModeOverworld');
+  const btnBt = $('btnModeBattle');
+  if (btnOw) btnOw.addEventListener('click', switchToOverworldMode);
+  if (btnBt) btnBt.addEventListener('click', switchToBattleMode);
+
   $('btnEndTurn').addEventListener('click', () => act(() => M._m3_end_turn()));
   $('btnRestart').addEventListener('click', () => restartCurrent());
   $('btnHint').addEventListener('click', () => toggleHint());

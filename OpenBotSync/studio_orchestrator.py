@@ -154,7 +154,17 @@ Tôi đã ban hành quy chuẩn kỹ thuật tại `Docs/PHASE_2_3D_GREYBOX_SPEC
   * Ch.1 (Sentinel Unit 07): 1,800 HP, 120 Stagger. Chu kỳ 3 lượt bắn Railgun.
   * Ch.2 (Warden Aegis): 3,200 HP, 200 Stagger. Rào chắn giảm 40% sát thương.
   * Ch.3 (Null Sovereign): 5,500 HP, 280 Stagger. Nuốt 1 hàng block khi nộ 100%.
-- **Vật cản**: Rock 3 HP, Ice 2 HP, Crate 2 HP, Chain 1 HP. Dọn dẹp bằng match kề cạnh.""")
+- **Vật cản**: Rock 3 HP, Ice 2 HP, Crate 2 HP, Chain 1 HP. Dọn dẹp bằng match kề cạnh."""),
+        ("user", "@Designer hãy thiết kế hệ thống Overworld Exploration cho phép điều khiển nhân vật Chibi đi thám hiểm ngoài bản đồ."),
+        ("assistant", """🗺️ **[THIẾT KẾ OVERWORLD & CHIBI SYSTEM HOÀN TẤT]**
+Tôi vừa hoàn thành tài liệu thiết kế chi tiết tại `Docs/OVERWORLD_EXPLORATION_DESIGN.md`:
+1. **Vòng lặp Dual-Mode**:
+   - Chế độ 1: Phiêu lưu ngoài map (Chibi 3D 2.8 đầu, điều khiển chạy khắp bản đồ, mở rương tiếp tế, tương tác NPC).
+   - Chế độ 2: Giao chiến (Combat Match-3 khi chạm trán quái).
+2. **Cơ chế Chạm Trán (Encounter Transition)**:
+   - Quái vật có nón tầm nhìn 60 độ. Khi chạm trán -> Hiệu ứng cảnh báo -> Chuyển cảnh tức thời vào trận chiến.
+   - Đánh lén sau lưng quái (Ambush) thưởng +2 lượt đi khởi đầu.
+3. **Prototype Trực Tiếp**: Đã cài đặt bản chạy thử nghiệm tương tác Three.js trên Web (phím WASD điều khiển Chibi Astra, mở rương, tương tác Boran)!""")
     ],
     "Environment/map builder": [
         ("user", "@Environment Builder báo cáo bố cục sàn đấu Diorama và góc quay Camera cho 3 Chương."),
@@ -174,7 +184,13 @@ Tôi đã đối chiếu toàn bộ yêu cầu dự án:
 - 12 Điểm mở ban đầu đã được giải quyết dứt khoát tại `Docs/EXECUTIVE_DIRECTIVE_AND_DECISIONS.md`.
 - 4 Quyết định mới (Decisions 13-16: Hộp thoại VN, Combo Special-Special, Deflector End-of-Turn, 4 Starter Heroes) đã được phê duyệt.
 - Lộ trình Phase 1 và Phase 2 đã nghiệm thu đầy đủ, mã nguồn đã tích hợp an toàn vào nhánh `main`.
-- Bộ tiêu chí nghiệm thu cho **Phase 3 (Gate Checklist 3)** đã sẵn sàng để đội ngũ triển khai!""")
+- Bộ tiêu chí nghiệm thu cho **Phase 3 (Gate Checklist 3)** đã sẵn sàng để đội ngũ triển khai!"""),
+        ("user", "@BA đối soát yêu cầu UI/UX phiêu lưu ngoài map và tích hợp vào hệ thống."),
+        ("assistant", """📋 **[XÁC NHẬN YÊU CẦU UI/UX OVERWORLD]**
+Đã nghiệm thu bộ khung giao diện Overworld HUD:
+- Radar bản đồ góc trên bên trái, hệ thống tiền tệ góc trên bên phải.
+- Nút tương tác tự đổi ngữ cảnh (Nói chuyện / Mở rương / Truy cập mã).
+- Bổ sung nút chuyển đổi chế độ Thám hiểm <-> Giao chiến ngay trên thanh điều hướng của bản Web!""")
     ]
 }
 

@@ -31,6 +31,10 @@
     </div>
   </div>
   <div class="topbar-actions">
+    <div class="mode-switcher">
+      <button id="btnModeOverworld" class="btn btn-mode active" type="button">🗺️ Phiêu Lưu (Chibi Overworld)</button>
+      <button id="btnModeBattle" class="btn btn-mode" type="button">⚔️ Giao Chiến (Match-3 Battle)</button>
+    </div>
     <label class="select-wrap">
       <span>Màn</span>
       <select id="stageSelect"></select>
@@ -41,8 +45,45 @@
   </div>
 </header>
 
-<!-- ===================== BỐ CỤC CHIA ĐÔI MÀN ===================== -->
-<main class="split">
+<!-- ===================== CHẾ ĐỘ 1: THÁM HIỂM (OVERWORLD CHIBI) ===================== -->
+<section id="overworldView" class="overworld-view">
+  <div id="overworldContainer" class="overworld-container">
+    <canvas id="overworldCanvas"></canvas>
+    
+    <div class="ow-hud">
+      <div class="ow-top-left">
+        <div class="ow-map-badge">
+          <span class="ow-radar-dot"></span>
+          <div>
+            <strong class="ow-area-title">Khu Định Cư Aster &bull; Vành Đai Sector 7</strong>
+            <div class="ow-area-sub">Chế độ: Thám hiểm Chibi tự do</div>
+          </div>
+        </div>
+        <div class="ow-quest-box">
+          <div class="ow-quest-title">📜 Nhiệm vụ chính</div>
+          <div class="ow-quest-desc">Gặp Boran & Mở rương tiếp tế trước khi chạm trán Sentinel 07</div>
+        </div>
+      </div>
+
+      <div class="ow-top-right">
+        <div class="ow-currency">
+          <span>💎 Aether: 1,250</span>
+          <span>⚙️ Hợp kim: 800</span>
+        </div>
+      </div>
+
+      <div class="ow-controls-hint">
+        ⌨️ Dùng <strong>W A S D</strong> hoặc <strong>Phím Mũi Tên</strong> để chạy &bull; Phím <strong>E</strong> để mở rương/nói chuyện &bull; Chạm vào <strong>Sentinel 07</strong> để vào trận giao chiến!
+      </div>
+
+      <div id="overworldPrompt" class="ow-prompt"></div>
+      <div id="encounterFlash" class="encounter-flash"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CHẾ ĐỘ 2: GIAO CHIẾN (COMBAT BATTLE + MATCH-3) ===================== -->
+<main id="battleSplit" class="split" style="display: none;">
 
   <!-- ============ NỬA TRÁI: BÀN MATCH-3 ============ -->
   <section class="half board-half">
