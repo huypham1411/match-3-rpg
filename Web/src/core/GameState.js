@@ -45,49 +45,229 @@ export const SPECIAL_TYPES = {
     SWAP_ALL: 4      // Lỗ đen sắc màu (Match 5 thẳng hàng): nổ tất cả ngọc cùng màu
 };
 
+export const OBSTACLE_TYPES = {
+    NONE: 0,
+    ICE: 1,          // 2 HP - tan chảy khi có match kề cạnh
+    ROCK: 2,         // 3 HP - khối đá chặn rơi, cần match kề cạnh hoặc bom phá
+    CRATE: 3,        // 2 HP - hộp kim loại chặn rơi
+    CHAIN: 4         // 1 HP - xích khoá ô không cho đổi chỗ
+};
+
+export const STAGES_DATA = {
+    1: {
+        id: 1,
+        chapter: 'Chương 1: Tiếng Vọng Vùng Biên',
+        name: 'Khu Định Cư Aster',
+        boss: {
+            id: 'sentinel_07',
+            name: 'Sentinel Unit 07 (Thủ Vệ Rỉ Sét)',
+            hp: 25000,
+            maxHp: 25000,
+            stagger: 100,
+            maxStagger: 100,
+            isBroken: false,
+            breakTurnsLeft: 0,
+            telegraphName: 'Hủy Diệt Pháo',
+            telegraphCountdown: 2,
+            telegraphDmg: 850,
+            obstacleType: OBSTACLE_TYPES.ROCK,
+            obstacleCount: 2
+        },
+        introDialogue: [
+            'Astra: "Trụ canh phòng Sentinel 07 đã bị mã độc Fray xâm thực! Nó đang nạp pháo cối!"',
+            'Creator: "Chuẩn bị giao thức kết nối! Astra, nhắm vào điểm yếu Stagger của nó!"'
+        ]
+    },
+    2: {
+        id: 2,
+        chapter: 'Chương 2: Bức Tường Băng Giá',
+        name: 'Trạm Kiểm Soát Unmapped Rim',
+        boss: {
+            id: 'warden_aegis',
+            name: 'Đại Tá Warden Aegis (Cai Ngục Thiết Vách)',
+            hp: 35000,
+            maxHp: 35000,
+            stagger: 120,
+            maxStagger: 120,
+            isBroken: false,
+            breakTurnsLeft: 0,
+            telegraphName: 'Làm Lạnh Tuyệt Đối',
+            telegraphCountdown: 3,
+            telegraphDmg: 1100,
+            obstacleType: OBSTACLE_TYPES.CHAIN,
+            obstacleCount: 3
+        },
+        introDialogue: [
+            'Warden Aegis: "Lũ rác rưởi vùng biên! Bức tường này là ranh giới các ngươi không bao giờ vượt qua!"',
+            'Elysia: "Hắn kích hoạt bẫy lạnh khóa ô! Lin, hãy dùng nanite sinh học hỗ trợ!"'
+        ]
+    },
+    3: {
+        id: 3,
+        chapter: 'Chương 3: Ký Ức Khởi Nguyên',
+        name: 'Tổ Hợp Máy Chủ Data Haven Beta',
+        boss: {
+            id: 'null_sovereign',
+            name: 'Null Sovereign (Thực Thể Hư Vô)',
+            hp: 50000,
+            maxHp: 50000,
+            stagger: 150,
+            maxStagger: 150,
+            isBroken: false,
+            breakTurnsLeft: 0,
+            telegraphName: 'Xóa Sổ Thực Thể (Fatal Anomaly)',
+            telegraphCountdown: 2,
+            telegraphDmg: 1600,
+            obstacleType: OBSTACLE_TYPES.ICE,
+            obstacleCount: 4
+        },
+        introDialogue: [
+            'Null Sovereign: "Phát hiện Lỗi hệ thống: Creator. Kích hoạt quy trình tiêu hủy vĩnh viễn."',
+            'Astra: "Toàn đội tập trung! Kích hoạt Ultimate Chain Burst để thanh tẩy máy chủ mẹ!"'
+        ]
+    }
+};
+
 export class GameState {
     constructor(width = 8, height = 8) {
         this.width = width;
         this.height = height;
+        this.currentStageId = 1;
         this.turn = 1;
         this.movesLeft = 4;
         this.maxMoves = 4;
         this.score = 0;
         this.comboChain = 0;
 
-        // Đội hình 4 Role chuẩn
+        // Đội hình 4 Role chuẩn (kèm cờ isDefeated)
         this.heroes = [
-            { id: 1, name: 'Lôi Kiếm Sĩ', role: 'Attacker', color: COLORS.FIRE, altColor: COLORS.LIGHTNING, hp: 1000, maxHp: 1000, energy: 40, maxEnergy: 100, skillCd: 0, maxCd: 3 },
-            { id: 2, name: 'Tinh Linh Chú Thuật', role: 'Supporter', color: COLORS.VOID, altColor: COLORS.WATER, hp: 850, maxHp: 850, energy: 20, maxEnergy: 100, skillCd: 0, maxCd: 4 },
-            { id: 3, name: 'Thánh Nữ Ánh Sáng', role: 'Healer', color: COLORS.NATURE, altColor: 0, hp: 900, maxHp: 900, energy: 30, maxEnergy: 100, skillCd: 0, maxCd: 3 },
-            { id: 4, name: 'Thiết Giáp Vệ Binh', role: 'Defender', color: COLORS.ICE, altColor: COLORS.WATER, hp: 1400, maxHp: 1400, energy: 10, maxEnergy: 100, skillCd: 0, maxCd: 4, deflectorStacks: 0 }
+            { id: 1, name: 'Lôi Kiếm Sĩ (Astra)', role: 'Attacker', color: COLORS.FIRE, altColor: COLORS.LIGHTNING, hp: 1000, maxHp: 1000, energy: 40, maxEnergy: 100, skillCd: 0, maxCd: 3, isDefeated: false },
+            { id: 2, name: 'Tinh Linh (Elysia)', role: 'Supporter', color: COLORS.VOID, altColor: COLORS.WATER, hp: 850, maxHp: 850, energy: 20, maxEnergy: 100, skillCd: 0, maxCd: 4, isDefeated: false },
+            { id: 3, name: 'Thánh Nữ (Lin)', role: 'Healer', color: COLORS.NATURE, altColor: 0, hp: 900, maxHp: 900, energy: 30, maxEnergy: 100, skillCd: 0, maxCd: 3, isDefeated: false },
+            { id: 4, name: 'Thiết Giáp (Boran)', role: 'Defender', color: COLORS.ICE, altColor: COLORS.WATER, hp: 1400, maxHp: 1400, energy: 10, maxEnergy: 100, skillCd: 0, maxCd: 4, deflectorStacks: 0, isDefeated: false }
         ];
 
-        // Boss Sentinel Unit 07 với hệ thống Telegraph & Stagger Break
-        this.boss = {
-            id: 'sentinel_07',
-            name: 'Sentinel Unit 07 (Thủ Hộ Tro Tàn)',
-            hp: 30000,
-            maxHp: 30000,
-            stagger: 100,      // Toughness 100%
-            maxStagger: 100,
-            isBroken: false,   // Bị choáng (nhận x2 DMG)
-            breakTurnsLeft: 0,
-            // Telegraph System: Chỉ báo chiêu thức nguy hiểm sắp tới
-            telegraphName: 'Tụ Năng Lượng: Hủy Diệt Pháo',
-            telegraphCountdown: 2,
-            telegraphDmg: 900,
-            isTelegraphing: true
-        };
+        // Khởi tạo Boss từ Stage 1
+        this.boss = { ...STAGES_DATA[1].boss };
 
-        // Bàn cờ 8x8 (Lưu mã màu: 1..6)
+        // Bàn cờ 8x8 (Mã màu: 1..6)
         this.grid = Array(height).fill(null).map(() => Array(width).fill(0));
-        // Mảng lưu loại Ngọc Đặc Biệt: SPECIAL_TYPES
+        // Mảng Ngọc Đặc Biệt: SPECIAL_TYPES
         this.specialGrid = Array(height).fill(null).map(() => Array(width).fill(SPECIAL_TYPES.NONE));
+        // Mảng Vật Cản: OBSTACLE_TYPES { type, hp }
+        this.obstacleGrid = Array(height).fill(null).map(() => Array(width).fill(null).map(() => ({ type: OBSTACLE_TYPES.NONE, hp: 0 })));
+
         this.selectedTile = null; // {r, c}
         this.isProcessing = false;
 
         this.initBoard();
+    }
+
+    /** Nạp Màn chơi mới (Stage 1 -> Stage 2 -> Stage 3) */
+    loadStage(stageId) {
+        const stageDef = STAGES_DATA[stageId];
+        if (!stageDef) return false;
+
+        this.currentStageId = stageId;
+        this.boss = { ...stageDef.boss };
+        this.turn = 1;
+        this.movesLeft = this.maxMoves;
+
+        // Reset máu và nộ các hero còn sống
+        this.heroes.forEach(h => {
+            h.hp = h.maxHp;
+            h.isDefeated = false;
+            h.skillCd = 0;
+            h.energy = 30;
+        });
+
+        // Xóa sạch vật cản cũ và khởi tạo bàn mới
+        this.obstacleGrid = Array(this.height).fill(null).map(() => Array(this.width).fill(null).map(() => ({ type: OBSTACLE_TYPES.NONE, hp: 0 })));
+        this.specialGrid = Array(this.height).fill(null).map(() => Array(this.width).fill(SPECIAL_TYPES.NONE));
+        this.initBoard();
+
+        // Sinh vật cản đặc trưng của màn
+        if (stageDef.boss.obstacleType && stageDef.boss.obstacleCount > 0) {
+            for (let i = 0; i < stageDef.boss.obstacleCount; i++) {
+                const r = 2 + Math.floor(Math.random() * 4);
+                const c = 1 + Math.floor(Math.random() * 6);
+                const hp = stageDef.boss.obstacleType === OBSTACLE_TYPES.ROCK ? 3 : 2;
+                this.spawnObstacle(r, c, stageDef.boss.obstacleType, hp);
+            }
+        }
+
+        events.emit('stage_loaded', { stage: stageDef, boss: this.boss, heroes: this.heroes });
+        events.emit('state_updated', { heroes: this.heroes, boss: this.boss, movesLeft: this.movesLeft });
+        return true;
+    }
+
+    /** Sinh vật cản tại toạ độ (r, c) */
+    spawnObstacle(r, c, type, hp = 2) {
+        if (r < 0 || r >= this.height || c < 0 || c >= this.width) return;
+        this.obstacleGrid[r][c] = { type, hp };
+        events.emit('obstacle_spawned', { r, c, type, hp });
+    }
+
+    /** Gây sát thương lên các vật cản nằm kề các ô bị nổ match */
+    damageAdjacentObstacles(matchedCoords) {
+        const damagedObstacles = [];
+        const checked = new Set();
+
+        matchedCoords.forEach(m => {
+            const neighbors = [
+                { r: m.r - 1, c: m.c },
+                { r: m.r + 1, c: m.c },
+                { r: m.r, c: m.c - 1 },
+                { r: m.r, c: m.c + 1 }
+            ];
+
+            neighbors.forEach(n => {
+                const key = `${n.r},${n.c}`;
+                if (n.r >= 0 && n.r < this.height && n.c >= 0 && n.c < this.width && !checked.has(key)) {
+                    checked.add(key);
+                    const obs = this.obstacleGrid[n.r][n.c];
+                    if (obs && obs.type !== OBSTACLE_TYPES.NONE) {
+                        obs.hp -= 1;
+                        damagedObstacles.push({ r: n.r, c: n.c, type: obs.type, remainingHp: obs.hp });
+                        if (obs.hp <= 0) {
+                            obs.type = OBSTACLE_TYPES.NONE;
+                            obs.hp = 0;
+                            events.emit('obstacle_destroyed', { r: n.r, c: n.c });
+                        }
+                    }
+                }
+            });
+        });
+
+        if (damagedObstacles.length > 0) {
+            events.emit('obstacles_damaged', { obstacles: damagedObstacles });
+        }
+    }
+
+    /** Kiểm tra tử trận nhân vật */
+    checkHeroFaint() {
+        let allDefeated = true;
+        this.heroes.forEach(h => {
+            if (h.hp <= 0) {
+                h.hp = 0;
+                if (!h.isDefeated) {
+                    h.isDefeated = true;
+                    events.emit('hero_fainted', { hero: h });
+                }
+            } else {
+                allDefeated = false;
+            }
+        });
+
+        if (allDefeated) {
+            events.emit('game_over', { reason: 'TOÀN ĐỘI ĐÃ GỤC NGÃ' });
+        }
+    }
+
+    /** Kiểm tra dung hợp đặc biệt khi đổi 2 ngọc đặc biệt với nhau */
+    isSpecialFusion(spec1, spec2) {
+        if (!spec1 || !spec2 || spec1 === SPECIAL_TYPES.NONE || spec2 === SPECIAL_TYPES.NONE) return false;
+        return true;
     }
 
     /** Tạo ngẫu nhiên bàn cờ khởi đầu (không có sẵn match-3) */
@@ -303,6 +483,9 @@ export class GameState {
             // Tính toán sát thương & nạp nộ từng role
             this.processCombatMath(matches, this.comboChain);
 
+            // Sát thương lên các vật cản kề bên (Đá, Băng, Hộp, Xích)
+            this.damageAdjacentObstacles(matches);
+
             // Xóa khối bị match khỏi grid
             matches.forEach(m => {
                 this.grid[m.r][m.c] = 0;
@@ -465,6 +648,7 @@ export class GameState {
             this.heroes.forEach(h => {
                 h.hp = Math.max(0, h.hp - Math.round(bossDmg * (0.85 + Math.random() * 0.3)));
             });
+            this.checkHeroFaint();
             events.emit('boss_attack', { damage: bossDmg, isSuperAttack });
         }
 
@@ -478,7 +662,7 @@ export class GameState {
     /** Kích hoạt Ultimate của Hero */
     triggerUltimate(heroIndex) {
         const hero = this.heroes[heroIndex];
-        if (!hero || hero.energy < hero.maxEnergy) return false;
+        if (!hero || hero.isDefeated || hero.energy < hero.maxEnergy) return false;
 
         hero.energy = 0;
         let ultDmg = 2500;

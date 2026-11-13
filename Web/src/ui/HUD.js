@@ -27,9 +27,9 @@ export class TacticalHUD {
             <div class="hud-topbar">
                 <div class="boss-hud-card">
                     <div class="boss-info-row">
-                        <span class="boss-badge">TRÙM CHƯƠNG 1</span>
+                        <span class="boss-badge" id="hudBossBadge">CHƯƠNG ${this.state.currentStageId}</span>
                         <span class="boss-name" id="hudBossName">${this.state.boss.name}</span>
-                        <span class="boss-intent" id="hudBossIntent">⚠️ ${this.state.boss.intent}</span>
+                        <span class="boss-intent" id="hudBossIntent">⚠️ ${this.state.boss.telegraphName || 'Tụ Năng Lượng'}</span>
                     </div>
                     <!-- Thanh máu Boss -->
                     <div class="progress-bar-wrap hp-wrap">
@@ -47,6 +47,18 @@ export class TacticalHUD {
                 <div class="turn-counter-badge">
                     <span class="turn-label">TURN <b id="hudTurnNum">1</b></span>
                     <span class="moves-label">NƯỚC ĐI: <b id="hudMovesLeft" style="color:#00f0ff">4 / 4</b></span>
+                </div>
+            </div>
+
+            <!-- MODAL CHIẾN THẮNG MÀN CHƠI & CHUYỂN CHƯƠNG -->
+            <div id="stageVictoryModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(10,15,30,0.88); z-index:999; justify-content:center; align-items:center; flex-direction:column; gap:16px;">
+                <div style="background:#111827; border:2px solid #00f0ff; border-radius:12px; padding:24px; max-width:440px; text-align:center; box-shadow:0 0 30px rgba(0,240,255,0.4);">
+                    <div style="font-size:32px; margin-bottom:8px;">🏆</div>
+                    <h2 style="color:#00f0ff; margin-bottom:8px;" id="victoryModalTitle">CHIẾN THẮNG CHƯƠNG 1!</h2>
+                    <p style="color:#94a3b8; font-size:13px; line-height:1.6; margin-bottom:16px;" id="victoryModalDesc">Trụ canh phòng Sentinel Unit 07 đã bị vô hiệu hóa hoàn toàn.</p>
+                    <button onclick="window.loadNextStage()" style="background:linear-gradient(135deg, #00f0ff, #0077ff); color:#000; border:none; padding:12px 28px; border-radius:8px; font-weight:800; font-size:14px; cursor:pointer; box-shadow:0 0 15px rgba(0,240,255,0.6);">
+                        TIẾP TỤC CHƯƠNG TIẾP THEO ➔
+                    </button>
                 </div>
             </div>
 
@@ -153,13 +165,34 @@ export class TacticalHUD {
                 energyBar.style.strokeDashoffset = offset;
             }
             if (card) {
-                if (hero.energy >= hero.maxEnergy) {
-                    card.classList.add('ult-ready');
+                if (hero.isDefeated) {
+                    card.classList.add('hero-defeated');
+                    card.style.opacity = '0.4';
+                    card.style.filter = 'grayscale(100%)';
                 } else {
-                    card.classList.remove('ult-ready');
+                    card.classList.remove('hero-defeated');
+                    card.style.opacity = '1.0';
+                    card.style.filter = 'none';
+                    if (hero.energy >= hero.maxEnergy) {
+                        card.classList.add('ult-ready');
+                    } else {
+                        card.classList.remove('ult-ready');
+                    }
                 }
             }
         });
+
+        // Kiểm tra hạ gục Boss -> Mở Modal Chiến Thắng
+        if (this.state.boss.hp <= 0) {
+            const victoryModal = document.getElementById('stageVictoryModal');
+            const titleEl = document.getElementById('victoryModalTitle');
+            const descEl = document.getElementById('victoryModalDesc');
+            if (victoryModal && victoryModal.style.display !== 'flex') {
+                victoryModal.style.display = 'flex';
+                if (titleEl) titleEl.textContent = `CHIẾN THẮNG CHƯƠNG ${this.state.currentStageId}!`;
+                if (descEl) descEl.textContent = `Trùm ${this.state.boss.name} đã bị đánh bại! Bản đồ tiếp theo đã sẵn sàng.`;
+            }
+        }
     }
 
     initEventListeners() {
@@ -199,6 +232,23 @@ export class TacticalHUD {
                 window.triggerHeroUlt(idx);
             }
         });
+
+        // Hàm chuyển sang màn tiếp theo
+        window.loadNextStage = () => {
+            const nextStage = this.state.currentStageId >= 3 ? 1 : this.state.currentStageId + 1;
+            const victoryModal = document.getElementById('stageVictoryModal');
+            if (victoryModal) victoryModal.style.display = 'none';
+
+            this.state.loadStage(nextStage);
+            const badgeEl = document.getElementById('hudBossBadge');
+            const nameEl = document.getElementById('hudBossName');
+            if (badgeEl) badgeEl.textContent = `CHƯƠNG ${nextStage}`;
+            if (nameEl) nameEl.textContent = this.state.boss.name;
+
+            this.showToast(`🚀 BẮT ĐẦU CHƯƠNG ${nextStage}: ${this.state.boss.name}`, '#00f0ff');
+            this.renderHeroes();
+            this.updateHUD();
+        };
 
         // Hàm toàn cục cho nút bấm HTML gọi
         window.triggerHeroUlt = (idx) => {
