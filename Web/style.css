@@ -208,11 +208,11 @@ kbd {
 .legend em { font-style: normal; color: #cbd5e1; }
 .dot { width: 11px; height: 11px; border-radius: 3px; display: inline-block; box-shadow: 0 0 6px currentColor; }
 .dot.c1 { background: #ff2e55; color: rgba(255, 46, 85, 0.6); }
-.dot.c2 { background: #00d2ff; color: rgba(0, 210, 255, 0.6); }
-.dot.c3 { background: #00ff88; color: rgba(0, 255, 136, 0.6); }
-.dot.c4 { background: #ffb800; color: rgba(255, 184, 0, 0.6); }
-.dot.c5 { background: #9b51e0; color: rgba(155, 81, 224, 0.6); }
-.dot.c6 { background: #22d3ee; color: rgba(34, 211, 238, 0.6); }
+.dot.c2 { background: #1d4ed8; color: rgba(29, 78, 216, 0.6); }
+.dot.c3 { background: #10b981; color: rgba(16, 185, 129, 0.6); }
+.dot.c4 { background: #f59e0b; color: rgba(245, 158, 11, 0.6); }
+.dot.c5 { background: #9333ea; color: rgba(147, 51, 234, 0.6); }
+.dot.c6 { background: #38bdf8; color: rgba(56, 189, 248, 0.6); }
 
 /* Khung bàn nối tác chiến phong cách PGR với góc định vị Laser */
 .board-wrap {
@@ -308,48 +308,63 @@ kbd {
   border-radius: inherit;
 }
 
-/* 6 BẢNG MÀU TINH THỂ HARD-LIGHT PHONG CÁCH PGR */
-/* C1: Thermal Crimson Core */
+/* 6 BẢNG MÀU TINH THỂ HARD-LIGHT PHONG CÁCH PGR - ĐỘ TƯƠNG PHẢN CAO VÀ RÕ RÀNG */
+/* C1: Thermal Crimson Core (Hỏa / Đỏ) */
 .cell.c1 {
-  background: radial-gradient(circle at 35% 25%, #ff5277, #e11d48 55%, #880825 100%);
-  border-color: rgba(255, 82, 119, 0.45);
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5), inset 0 -3px 6px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(225, 29, 72, 0.35);
+  background: radial-gradient(circle at 35% 25%, #ff4b6e, #dc2626 55%, #7f1d1d 100%);
+  border-color: rgba(255, 75, 110, 0.6);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5), inset 0 -3px 6px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(220, 38, 38, 0.4);
   text-shadow: 0 0 10px rgba(255, 46, 85, 0.9);
 }
-/* C2: Plasma Cyan Crystal */
+/* C2: Deep Cobalt Ocean Sapphire (Thủy / Xanh Dương Đậm - Khác hoàn toàn Cyan) */
 .cell.c2 {
-  background: radial-gradient(circle at 35% 25%, #38bdf8, #0ea5e9 55%, #0369a1 100%);
-  border-color: rgba(56, 189, 248, 0.45);
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5), inset 0 -3px 6px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(14, 165, 233, 0.35);
-  text-shadow: 0 0 10px rgba(0, 210, 255, 0.9);
+  background: radial-gradient(circle at 35% 25%, #3b82f6, #1d4ed8 55%, #172554 100%);
+  border-color: rgba(59, 130, 246, 0.7);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5), inset 0 -3px 6px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(29, 78, 216, 0.4);
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.9);
 }
-/* C3: Nanite Emerald Shard */
+/* C3: Nanite Emerald Shard (Thảo / Xanh Lá) */
 .cell.c3 {
-  background: radial-gradient(circle at 35% 25%, #4ade80, #10b981 55%, #047857 100%);
-  border-color: rgba(74, 222, 128, 0.45);
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5), inset 0 -3px 6px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(16, 185, 129, 0.35);
-  text-shadow: 0 0 10px rgba(0, 255, 136, 0.9);
+  background: radial-gradient(circle at 35% 25%, #34d399, #059669 55%, #064e3b 100%);
+  border-color: rgba(52, 211, 153, 0.6);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5), inset 0 -3px 6px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(5, 150, 105, 0.4);
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.9);
 }
-/* C4: Kinetic Amber Prism */
+/* C4: Kinetic Amber Gold (Lôi / Vàng Kim) */
 .cell.c4 {
-  background: radial-gradient(circle at 35% 25%, #fbbf24, #f59e0b 55%, #b45309 100%);
-  border-color: rgba(251, 191, 36, 0.45);
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5), inset 0 -3px 6px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(245, 158, 11, 0.35);
-  text-shadow: 0 0 10px rgba(255, 184, 0, 0.9);
+  background: radial-gradient(circle at 35% 25%, #fbbf24, #d97706 55%, #78350f 100%);
+  border-color: rgba(251, 191, 36, 0.65);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5), inset 0 -3px 6px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(217, 119, 6, 0.4);
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.9);
 }
-/* C5: Graviton Violet Singularity */
+/* C5: Graviton Royal Amethyst (Hư Không / Tím) */
 .cell.c5 {
-  background: radial-gradient(circle at 35% 25%, #c084fc, #9333ea 55%, #581c87 100%);
-  border-color: rgba(192, 132, 252, 0.45);
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5), inset 0 -3px 6px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(147, 51, 234, 0.35);
-  text-shadow: 0 0 10px rgba(155, 81, 224, 0.9);
+  background: radial-gradient(circle at 35% 25%, #c084fc, #7e22ce 55%, #3b0764 100%);
+  border-color: rgba(192, 132, 252, 0.6);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5), inset 0 -3px 6px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(126, 34, 206, 0.4);
+  text-shadow: 0 0 10px rgba(147, 51, 234, 0.9);
 }
-/* C6: Cryo Arctic Matrix */
+/* C6: Diamond Frost Arctic (Băng Tuyết / Diamond Cyan-White Sáng Lấp Lánh) */
 .cell.c6 {
-  background: radial-gradient(circle at 35% 25%, #67e8f9, #06b6d4 55%, #0e7490 100%);
-  border-color: rgba(103, 232, 249, 0.45);
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5), inset 0 -3px 6px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(6, 182, 212, 0.35);
-  text-shadow: 0 0 10px rgba(34, 211, 238, 0.9);
+  background: radial-gradient(circle at 35% 25%, #ffffff, #7dd3fc 45%, #0284c7 100%);
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.9), inset 0 -3px 6px rgba(0, 0, 0, 0.55), 0 4px 14px rgba(56, 189, 248, 0.55);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.95);
+}
+
+/* Ký hiệu Rune Nguyên Tố dập nổi bên trong mỗi ô block */
+.cell .rune-glyph {
+  font-size: 16px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+  opacity: 0.88;
+  user-select: none;
+  pointer-events: none;
+  transition: transform 0.18s ease;
+}
+.cell:hover .rune-glyph {
+  transform: scale(1.18);
+  opacity: 1;
 }
 
 /* TIÊU NGẮM LASER HOLOGRAPHIC KHI CHỌN Ô (PGR TARGETING RETICLE) */
@@ -450,18 +465,18 @@ kbd {
 /* HOẠT ẢNH RƠI TẦNG THÁC NƯỚC (CASCADE GRAVITY FALL) + NHÚN NẢY ĐÀN HỒI (SQUASH & STRETCH) */
 @keyframes cascadeDrop {
   0% {
-    transform: translateY(-56px) scale(0.86, 1.16);
-    opacity: 0.75;
+    transform: translateY(-96px) scale(0.85, 1.25);
+    opacity: 0.6;
   }
-  52% {
-    transform: translateY(0) scale(1.22, 0.78); /* Nén dẹp sâu khi tiếp đất */
+  50% {
+    transform: translateY(4px) scale(1.25, 0.78); /* Nén dẹp sâu khi tiếp đất */
     opacity: 1;
   }
-  74% {
-    transform: translateY(-8px) scale(0.93, 1.07); /* Nảy ngược đàn hồi */
+  72% {
+    transform: translateY(-12px) scale(0.92, 1.1); /* Nảy ngược đàn hồi */
   }
-  88% {
-    transform: translateY(0) scale(1.04, 0.97);
+  86% {
+    transform: translateY(2px) scale(1.05, 0.96);
   }
   100% {
     transform: translateY(0) scale(1, 1);
@@ -469,8 +484,31 @@ kbd {
   }
 }
 .cell.drop {
-  animation: cascadeDrop .36s cubic-bezier(0.25, 1, 0.5, 1) both;
+  animation: cascadeDrop .4s cubic-bezier(0.22, 1, 0.36, 1) both;
   opacity: 1 !important;
+}
+
+/* HIỆU ỨNG VỠ NÁT PHÁT SÁNG KHI KHỐI ĐƯỢC MATCH (MATCH DETONATION SHATTER) */
+@keyframes matchShatter {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  35% {
+    transform: scale(1.24);
+    filter: brightness(3.5) drop-shadow(0 0 16px #ffffff);
+  }
+  100% {
+    transform: scale(0.05);
+    opacity: 0;
+    filter: brightness(4);
+  }
+}
+
+.cell.shatter {
+  animation: matchShatter 0.22s ease-out forwards !important;
+  pointer-events: none;
+  z-index: 25;
 }
 
 /* HOẠT ẢNH KẾT TINH KHỐI MỚI (CRYSTALLINE POP-IN) */
@@ -854,29 +892,158 @@ kbd {
   color: #ffd700;
 }
 
-/* HSR Enemy Target List (Dạng Compact) */
+/* Thanh ghim mục tiêu phụ & Nút cốt truyện (Không che khuất đấu trường 3D) */
+.hsr-subtop-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+  gap: 8px;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+/* Nút chip thu gọn cốt truyện */
+.hsr-story-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  background: rgba(14, 18, 28, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+.hsr-story-chip:hover {
+  background: rgba(22, 30, 48, 0.95);
+  border-color: #00e5ff;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+}
+.story-chip-icon { font-size: 11px; }
+.story-chip-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #ffffff;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.story-chip-badge {
+  font-size: 8.5px;
+  color: #00e5ff;
+  background: rgba(0, 229, 255, 0.15);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+/* Modal hội thoại nổi (chỉ hiện khi người chơi chủ động bấm xem) */
+.hsr-story-modal {
+  position: absolute;
+  top: 105px;
+  left: 12px;
+  max-width: 380px;
+  background: rgba(10, 14, 24, 0.95);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(0, 229, 255, 0.45);
+  border-radius: 8px;
+  padding: 10px 14px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.85);
+  z-index: 30;
+  animation: fadeInDrawer 0.2s ease-out;
+  pointer-events: auto;
+}
+.story-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 5px;
+  margin-bottom: 6px;
+}
+.story-modal-head .story-chapter { font-size: 9px; color: #00e5ff; text-transform: uppercase; font-weight: 700; }
+.story-modal-head .story-title { font-size: 12px; color: #fff; font-weight: 800; margin: 2px 0 0; }
+.story-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.story-close-btn:hover { color: #fff; }
+
+/* HSR Enemy Target List (Dạng Compact Target Chips ở góc phải) */
 .hsr-enemy-line {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   align-items: center;
   justify-content: flex-end;
-  margin-top: 4px;
+  pointer-events: auto;
 }
 
 .hsr-enemy-line .enemy-card {
-  padding: 4px 8px;
-  min-width: 90px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  height: 26px;
   background: rgba(14, 18, 28, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-/* HSR Story Floating Panel */
-.hsr-story {
-  margin: 6px 0;
-  max-width: 80%;
-  background: rgba(10, 14, 24, 0.88);
-  backdrop-filter: blur(8px);
+.hsr-enemy-line .enemy-card.targeted {
+  border-color: #ff1744;
+  background: rgba(36, 12, 18, 0.9);
+  box-shadow: 0 0 8px rgba(255, 23, 68, 0.6);
+}
+
+.hsr-enemy-line .enemy-card .enemy-art,
+.hsr-enemy-line .enemy-card .enemy-stagger-wrap,
+.hsr-enemy-line .enemy-card .enemy-buffs {
+  display: none;
+}
+
+.hsr-enemy-line .enemy-card .enemy-top {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.hsr-enemy-line .enemy-card .enemy-tier {
+  font-size: 8px;
+  padding: 1px 3px;
+  border-radius: 2px;
+}
+.hsr-enemy-line .enemy-card .enemy-intent {
+  font-size: 9px;
+}
+.hsr-enemy-line .enemy-card .enemy-name {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+}
+.hsr-enemy-line .enemy-card .enemy-bar {
+  width: 32px;
+  height: 3px;
+}
+.hsr-enemy-line .enemy-card .enemy-hp {
+  font-size: 8.5px;
+  font-family: var(--font-mono);
+  color: #ffd700;
+  white-space: nowrap;
 }
 
 /* Bottom: Honkai Star Rail 4-Character Squad HUD */
@@ -1073,28 +1240,58 @@ kbd {
 
 .member-actions {
   width: 100%;
-  margin-top: 4px;
+  margin-top: 5px;
+  flex-shrink: 0;
 }
 
-.member-actions .btn {
+.member-actions .btn-skill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   width: 100%;
-  padding: 3px 4px;
+  padding: 4px 6px;
   font-size: 9.5px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 3px;
+  font-weight: 700;
   color: #ffffff;
-  font-weight: 600;
+  background: linear-gradient(180deg, #1b3558, #0e2036);
+  border: 1px solid rgba(0, 229, 255, 0.45);
+  border-radius: 4px;
   cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+  transition: all 0.15s ease;
   white-space: nowrap;
+}
+
+.member-actions .btn-skill:hover:not(:disabled) {
+  background: linear-gradient(180deg, #24497a, #132d4e);
+  border-color: #00e5ff;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.55);
+}
+
+.member-actions .btn-skill:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(0.6);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.member-actions .btn-skill .label {
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 68px;
 }
-  border-radius: 3px;
-  font-weight: 600;
-}
-.member-actions .btn > * {
-  transform: skewX(8deg);
+
+.member-actions .btn-skill kbd {
+  font-size: 8px;
+  font-family: var(--font-mono);
+  background: rgba(0, 229, 255, 0.2);
+  color: #00e5ff;
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  border-radius: 2px;
+  padding: 0 3px;
+  margin-left: 4px;
+  flex-shrink: 0;
 }
 
 /* ---------------------------- Buff / Debuff ---------------------------- */
@@ -1730,4 +1927,50 @@ body.playing #btnEndTurn { pointer-events: none; opacity: .6; }
 @keyframes fadeInDrawer {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* --------------------------------------------------------------------------
+   POPUP COMBO BÙNG NỔ TRÊN BÀN NỐI (JUICY COMBO BURST CALLOUT)
+   -------------------------------------------------------------------------- */
+.combo-banner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.6);
+  pointer-events: none;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.22s cubic-bezier(0.18, 1.25, 0.4, 1.3);
+}
+
+.combo-banner.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1.08);
+}
+
+.combo-banner-text {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 1.5px;
+  background: linear-gradient(180deg, #fff700, #ff8800 60%, #ff0055 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 14px rgba(255, 136, 0, 0.85)) drop-shadow(0 4px 10px rgba(0, 0, 0, 0.9));
+  text-transform: uppercase;
+}
+
+.combo-banner-sub {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: #00e5ff;
+  text-shadow: 0 0 8px #00e5ff, 0 2px 4px rgba(0, 0, 0, 0.8);
+  text-transform: uppercase;
+  margin-top: 2px;
 }

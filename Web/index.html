@@ -11,7 +11,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>RE:FRAY — Match-3 RPG (PGR Tactical Edition)</title>
-<link rel="stylesheet" href="style.css?v=20261113_0035" />
+<link rel="stylesheet" href="style.css?v=20261113_0900" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
@@ -99,13 +99,28 @@
           </div>
         </div>
 
-        <!-- Hàng địch chọn lọc (Thu gọn dạng target list) -->
-        <div id="enemyLine" class="enemy-line hsr-enemy-line" aria-label="Hàng địch"></div>
+        <!-- Thanh ghim mục tiêu phụ & Nút cốt truyện (Không che khuất đấu trường 3D) -->
+        <div class="hsr-subtop-bar">
+          <!-- Story Chip (Thu gọn dạng nút mở hội thoại khi cần) -->
+          <div id="storyToggleChip" class="hsr-story-chip" role="button" tabindex="0" title="Bấm để xem/ẩn hội thoại cốt truyện">
+            <span class="story-chip-icon">📖</span>
+            <span class="story-chip-title" id="storyChipTitle">1-1: Bia Rừng Cháy</span>
+            <span class="story-chip-badge">Hội thoại</span>
+          </div>
 
-        <!-- Story của màn: chương / tiêu đề / thoại mở màn -->
-        <div id="storyPanel" class="story-panel hsr-story" hidden>
-          <div class="story-chapter" id="storyChapter"></div>
-          <div class="story-title" id="storyTitle"></div>
+          <!-- Hàng địch chọn lọc (Thu gọn dạng target pill selector) -->
+          <div id="enemyLine" class="enemy-line hsr-enemy-line" aria-label="Hàng địch"></div>
+        </div>
+
+        <!-- Story Modal Popover (Chỉ hiện khi người chơi bấm nút Hội thoại) -->
+        <div id="storyPanel" class="story-panel hsr-story-modal" hidden>
+          <div class="story-modal-head">
+            <div>
+              <span class="story-chapter" id="storyChapter"></span>
+              <h4 class="story-title" id="storyTitle"></h4>
+            </div>
+            <button id="btnCloseStory" class="story-close-btn" type="button" title="Đóng hội thoại">×</button>
+          </div>
           <p class="story-brief" id="storyBrief"></p>
           <ul class="story-lines" id="storyLines"></ul>
         </div>
@@ -189,6 +204,6 @@
   </div>
 </div>
 
-<script type="module" src="m3ui.js?v=20261113_0035"></script>
+<script type="module" src="m3ui.js?v=20261113_0900"></script>
 </body>
 </html>

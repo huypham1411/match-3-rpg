@@ -108,6 +108,31 @@ function bigCallout(text, cls) {
   setTimeout(() => { if (el.parentNode) { el.remove(); } }, 1100);
 }
 
+function showComboBanner(combo) {
+  let banner = $('comboBanner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'comboBanner';
+    banner.className = 'combo-banner';
+    const bWrap = $('boardWrap');
+    if (bWrap) bWrap.appendChild(banner);
+  }
+  let subText = 'TACTICAL LINK';
+  if (combo >= 5) subText = '★ EXTREME BURST ★';
+  else if (combo >= 4) subText = '★ OVERDRIVE COMBO ★';
+  else if (combo >= 3) subText = '★ CRITICAL CHAIN ★';
+  else if (combo >= 2) subText = '★ CHAIN LINK ★';
+
+  banner.innerHTML = `
+    <div class="combo-banner-text">COMBO ×${combo}</div>
+    <div class="combo-banner-sub">${subText}</div>
+  `;
+  banner.classList.remove('show');
+  void banner.offsetWidth;
+  banner.classList.add('show');
+  setTimeout(() => banner.classList.remove('show'), 700);
+}
+
 function memberCard(index) { return teamEl.children[index] || null; }
 function enemyCard(index) { return enemyLineEl.children[index] || null; }
 
@@ -224,15 +249,16 @@ function setCameraMode(mode, durationMs = 0) {
 async function playEvent(e) {
   switch (e.kind) {
     case EV.MatchClear: {
-      if (e.value >= 2) { bigCallout(`COMBO x${e.value}`, 'combo'); }
+      const comboNum = e.value || 1;
+      showComboBanner(comboNum);
       const bWrap = $('boardWrap');
       if (bWrap) {
         bWrap.classList.remove('match-burst');
         void bWrap.offsetWidth;
         bWrap.classList.add('match-burst');
-        setTimeout(() => bWrap.classList.remove('match-burst'), 260);
+        setTimeout(() => bWrap.classList.remove('match-burst'), 280);
       }
-      screenShake(e.big ? 2 : 1);
+      screenShake(comboNum >= 3 ? 2 : (comboNum >= 2 ? 1 : 0));
 
       // Đồng bộ 1-1: Màu block match-3 kích hoạt nhân vật tương ứng hành động
       // Màu 1 (Đỏ) = Astra (Striker); Màu 2 (Xanh dương) = Mage; Màu 3 (Xanh lá) = Healer; Màu 4 (Vàng) = Defender
@@ -246,7 +272,7 @@ async function playEvent(e) {
         }
         trigger3DAttack(actingIdx, 0);
       }
-      return 180;
+      return 200;
     }
 
     case EV.PartyAttack: {
@@ -478,6 +504,9 @@ const logEl = $('log');
 
 // Tên lớp CSS theo màu block (1..6 = Đỏ, Xanh dương, Xanh lá, Vàng, Tím, Cyan)
 const COLOR_CLASS = ['', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
+const RUNE_GLYPHS = ['', '🔥', '💧', '🍃', '⚡', '🔮', '❄️'];
+const COLOR_NAMES = ['', 'Đỏ (Hỏa)', 'Lam (Thủy)', 'Lục (Mộc)', 'Vàng (Lôi)', 'Tím (Hư Không)', 'Băng (Hàn)'];
+let storyModalOpen = false;
 
 // Loại block: 0 thường, 1 vật cản, 2 nổ hàng/cột, 3 nổ vuông, 4 cầu vồng, 5 bẫy, 6 bom diện rộng
 const KIND_OBSTACLE = 1, KIND_LINE = 2, KIND_SQUARE = 3, KIND_RAINBOW = 4, KIND_TRAP = 5, KIND_AREA_BOMB = 6;
@@ -575,6 +604,23 @@ function bindControls() {
   $('banner').addEventListener('click', (event) => {
     if (event.target === $('banner')) { dismissBanner(); }
   });
+
+  const storyChip = $('storyToggleChip');
+  if (storyChip) {
+    storyChip.addEventListener('click', () => {
+      storyModalOpen = !storyModalOpen;
+      const p = $('storyPanel');
+      if (p) p.hidden = !storyModalOpen;
+    });
+  }
+  const closeStory = $('btnCloseStory');
+  if (closeStory) {
+    closeStory.addEventListener('click', () => {
+      storyModalOpen = false;
+      const p = $('storyPanel');
+      if (p) p.hidden = true;
+    });
+  }
 
   window.addEventListener('keydown', (event) => {
     const key = event.key;
@@ -743,13 +789,19 @@ async function onCellClick(x, y) {
     return;
   }
 
-  // Đổi chỗ thành công -> Reset transform và render trạng thái mới của bàn
+  // Đổi chỗ thành công -> Hiệu ứng nổ vỡ cho khối match
+  cellA.classList.add('shatter');
+  cellB.classList.add('shatter');
+  await sleep(140);
+
   cellA.style.transition = '';
   cellB.style.transition = '';
   cellA.style.transform = '';
   cellB.style.transform = '';
   cellA.style.zIndex = '';
   cellB.style.zIndex = '';
+  cellA.classList.remove('shatter');
+  cellB.classList.remove('shatter');
   playing = false;
 
   render();
@@ -1196,7 +1248,7 @@ function renderBoard() {
         prevCells[index] = signature;
         if (isDrop) {
           // Staggered cascade waterfall: hàng dưới tiếp đất trước, hàng trên rơi theo
-          const cascadeDelay = Math.min(260, (height - 1 - y) * 28 + (x % 3) * 8);
+          const cascadeDelay = Math.min(280, (height - 1 - y) * 32 + (x % 3) * 10);
           cell.style.animationDelay = `${cascadeDelay}ms`;
         } else {
           cell.style.animationDelay = `${(x + y) * 12}ms`;
@@ -1236,8 +1288,8 @@ function renderBoard() {
         glyph = '<span class="glyph-core glyph-bomb">✹</span>';
         cellTitle = '[PHE TA - BOM KHỐI NĂNG LƯỢNG] Bom nổ 3x3 của phe ta (sinh từ combo 5 góc L/T)! Nhấn 2 lần (double-click) hoặc di chuyển tự do để kích nổ vùng 3x3, gây sát thương khủng!';
       } else if (color > 0) {
-        glyph = '<span class="prism-facet"></span>';
-        cellTitle = `Khối pha lê năng lượng màu ${color}`;
+        glyph = `<span class="rune-glyph">${RUNE_GLYPHS[color] || '✦'}</span><span class="prism-facet"></span>`;
+        cellTitle = `Khối ${COLOR_NAMES[color] || 'nguyên tố'} #${color}`;
       }
 
       // Ô bị địch khoá (LockCells): vẽ lớp khoá riêng.
@@ -1485,6 +1537,7 @@ function renderTeam(memberBuffs) {
 // Vẽ story của màn
 // ---------------------------------------------------------------------------
 function renderStory() {
+  const chip = $('storyToggleChip');
   const panel = $('storyPanel');
   if (!panel) { return; }
 
@@ -1492,24 +1545,39 @@ function renderStory() {
   const stageTitle = M._m3_story_stage_title ? M.UTF8ToString(M._m3_story_stage_title()) : '';
   const brief = M._m3_story_brief ? M.UTF8ToString(M._m3_story_brief()) : '';
 
-  if (!chapterTitle && !stageTitle && !brief) { panel.hidden = true; return; }
-  panel.hidden = false;
+  if (!chapterTitle && !stageTitle && !brief) {
+    if (chip) chip.hidden = true;
+    panel.hidden = true;
+    return;
+  }
 
-  $('storyChapter').textContent = chapterTitle;
-  $('storyTitle').textContent = stageTitle;
-  $('storyBrief').textContent = brief;
+  if (chip) {
+    chip.hidden = false;
+    const titleEl = $('storyChipTitle');
+    if (titleEl) titleEl.textContent = stageTitle || chapterTitle || 'Cốt truyện';
+  }
+  panel.hidden = !storyModalOpen;
+
+  const chEl = $('storyChapter');
+  if (chEl) chEl.textContent = chapterTitle;
+  const stEl = $('storyTitle');
+  if (stEl) stEl.textContent = stageTitle;
+  const brEl = $('storyBrief');
+  if (brEl) brEl.textContent = brief;
 
   const introCount = M._m3_story_intro_count ? M._m3_story_intro_count() : 0;
   const linesEl = $('storyLines');
-  if (linesEl.children.length !== introCount) {
-    linesEl.innerHTML = '';
-    for (let i = 0; i < introCount; i++) {
-      const li = document.createElement('li');
-      linesEl.appendChild(li);
+  if (linesEl) {
+    if (linesEl.children.length !== introCount) {
+      linesEl.innerHTML = '';
+      for (let i = 0; i < introCount; i++) {
+        const li = document.createElement('li');
+        linesEl.appendChild(li);
+      }
     }
-  }
-  for (let i = 0; i < introCount; i++) {
-    linesEl.children[i].textContent = M.UTF8ToString(M._m3_story_intro_line(i));
+    for (let i = 0; i < introCount; i++) {
+      linesEl.children[i].textContent = M.UTF8ToString(M._m3_story_intro_line(i));
+    }
   }
 }
 
