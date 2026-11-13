@@ -23,5 +23,7 @@ __pycache__/
 .vscode/compileCommands*
 .env
 *.env
+Tools/bin/
+
 local_secrets.*
 *.blend1
