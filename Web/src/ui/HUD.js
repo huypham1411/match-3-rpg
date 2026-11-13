@@ -108,6 +108,17 @@ export class TacticalHUD {
 
         const hpFill = document.getElementById('hudBossHpFill');
         const hpText = document.getElementById('hudBossHpText');
+        const intentEl = document.getElementById('hudBossIntent');
+
+        if (intentEl) {
+            if (this.state.boss.isBroken) {
+                intentEl.innerHTML = `<span style="color:#ef4444; font-weight:800;">💫 CHOÁNG (BREAK) — ĐÒN HỦY DIỆT BỊ NGẮT!</span>`;
+            } else {
+                const count = this.state.boss.telegraphCountdown;
+                const color = count === 1 ? '#ff0055' : '#fbbf24';
+                intentEl.innerHTML = `<span style="color:${color}">⚠️ ${this.state.boss.telegraphName} [${count} TURN NỮA]</span>`;
+            }
+        }
         if (hpFill) hpFill.style.width = `${Math.max(0, hpPercent)}%`;
         if (hpText) hpText.textContent = `${this.state.boss.hp} / ${this.state.boss.maxHp}`;
 
@@ -155,8 +166,28 @@ export class TacticalHUD {
         events.on('state_updated', () => this.updateHUD());
         events.on('damage_dealt', () => this.updateHUD());
         events.on('heal_triggered', () => this.updateHUD());
-        events.on('stagger_broken', () => this.updateHUD());
+        events.on('stagger_broken', () => {
+            this.showToast('💥 BOSS BỊ STAGGER BREAK! SÁT THƯƠNG X2 & HỦY CHIÊU!', '#00f0ff');
+            this.updateHUD();
+        });
         events.on('new_turn_started', () => this.updateHUD());
+
+        events.on('special_created', ({ specialType }) => {
+            const names = { 1: 'LASER HÀNG', 2: 'LASER CỘT', 3: 'BOM VORTEX 3X3', 4: 'LỖ ĐEN PRISMATIC' };
+            this.showToast(`✨ TẠO NGỌC ĐẶC BIỆT: ${names[specialType] || 'SPECIAL'}!`, '#fbbf24');
+        });
+
+        events.on('special_triggered', ({ type, count }) => {
+            this.showToast(`🌌 KÍCH HOẠT ${type}: NỔ ${count} KHỐI LIÊN HOÀN!`, '#ec4899');
+        });
+
+        events.on('telegraph_unleashed', ({ name, damage }) => {
+            this.showToast(`🚨 BOSS TUNG CHIÊU: ${name} (-${damage} DMG)!`, '#ef4444');
+        });
+
+        events.on('deflector_blocked', ({ blockedAmount }) => {
+            this.showToast(`🛡️ DEFENDER CHẶN THÀNH CÔNG (-${blockedAmount} DMG)!`, '#3b82f6');
+        });
 
         // Phím tắt bàn phím: 1..4 (Skill), NumPad 1..4 (Ultimate)
         window.addEventListener('keydown', (e) => {
@@ -182,5 +213,27 @@ export class TacticalHUD {
                 this.updateHUD();
             }
         };
+    }
+
+    /** Hiển thị thông báo chiến đấu nổi bật (Toast Banner) */
+    showToast(message, color = '#00f0ff') {
+        let toastContainer = document.getElementById('hudToastContainer');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'hudToastContainer';
+            toastContainer.style.cssText = 'position:fixed; top:85px; left:50%; transform:translateX(-50%); z-index:100; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:8px;';
+            document.body.appendChild(toastContainer);
+        }
+
+        const toast = document.createElement('div');
+        toast.style.cssText = `background:rgba(15,23,42,0.92); border:1px solid ${color}; border-radius:8px; padding:8px 16px; color:#fff; font-size:13px; font-weight:700; letter-spacing:0.5px; box-shadow:0 0 16px ${color}66; animation:toastIn 0.3s ease-out;`;
+        toast.textContent = message;
+        toastContainer.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.4s';
+            setTimeout(() => toast.remove(), 400);
+        }, 2200);
     }
 }

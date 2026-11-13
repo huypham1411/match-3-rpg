@@ -218,6 +218,52 @@ export class Board3D {
         events.on('blocks_fall', ({ drops }) => {
             this.animateDrops(drops);
         });
+
+        // 4. Sinh ngọc đặc biệt (Match 4, Match 5)
+        events.on('special_created', ({ r, c, specialType }) => {
+            this.attachSpecialMarker(r, c, specialType);
+        });
+    }
+
+    /** Gắn hiệu ứng thị giác cho Ngọc Đặc Biệt */
+    attachSpecialMarker(r, c, specialType) {
+        const mesh = this.tileMeshes[r][c];
+        if (!mesh) return;
+
+        // Xóa marker cũ nếu có
+        const oldMarker = mesh.getObjectByName('special_marker');
+        if (oldMarker) mesh.remove(oldMarker);
+
+        let markerGeo;
+        let markerMat;
+
+        if (specialType === 1 || specialType === 2) {
+            // Tia Laser hàng/cột: Vòng hào quang Neon sáng rực
+            markerGeo = new THREE.TorusGeometry(0.35, 0.08, 8, 24);
+            markerMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        } else if (specialType === 3) {
+            // Bom 3x3: Lõi năng lượng đỏ nhấp nháy
+            markerGeo = new THREE.SphereGeometry(0.28, 12, 12);
+            markerMat = new THREE.MeshBasicMaterial({ color: 0xff0055 });
+        } else if (specialType === 4) {
+            // SwapAll / Lỗ đen vũ trụ: Viên kim cương bát diện xoay tròn
+            markerGeo = new THREE.OctahedronGeometry(0.36, 0);
+            markerMat = new THREE.MeshStandardMaterial({
+                color: 0x00f0ff,
+                emissive: 0xffffff,
+                emissiveIntensity: 0.8,
+                metalness: 0.9,
+                roughness: 0.1
+            });
+        }
+
+        if (markerGeo) {
+            const marker = new THREE.Mesh(markerGeo, markerMat);
+            marker.name = 'special_marker';
+            marker.position.z = 0.3; // Nổi lên bề mặt khối
+            marker.userData = { isSpecialMarker: true, specialType };
+            mesh.add(marker);
+        }
     }
 
     /** Diễn hoạt hoán đổi 2 khối bằng toán học Lerp */
@@ -305,6 +351,20 @@ export class Board3D {
                 if (anim.squashTimer <= 0) {
                     mesh.scale.set(1.0, 1.0, 1.0);
                     this.animatingTiles.splice(i, 1);
+                }
+            }
+        }
+
+        // Xoay nhẹ các viên ngọc đặc biệt (Octahedron / Torus) để tạo sự sống động
+        for (let r = 0; r < this.state.height; r++) {
+            for (let c = 0; c < this.state.width; c++) {
+                const mesh = this.tileMeshes[r][c];
+                if (mesh) {
+                    const marker = mesh.getObjectByName('special_marker');
+                    if (marker) {
+                        marker.rotation.z += delta * 2.5;
+                        marker.rotation.y += delta * 1.5;
+                    }
                 }
             }
         }

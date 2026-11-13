@@ -37,6 +37,14 @@ export const COLOR_NAMES = {
     6: 'Băng Tuyết (Diamond Ice)'
 };
 
+export const SPECIAL_TYPES = {
+    NONE: 0,
+    LINE_ROW: 1,     // Quét toàn bộ hàng ngang (Match 4 ngang)
+    LINE_COL: 2,     // Quét toàn bộ cột dọc (Match 4 dọc)
+    BOMB_3X3: 3,     // Nổ 3x3 diện rộng (Match 5 chữ L hoặc T)
+    SWAP_ALL: 4      // Lỗ đen sắc màu (Match 5 thẳng hàng): nổ tất cả ngọc cùng màu
+};
+
 export class GameState {
     constructor(width = 8, height = 8) {
         this.width = width;
@@ -55,21 +63,27 @@ export class GameState {
             { id: 4, name: 'Thiết Giáp Vệ Binh', role: 'Defender', color: COLORS.ICE, altColor: COLORS.WATER, hp: 1400, maxHp: 1400, energy: 10, maxEnergy: 100, skillCd: 0, maxCd: 4, deflectorStacks: 0 }
         ];
 
-        // Boss Sentinel Unit 07
+        // Boss Sentinel Unit 07 với hệ thống Telegraph & Stagger Break
         this.boss = {
             id: 'sentinel_07',
             name: 'Sentinel Unit 07 (Thủ Hộ Tro Tàn)',
-            hp: 25000,
-            maxHp: 25000,
+            hp: 30000,
+            maxHp: 30000,
             stagger: 100,      // Toughness 100%
             maxStagger: 100,
             isBroken: false,   // Bị choáng (nhận x2 DMG)
             breakTurnsLeft: 0,
-            intent: 'Quét Tia Laser (Toàn Đội)'
+            // Telegraph System: Chỉ báo chiêu thức nguy hiểm sắp tới
+            telegraphName: 'Tụ Năng Lượng: Hủy Diệt Pháo',
+            telegraphCountdown: 2,
+            telegraphDmg: 900,
+            isTelegraphing: true
         };
 
         // Bàn cờ 8x8 (Lưu mã màu: 1..6)
         this.grid = Array(height).fill(null).map(() => Array(width).fill(0));
+        // Mảng lưu loại Ngọc Đặc Biệt: SPECIAL_TYPES
+        this.specialGrid = Array(height).fill(null).map(() => Array(width).fill(SPECIAL_TYPES.NONE));
         this.selectedTile = null; // {r, c}
         this.isProcessing = false;
 
@@ -109,10 +123,54 @@ export class GameState {
         this.isProcessing = true;
         events.emit('swap_start', { from: { r: r1, c: c1 }, to: { r: r2, c: c2 } });
 
+        // Kiểm tra kích hoạt ngọc tối thượng SWAP_ALL (Lỗ Đen Sắc Màu)
+        const isSwapAll1 = this.specialGrid[r1][c1] === SPECIAL_TYPES.SWAP_ALL;
+        const isSwapAll2 = this.specialGrid[r2][c2] === SPECIAL_TYPES.SWAP_ALL;
+
+        if (isSwapAll1 || isSwapAll2) {
+            const targetColor = isSwapAll1 ? this.grid[r2][c2] : this.grid[r1][c1];
+            this.movesLeft--;
+            this.comboChain = 1;
+            events.emit('swap_accept', { from: { r: r1, c: c1 }, to: { r: r2, c: c2 } });
+
+            // Gom tất cả các khối có cùng targetColor
+            const allColorMatches = [];
+            for (let r = 0; r < this.height; r++) {
+                for (let c = 0; c < this.width; c++) {
+                    if (this.grid[r][c] === targetColor || (r === r1 && c === c1) || (r === r2 && c === c2)) {
+                        allColorMatches.push({ r, c, color: this.grid[r][c], special: this.specialGrid[r][c] });
+                    }
+                }
+            }
+
+            events.emit('special_triggered', { type: 'PRISMATIC_BURST', color: targetColor, count: allColorMatches.length });
+            events.emit('match_shatter', { matches: allColorMatches, combo: this.comboChain });
+            this.processCombatMath(allColorMatches, 3); // Sát thương cực đại
+
+            // Xóa khối
+            allColorMatches.forEach(m => {
+                this.grid[m.r][m.c] = 0;
+                this.specialGrid[m.r][m.c] = SPECIAL_TYPES.NONE;
+            });
+
+            await new Promise(res => setTimeout(res, 250));
+            const dropDetails = this.applyGravityAndRefill();
+            events.emit('blocks_fall', { drops: dropDetails });
+            await new Promise(res => setTimeout(res, 300));
+
+            await this.resolveCascade();
+            if (this.movesLeft <= 0) await this.endTurn();
+            this.isProcessing = false;
+            return true;
+        }
+
         // Hoán đổi tạm thời
         const temp = this.grid[r1][c1];
+        const tempSpec = this.specialGrid[r1][c1];
         this.grid[r1][c1] = this.grid[r2][c2];
+        this.specialGrid[r1][c1] = this.specialGrid[r2][c2];
         this.grid[r2][c2] = temp;
+        this.specialGrid[r2][c2] = tempSpec;
 
         // Tìm match
         const matches = this.findMatches();
@@ -120,7 +178,9 @@ export class GameState {
             // Nước đi không hợp lệ -> Trả về vị trí cũ
             await new Promise(res => setTimeout(res, 200));
             this.grid[r2][c2] = this.grid[r1][c1];
+            this.specialGrid[r2][c2] = this.specialGrid[r1][c1];
             this.grid[r1][c1] = temp;
+            this.specialGrid[r1][c1] = tempSpec;
             events.emit('swap_reject', { from: { r: r1, c: c1 }, to: { r: r2, c: c2 } });
             this.isProcessing = false;
             return false;
@@ -134,7 +194,7 @@ export class GameState {
         // Chạy vòng lặp cascade (nổ khối -> rơi -> nạp mới -> tìm match tiếp)
         await this.resolveCascade();
 
-        // Kiểm tra kết thúc lượt nếu hết 4 nước
+        // Kiểm tra kết thúc lượt nếu hết nước đi
         if (this.movesLeft <= 0) {
             await this.endTurn();
         }
@@ -143,9 +203,10 @@ export class GameState {
         return true;
     }
 
-    /** Tìm tất cả các cụm Match trên bàn */
+    /** Tìm tất cả các cụm Match trên bàn và nhận diện Ngọc Đặc Biệt */
     findMatches() {
-        const matched = new Set();
+        const matched = new Map(); // key: "r,c" -> { r, c, color, willSpawnSpecial: null }
+        const specialsToSpawn = []; // { r, c, specialType, color }
 
         // 1. Quét hàng ngang
         for (let r = 0; r < this.height; r++) {
@@ -155,8 +216,16 @@ export class GameState {
                     matchLen++;
                 } else {
                     if (matchLen >= 3) {
+                        const midC = c - Math.floor(matchLen / 2) - 1;
+                        let special = SPECIAL_TYPES.NONE;
+                        if (matchLen === 4) special = SPECIAL_TYPES.LINE_ROW;
+                        else if (matchLen >= 5) special = SPECIAL_TYPES.SWAP_ALL;
+
                         for (let k = c - matchLen; k < c; k++) {
-                            matched.add(`${r},${k}`);
+                            matched.set(`${r},${k}`, { r, c: k, color: this.grid[r][k] });
+                        }
+                        if (special !== SPECIAL_TYPES.NONE) {
+                            specialsToSpawn.push({ r, c: midC, specialType: special, color: this.grid[r][midC] });
                         }
                     }
                     matchLen = 1;
@@ -172,8 +241,16 @@ export class GameState {
                     matchLen++;
                 } else {
                     if (matchLen >= 3) {
+                        const midR = r - Math.floor(matchLen / 2) - 1;
+                        let special = SPECIAL_TYPES.NONE;
+                        if (matchLen === 4) special = SPECIAL_TYPES.LINE_COL;
+                        else if (matchLen >= 5) special = SPECIAL_TYPES.SWAP_ALL;
+
                         for (let k = r - matchLen; k < r; k++) {
-                            matched.add(`${k},${c}`);
+                            matched.set(`${k},${c}`, { r: k, c, color: this.grid[k][c] });
+                        }
+                        if (special !== SPECIAL_TYPES.NONE) {
+                            specialsToSpawn.push({ r: midR, c, specialType: special, color: this.grid[midR][c] });
                         }
                     }
                     matchLen = 1;
@@ -181,27 +258,36 @@ export class GameState {
             }
         }
 
-        // 3. Quét khối vuông 2x2 (Rocket Breaker)
-        for (let r = 0; r < this.height - 1; r++) {
-            for (let c = 0; c < this.width - 1; c++) {
-                const color = this.grid[r][c];
-                if (color > 0 &&
-                    this.grid[r + 1][c] === color &&
-                    this.grid[r][c + 1] === color &&
-                    this.grid[r + 1][c + 1] === color) {
-                    matched.add(`${r},${c}`);
-                    matched.add(`${r + 1},${c}`);
-                    matched.add(`${r},${c + 1}`);
-                    matched.add(`${r + 1},${c + 1}`);
+        // 3. Kích hoạt hiệu ứng lan của các Ngọc Đặc Biệt bị dính trong vụ nổ
+        const finalSet = new Map(matched);
+        matched.forEach((val) => {
+            const spec = this.specialGrid[val.r][val.c];
+            if (spec === SPECIAL_TYPES.LINE_ROW) {
+                // Quét cả hàng
+                for (let c = 0; c < this.width; c++) {
+                    finalSet.set(`${val.r},${c}`, { r: val.r, c, color: this.grid[val.r][c] });
+                }
+            } else if (spec === SPECIAL_TYPES.LINE_COL) {
+                // Quét cả cột
+                for (let r = 0; r < this.height; r++) {
+                    finalSet.set(`${r},${val.c}`, { r, c: val.c, color: this.grid[r][val.c] });
+                }
+            } else if (spec === SPECIAL_TYPES.BOMB_3X3) {
+                // Nổ 3x3
+                for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                        const nr = val.r + dr;
+                        const nc = val.c + dc;
+                        if (nr >= 0 && nr < this.height && nc >= 0 && nc < this.width) {
+                            finalSet.set(`${nr},${nc}`, { r: nr, c: nc, color: this.grid[nr][nc] });
+                        }
+                    }
                 }
             }
-        }
-
-        const result = [];
-        matched.forEach(coord => {
-            const [r, c] = coord.split(',').map(Number);
-            result.push({ r, c, color: this.grid[r][c] });
         });
+
+        const result = Array.from(finalSet.values());
+        result.specialsToSpawn = specialsToSpawn;
         return result;
     }
 
@@ -210,6 +296,8 @@ export class GameState {
         let matches = this.findMatches();
         while (matches.length > 0) {
             this.comboChain++;
+            const specialsToSpawn = matches.specialsToSpawn || [];
+
             events.emit('match_shatter', { matches, combo: this.comboChain });
 
             // Tính toán sát thương & nạp nộ từng role
@@ -218,6 +306,14 @@ export class GameState {
             // Xóa khối bị match khỏi grid
             matches.forEach(m => {
                 this.grid[m.r][m.c] = 0;
+                this.specialGrid[m.r][m.c] = SPECIAL_TYPES.NONE;
+            });
+
+            // Nếu có ngọc đặc biệt được tạo ra (Match 4, 5)
+            specialsToSpawn.forEach(sp => {
+                this.grid[sp.r][sp.c] = sp.color;
+                this.specialGrid[sp.r][sp.c] = sp.specialType;
+                events.emit('special_created', { r: sp.r, c: sp.c, specialType: sp.specialType, color: sp.color });
             });
 
             await new Promise(res => setTimeout(res, 220));
@@ -307,8 +403,10 @@ export class GameState {
                     const fromR = r;
                     const toR = r + emptySpaces;
                     this.grid[toR][c] = this.grid[fromR][c];
+                    this.specialGrid[toR][c] = this.specialGrid[fromR][c];
                     this.grid[fromR][c] = 0;
-                    drops.push({ from: { r: fromR, c }, to: { r: toR, c }, color: this.grid[toR][c] });
+                    this.specialGrid[fromR][c] = SPECIAL_TYPES.NONE;
+                    drops.push({ from: { r: fromR, c }, to: { r: toR, c }, color: this.grid[toR][c], special: this.specialGrid[toR][c] });
                 }
             }
 
@@ -317,7 +415,8 @@ export class GameState {
                 const targetR = emptySpaces - 1 - k;
                 const newColor = Math.floor(Math.random() * 6) + 1;
                 this.grid[targetR][c] = newColor;
-                drops.push({ from: { r: -1 - k, c }, to: { r: targetR, c }, color: newColor, isNew: true });
+                this.specialGrid[targetR][c] = SPECIAL_TYPES.NONE;
+                drops.push({ from: { r: -1 - k, c }, to: { r: targetR, c }, color: newColor, isNew: true, special: SPECIAL_TYPES.NONE });
             }
         }
 
@@ -342,19 +441,31 @@ export class GameState {
                 events.emit('stagger_recovered', { boss: this.boss });
             }
         } else {
-            // Boss tấn công!
+            // Đếm ngược đòn chí mạng Telegraph
+            this.boss.telegraphCountdown--;
+            let isSuperAttack = false;
             let bossDmg = 450;
+
+            if (this.boss.telegraphCountdown <= 0) {
+                // Kích hoạt Đòn Hủy Diệt Pháo
+                isSuperAttack = true;
+                bossDmg = this.boss.telegraphDmg;
+                this.boss.telegraphCountdown = 3; // Reset chu kỳ tụ năng lượng
+                events.emit('telegraph_unleashed', { name: this.boss.telegraphName, damage: bossDmg });
+            }
+
             if (this.heroes[3].deflectorStacks > 0) {
-                // Defender kích hoạt khiên giảm 40% sát thương
-                bossDmg = Math.round(bossDmg * 0.6);
+                // Defender kích hoạt khiên giảm 50% sát thương
+                const blocked = Math.round(bossDmg * 0.5);
+                bossDmg -= blocked;
                 this.heroes[3].deflectorStacks = 0;
-                events.emit('deflector_blocked', { reducedDamage: bossDmg });
+                events.emit('deflector_blocked', { reducedDamage: bossDmg, blockedAmount: blocked });
             }
 
             this.heroes.forEach(h => {
-                h.hp = Math.max(0, h.hp - Math.round(bossDmg * (0.8 + Math.random() * 0.4)));
+                h.hp = Math.max(0, h.hp - Math.round(bossDmg * (0.85 + Math.random() * 0.3)));
             });
-            events.emit('boss_attack', { damage: bossDmg });
+            events.emit('boss_attack', { damage: bossDmg, isSuperAttack });
         }
 
         // Bắt đầu turn mới
