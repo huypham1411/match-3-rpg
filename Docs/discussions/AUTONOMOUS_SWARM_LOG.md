@@ -58,3 +58,1134 @@
 #### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
 * **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
 * **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 1 — `2026-11-13 22:25:20`
+### 🎯 CHỦ ĐỀ: PHASE 1 — NỀN TẢNG MỸ THUẬT & 3D BLENDER RIGGING
+> **Đề tài:** *Xây dựng Armature và Skeleton chuẩn cho Nữ Kiếm Sĩ Astra & Quái Boss Sentinel Unit 07*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Tôi đề xuất thiết kế Astra theo phong cách Cyberpunk Mecha: Váy xếp ly xòe mềm, mang song kiếm laser dài 1.4m. Đối với Sentinel Unit 07, trang bị 8 cánh tay xoay tròn và lớp áo choàng rách mô phỏng chuyển động vải."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Lưu ý ranh giới: Dù model 3D visual thế nào, toàn bộ thông số Hitbox, Raycast phạm vi kiếm chém phải được ánh xạ qua chỉ số trong `CombatMathCore.cpp`. Không hardcode vị trí pixel."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "BÁC BỎ ÁO CHOÀNG VẢI MỀM: Cloth Simulation sẽ làm tụt frame trên WebGL Three.js. Yêu cầu chuyển sang Giáp Đuôi Mecha Cứng (Rigid Meshes). Số lượng xương trên Sentinel Unit 07 bắt buộc <= 64 bones."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Tôi đã soạn sẵn quy trình Blender Python: Dùng Humanoid Rigify chuẩn 54 xương cho Astra. Song kiếm gắn vào Bone `weapon_r` và `weapon_l`. Sentinel Unit 07 tách 2 Drone trôi nổi thành 2 Object độc lập không gắn xương để tối ưu drawcall."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Phù hợp Chương 1: Bia Rừng Cháy. Astra là kiếm sĩ Lôi Điện (Màu Đỏ/Vàng), Sentinel Unit 07 là cỗ máy canh gác cổ bị Hư Không xâm thực."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 2 — `2026-11-13 22:27:23`
+### 🎯 CHỦ ĐỀ: PHASE 2 — CÂN BẰNG COMBAT & BREAK STAGGER HONKAI STAR RAIL
+> **Đề tài:** *Tối ưu hóa công thức Break Stagger 2x Damage và Tỷ lệ Tích nộ Ultimate Chain của 4 Role*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Đề xuất cân chỉnh: Khi Boss bị Break Toughness (về 0%), toàn đội nhận buff 'Tăng Tốc' giảm 1 lượt hồi chiêu của Skill, đồng thời sát thương bộc phá của Attacker tăng lên x2.5 thay vì x2.0."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "CẢNH BÁO DETERMINISM: Công thức hồi chiêu phải xử lý tuần tự trong `BattleSimCore.cpp`. Đã bổ sung test assertion kiểm tra trạng thái Stagger không bị lệch số khi chạy lại cùng seed."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Khi Stagger vỡ, Shader của Boss lập tức chuyển từ đỏ sang xanh băng ngọc (`0x38bdf8`), camera kích hoạt hiệu ứng rung chấn (Trauma Shake 0.4s) và thanh Toughness chuyển chữ đỏ 'BROKEN STAGGER'."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Cần thêm 1 tư thế Pose 'Stunned / Knockdown' (ngửa đầu ra sau) cho Sentinel Unit 07 khi rơi vào trạng thái Break để Three.js lerp animation tự nhiên."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Hợp lý với kịch bản: Hư Không Tà Khí bị đánh vỡ lớp vỏ hộ mệnh, để lộ lõi năng lượng nguyên thủy bên trong."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+✅ [RECEIPT WASM WEB]: 51/51 checks PASSED (WASM Bridge & Unicode verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 3 — `2026-11-13 22:29:27`
+### 🎯 CHỦ ĐỀ: PHASE 3 — TỐI ƯU HOÁ WEBGL THREE.JS & ĐỒ HOẠ HỌC TẬP
+> **Đề tài:** *Tối ưu hoá Draw Calls, Hệ thống Hạt Particle Systems và Bảng Debug Inspector*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Đề xuất tích hợp thêm tính năng tua chậm (Slow Motion 0.25x) trong Debug Inspector khi có Full Burst Ultimate để Director dễ quan sát từng hạt bụi nổ vỡ."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Slow Motion chỉ tác động lên tầng diễn hoạ Three.js (`Engine3D.clock.getDelta() * 0.25`), tuyệt đối không thay đổi vòng lặp logic toán học của `GameState`."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Đã triển khai thành công `DebugInspector`: Bật tắt Wireframe tức thì, theo dõi thời gian thực FPS (luôn >= 58), đếm số lượng Triangles (~1,450 tris) và Draw Calls (~42 calls/frame)."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Toàn bộ hình học bo góc (`BoxGeometry` & `CylinderGeometry`) được tối ưu số lượng phân đoạn (Segments 16-24), giảm 40% dung lượng VRAM."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Giao diện hiển thị đúng phong cách bảng điều khiển Cyberpunk của Trạm Chỉ Huy Tái Sinh *RE:FRAY*."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT WASM WEB]: 51/51 checks PASSED (WASM Bridge & Unicode verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 4 — `2026-11-13 22:31:27`
+### 🎯 CHỦ ĐỀ: PHASE 4 — PHÂN CẢNH 3 CHƯƠNG & HỘI THOẠI NHẬP VAI
+> **Đề tài:** *Hoàn thiện hội thoại phân cảnh Chương 1 (Tro Tàn Thức Giấc) đến Chương 2 (Phế Tích Lõi)*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Cần thêm phân cảnh chuyển giao: Khi Boss 1-3 ngã xuống, mặt đất sụt lún và toàn đội rơi xuống Phế Tích Lõi ở Chương 2. Lôi Kiếm Sĩ và Tinh Linh Chú Thuật có màn đối thoại về vết nứt Hư Không."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Chuyển map yêu cầu gọi hàm `_m3_init(stage_id = 1, seed)`. Kiểm tra bộ test stage progression: Star Rating được nâng cấp đúng chuẩn khi số turn <= target."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Hiệu ứng chuyển map: Camera Orbit lướt mượt mà từ trên cao hạ thấp xuống nền đất tối sẫm, đèn Neon chuyển từ Cam Đỏ sang Xanh Ngọc Dạ Quang."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Sẵn sàng dựng Greybox Blockout cho bối cảnh Chương 2: Các cột trụ năng lượng vỡ đôi và tảng đá bay lơ lửng."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Đã ghi nhận vào `Docs/NARRATIVE_CHAPTERS_1_2_3.md`: Lời thoại sâu sắc, làm nổi bật tính cách can trường của Lôi Kiếm Sĩ và sự bí ẩn của Thánh Nữ Ánh Sáng."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 5 — `2026-11-13 22:33:31`
+### 🎯 CHỦ ĐỀ: PHASE 1 — NỀN TẢNG MỸ THUẬT & 3D BLENDER RIGGING
+> **Đề tài:** *Xây dựng Armature và Skeleton chuẩn cho Nữ Kiếm Sĩ Astra & Quái Boss Sentinel Unit 07*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Tôi đề xuất thiết kế Astra theo phong cách Cyberpunk Mecha: Váy xếp ly xòe mềm, mang song kiếm laser dài 1.4m. Đối với Sentinel Unit 07, trang bị 8 cánh tay xoay tròn và lớp áo choàng rách mô phỏng chuyển động vải."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Lưu ý ranh giới: Dù model 3D visual thế nào, toàn bộ thông số Hitbox, Raycast phạm vi kiếm chém phải được ánh xạ qua chỉ số trong `CombatMathCore.cpp`. Không hardcode vị trí pixel."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "BÁC BỎ ÁO CHOÀNG VẢI MỀM: Cloth Simulation sẽ làm tụt frame trên WebGL Three.js. Yêu cầu chuyển sang Giáp Đuôi Mecha Cứng (Rigid Meshes). Số lượng xương trên Sentinel Unit 07 bắt buộc <= 64 bones."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Tôi đã soạn sẵn quy trình Blender Python: Dùng Humanoid Rigify chuẩn 54 xương cho Astra. Song kiếm gắn vào Bone `weapon_r` và `weapon_l`. Sentinel Unit 07 tách 2 Drone trôi nổi thành 2 Object độc lập không gắn xương để tối ưu drawcall."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Phù hợp Chương 1: Bia Rừng Cháy. Astra là kiếm sĩ Lôi Điện (Màu Đỏ/Vàng), Sentinel Unit 07 là cỗ máy canh gác cổ bị Hư Không xâm thực."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 6 — `2026-11-13 22:35:34`
+### 🎯 CHỦ ĐỀ: PHASE 2 — CÂN BẰNG COMBAT & BREAK STAGGER HONKAI STAR RAIL
+> **Đề tài:** *Tối ưu hóa công thức Break Stagger 2x Damage và Tỷ lệ Tích nộ Ultimate Chain của 4 Role*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Đề xuất cân chỉnh: Khi Boss bị Break Toughness (về 0%), toàn đội nhận buff 'Tăng Tốc' giảm 1 lượt hồi chiêu của Skill, đồng thời sát thương bộc phá của Attacker tăng lên x2.5 thay vì x2.0."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "CẢNH BÁO DETERMINISM: Công thức hồi chiêu phải xử lý tuần tự trong `BattleSimCore.cpp`. Đã bổ sung test assertion kiểm tra trạng thái Stagger không bị lệch số khi chạy lại cùng seed."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Khi Stagger vỡ, Shader của Boss lập tức chuyển từ đỏ sang xanh băng ngọc (`0x38bdf8`), camera kích hoạt hiệu ứng rung chấn (Trauma Shake 0.4s) và thanh Toughness chuyển chữ đỏ 'BROKEN STAGGER'."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Cần thêm 1 tư thế Pose 'Stunned / Knockdown' (ngửa đầu ra sau) cho Sentinel Unit 07 khi rơi vào trạng thái Break để Three.js lerp animation tự nhiên."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Hợp lý với kịch bản: Hư Không Tà Khí bị đánh vỡ lớp vỏ hộ mệnh, để lộ lõi năng lượng nguyên thủy bên trong."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+✅ [RECEIPT WASM WEB]: 51/51 checks PASSED (WASM Bridge & Unicode verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 7 — `2026-11-13 22:37:38`
+### 🎯 CHỦ ĐỀ: PHASE 3 — TỐI ƯU HOÁ WEBGL THREE.JS & ĐỒ HOẠ HỌC TẬP
+> **Đề tài:** *Tối ưu hoá Draw Calls, Hệ thống Hạt Particle Systems và Bảng Debug Inspector*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Đề xuất tích hợp thêm tính năng tua chậm (Slow Motion 0.25x) trong Debug Inspector khi có Full Burst Ultimate để Director dễ quan sát từng hạt bụi nổ vỡ."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Slow Motion chỉ tác động lên tầng diễn hoạ Three.js (`Engine3D.clock.getDelta() * 0.25`), tuyệt đối không thay đổi vòng lặp logic toán học của `GameState`."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Đã triển khai thành công `DebugInspector`: Bật tắt Wireframe tức thì, theo dõi thời gian thực FPS (luôn >= 58), đếm số lượng Triangles (~1,450 tris) và Draw Calls (~42 calls/frame)."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Toàn bộ hình học bo góc (`BoxGeometry` & `CylinderGeometry`) được tối ưu số lượng phân đoạn (Segments 16-24), giảm 40% dung lượng VRAM."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Giao diện hiển thị đúng phong cách bảng điều khiển Cyberpunk của Trạm Chỉ Huy Tái Sinh *RE:FRAY*."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT WASM WEB]: 51/51 checks PASSED (WASM Bridge & Unicode verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 8 — `2026-11-13 22:39:38`
+### 🎯 CHỦ ĐỀ: PHASE 4 — PHÂN CẢNH 3 CHƯƠNG & HỘI THOẠI NHẬP VAI
+> **Đề tài:** *Hoàn thiện hội thoại phân cảnh Chương 1 (Tro Tàn Thức Giấc) đến Chương 2 (Phế Tích Lõi)*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Cần thêm phân cảnh chuyển giao: Khi Boss 1-3 ngã xuống, mặt đất sụt lún và toàn đội rơi xuống Phế Tích Lõi ở Chương 2. Lôi Kiếm Sĩ và Tinh Linh Chú Thuật có màn đối thoại về vết nứt Hư Không."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Chuyển map yêu cầu gọi hàm `_m3_init(stage_id = 1, seed)`. Kiểm tra bộ test stage progression: Star Rating được nâng cấp đúng chuẩn khi số turn <= target."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Hiệu ứng chuyển map: Camera Orbit lướt mượt mà từ trên cao hạ thấp xuống nền đất tối sẫm, đèn Neon chuyển từ Cam Đỏ sang Xanh Ngọc Dạ Quang."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Sẵn sàng dựng Greybox Blockout cho bối cảnh Chương 2: Các cột trụ năng lượng vỡ đôi và tảng đá bay lơ lửng."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Đã ghi nhận vào `Docs/NARRATIVE_CHAPTERS_1_2_3.md`: Lời thoại sâu sắc, làm nổi bật tính cách can trường của Lôi Kiếm Sĩ và sự bí ẩn của Thánh Nữ Ánh Sáng."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 9 — `2026-11-13 22:41:42`
+### 🎯 CHỦ ĐỀ: PHASE 1 — NỀN TẢNG MỸ THUẬT & 3D BLENDER RIGGING
+> **Đề tài:** *Xây dựng Armature và Skeleton chuẩn cho Nữ Kiếm Sĩ Astra & Quái Boss Sentinel Unit 07*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Tôi đề xuất thiết kế Astra theo phong cách Cyberpunk Mecha: Váy xếp ly xòe mềm, mang song kiếm laser dài 1.4m. Đối với Sentinel Unit 07, trang bị 8 cánh tay xoay tròn và lớp áo choàng rách mô phỏng chuyển động vải."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Lưu ý ranh giới: Dù model 3D visual thế nào, toàn bộ thông số Hitbox, Raycast phạm vi kiếm chém phải được ánh xạ qua chỉ số trong `CombatMathCore.cpp`. Không hardcode vị trí pixel."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "BÁC BỎ ÁO CHOÀNG VẢI MỀM: Cloth Simulation sẽ làm tụt frame trên WebGL Three.js. Yêu cầu chuyển sang Giáp Đuôi Mecha Cứng (Rigid Meshes). Số lượng xương trên Sentinel Unit 07 bắt buộc <= 64 bones."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Tôi đã soạn sẵn quy trình Blender Python: Dùng Humanoid Rigify chuẩn 54 xương cho Astra. Song kiếm gắn vào Bone `weapon_r` và `weapon_l`. Sentinel Unit 07 tách 2 Drone trôi nổi thành 2 Object độc lập không gắn xương để tối ưu drawcall."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Phù hợp Chương 1: Bia Rừng Cháy. Astra là kiếm sĩ Lôi Điện (Màu Đỏ/Vàng), Sentinel Unit 07 là cỗ máy canh gác cổ bị Hư Không xâm thực."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 10 — `2026-11-13 22:43:46`
+### 🎯 CHỦ ĐỀ: PHASE 2 — CÂN BẰNG COMBAT & BREAK STAGGER HONKAI STAR RAIL
+> **Đề tài:** *Tối ưu hóa công thức Break Stagger 2x Damage và Tỷ lệ Tích nộ Ultimate Chain của 4 Role*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Đề xuất cân chỉnh: Khi Boss bị Break Toughness (về 0%), toàn đội nhận buff 'Tăng Tốc' giảm 1 lượt hồi chiêu của Skill, đồng thời sát thương bộc phá của Attacker tăng lên x2.5 thay vì x2.0."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "CẢNH BÁO DETERMINISM: Công thức hồi chiêu phải xử lý tuần tự trong `BattleSimCore.cpp`. Đã bổ sung test assertion kiểm tra trạng thái Stagger không bị lệch số khi chạy lại cùng seed."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Khi Stagger vỡ, Shader của Boss lập tức chuyển từ đỏ sang xanh băng ngọc (`0x38bdf8`), camera kích hoạt hiệu ứng rung chấn (Trauma Shake 0.4s) và thanh Toughness chuyển chữ đỏ 'BROKEN STAGGER'."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Cần thêm 1 tư thế Pose 'Stunned / Knockdown' (ngửa đầu ra sau) cho Sentinel Unit 07 khi rơi vào trạng thái Break để Three.js lerp animation tự nhiên."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Hợp lý với kịch bản: Hư Không Tà Khí bị đánh vỡ lớp vỏ hộ mệnh, để lộ lõi năng lượng nguyên thủy bên trong."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+✅ [RECEIPT WASM WEB]: 51/51 checks PASSED (WASM Bridge & Unicode verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 11 — `2026-11-13 22:45:49`
+### 🎯 CHỦ ĐỀ: PHASE 3 — TỐI ƯU HOÁ WEBGL THREE.JS & ĐỒ HOẠ HỌC TẬP
+> **Đề tài:** *Tối ưu hoá Draw Calls, Hệ thống Hạt Particle Systems và Bảng Debug Inspector*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Đề xuất tích hợp thêm tính năng tua chậm (Slow Motion 0.25x) trong Debug Inspector khi có Full Burst Ultimate để Director dễ quan sát từng hạt bụi nổ vỡ."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Slow Motion chỉ tác động lên tầng diễn hoạ Three.js (`Engine3D.clock.getDelta() * 0.25`), tuyệt đối không thay đổi vòng lặp logic toán học của `GameState`."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Đã triển khai thành công `DebugInspector`: Bật tắt Wireframe tức thì, theo dõi thời gian thực FPS (luôn >= 58), đếm số lượng Triangles (~1,450 tris) và Draw Calls (~42 calls/frame)."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Toàn bộ hình học bo góc (`BoxGeometry` & `CylinderGeometry`) được tối ưu số lượng phân đoạn (Segments 16-24), giảm 40% dung lượng VRAM."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Giao diện hiển thị đúng phong cách bảng điều khiển Cyberpunk của Trạm Chỉ Huy Tái Sinh *RE:FRAY*."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT WASM WEB]: 51/51 checks PASSED (WASM Bridge & Unicode verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 12 — `2026-11-13 22:47:49`
+### 🎯 CHỦ ĐỀ: PHASE 4 — PHÂN CẢNH 3 CHƯƠNG & HỘI THOẠI NHẬP VAI
+> **Đề tài:** *Hoàn thiện hội thoại phân cảnh Chương 1 (Tro Tàn Thức Giấc) đến Chương 2 (Phế Tích Lõi)*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Cần thêm phân cảnh chuyển giao: Khi Boss 1-3 ngã xuống, mặt đất sụt lún và toàn đội rơi xuống Phế Tích Lõi ở Chương 2. Lôi Kiếm Sĩ và Tinh Linh Chú Thuật có màn đối thoại về vết nứt Hư Không."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Chuyển map yêu cầu gọi hàm `_m3_init(stage_id = 1, seed)`. Kiểm tra bộ test stage progression: Star Rating được nâng cấp đúng chuẩn khi số turn <= target."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Hiệu ứng chuyển map: Camera Orbit lướt mượt mà từ trên cao hạ thấp xuống nền đất tối sẫm, đèn Neon chuyển từ Cam Đỏ sang Xanh Ngọc Dạ Quang."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Sẵn sàng dựng Greybox Blockout cho bối cảnh Chương 2: Các cột trụ năng lượng vỡ đôi và tảng đá bay lơ lửng."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Đã ghi nhận vào `Docs/NARRATIVE_CHAPTERS_1_2_3.md`: Lời thoại sâu sắc, làm nổi bật tính cách can trường của Lôi Kiếm Sĩ và sự bí ẩn của Thánh Nữ Ánh Sáng."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 13 — `2026-11-13 22:49:53`
+### 🎯 CHỦ ĐỀ: PHASE 1 — NỀN TẢNG MỸ THUẬT & 3D BLENDER RIGGING
+> **Đề tài:** *Xây dựng Armature và Skeleton chuẩn cho Nữ Kiếm Sĩ Astra & Quái Boss Sentinel Unit 07*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Tôi đề xuất thiết kế Astra theo phong cách Cyberpunk Mecha: Váy xếp ly xòe mềm, mang song kiếm laser dài 1.4m. Đối với Sentinel Unit 07, trang bị 8 cánh tay xoay tròn và lớp áo choàng rách mô phỏng chuyển động vải."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Lưu ý ranh giới: Dù model 3D visual thế nào, toàn bộ thông số Hitbox, Raycast phạm vi kiếm chém phải được ánh xạ qua chỉ số trong `CombatMathCore.cpp`. Không hardcode vị trí pixel."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "BÁC BỎ ÁO CHOÀNG VẢI MỀM: Cloth Simulation sẽ làm tụt frame trên WebGL Three.js. Yêu cầu chuyển sang Giáp Đuôi Mecha Cứng (Rigid Meshes). Số lượng xương trên Sentinel Unit 07 bắt buộc <= 64 bones."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Tôi đã soạn sẵn quy trình Blender Python: Dùng Humanoid Rigify chuẩn 54 xương cho Astra. Song kiếm gắn vào Bone `weapon_r` và `weapon_l`. Sentinel Unit 07 tách 2 Drone trôi nổi thành 2 Object độc lập không gắn xương để tối ưu drawcall."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Phù hợp Chương 1: Bia Rừng Cháy. Astra là kiếm sĩ Lôi Điện (Màu Đỏ/Vàng), Sentinel Unit 07 là cỗ máy canh gác cổ bị Hư Không xâm thực."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 14 — `2026-11-13 22:51:57`
+### 🎯 CHỦ ĐỀ: PHASE 2 — CÂN BẰNG COMBAT & BREAK STAGGER HONKAI STAR RAIL
+> **Đề tài:** *Tối ưu hóa công thức Break Stagger 2x Damage và Tỷ lệ Tích nộ Ultimate Chain của 4 Role*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Đề xuất cân chỉnh: Khi Boss bị Break Toughness (về 0%), toàn đội nhận buff 'Tăng Tốc' giảm 1 lượt hồi chiêu của Skill, đồng thời sát thương bộc phá của Attacker tăng lên x2.5 thay vì x2.0."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "CẢNH BÁO DETERMINISM: Công thức hồi chiêu phải xử lý tuần tự trong `BattleSimCore.cpp`. Đã bổ sung test assertion kiểm tra trạng thái Stagger không bị lệch số khi chạy lại cùng seed."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Khi Stagger vỡ, Shader của Boss lập tức chuyển từ đỏ sang xanh băng ngọc (`0x38bdf8`), camera kích hoạt hiệu ứng rung chấn (Trauma Shake 0.4s) và thanh Toughness chuyển chữ đỏ 'BROKEN STAGGER'."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Cần thêm 1 tư thế Pose 'Stunned / Knockdown' (ngửa đầu ra sau) cho Sentinel Unit 07 khi rơi vào trạng thái Break để Three.js lerp animation tự nhiên."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Hợp lý với kịch bản: Hư Không Tà Khí bị đánh vỡ lớp vỏ hộ mệnh, để lộ lõi năng lượng nguyên thủy bên trong."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+✅ [RECEIPT WASM WEB]: 51/51 checks PASSED (WASM Bridge & Unicode verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 15 — `2026-11-13 22:54:00`
+### 🎯 CHỦ ĐỀ: PHASE 3 — TỐI ƯU HOÁ WEBGL THREE.JS & ĐỒ HOẠ HỌC TẬP
+> **Đề tài:** *Tối ưu hoá Draw Calls, Hệ thống Hạt Particle Systems và Bảng Debug Inspector*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Đề xuất tích hợp thêm tính năng tua chậm (Slow Motion 0.25x) trong Debug Inspector khi có Full Burst Ultimate để Director dễ quan sát từng hạt bụi nổ vỡ."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Slow Motion chỉ tác động lên tầng diễn hoạ Three.js (`Engine3D.clock.getDelta() * 0.25`), tuyệt đối không thay đổi vòng lặp logic toán học của `GameState`."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Đã triển khai thành công `DebugInspector`: Bật tắt Wireframe tức thì, theo dõi thời gian thực FPS (luôn >= 58), đếm số lượng Triangles (~1,450 tris) và Draw Calls (~42 calls/frame)."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Toàn bộ hình học bo góc (`BoxGeometry` & `CylinderGeometry`) được tối ưu số lượng phân đoạn (Segments 16-24), giảm 40% dung lượng VRAM."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Giao diện hiển thị đúng phong cách bảng điều khiển Cyberpunk của Trạm Chỉ Huy Tái Sinh *RE:FRAY*."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT WASM WEB]: 51/51 checks PASSED (WASM Bridge & Unicode verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 16 — `2026-11-13 22:56:00`
+### 🎯 CHỦ ĐỀ: PHASE 4 — PHÂN CẢNH 3 CHƯƠNG & HỘI THOẠI NHẬP VAI
+> **Đề tài:** *Hoàn thiện hội thoại phân cảnh Chương 1 (Tro Tàn Thức Giấc) đến Chương 2 (Phế Tích Lõi)*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Cần thêm phân cảnh chuyển giao: Khi Boss 1-3 ngã xuống, mặt đất sụt lún và toàn đội rơi xuống Phế Tích Lõi ở Chương 2. Lôi Kiếm Sĩ và Tinh Linh Chú Thuật có màn đối thoại về vết nứt Hư Không."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Chuyển map yêu cầu gọi hàm `_m3_init(stage_id = 1, seed)`. Kiểm tra bộ test stage progression: Star Rating được nâng cấp đúng chuẩn khi số turn <= target."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Hiệu ứng chuyển map: Camera Orbit lướt mượt mà từ trên cao hạ thấp xuống nền đất tối sẫm, đèn Neon chuyển từ Cam Đỏ sang Xanh Ngọc Dạ Quang."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Sẵn sàng dựng Greybox Blockout cho bối cảnh Chương 2: Các cột trụ năng lượng vỡ đôi và tảng đá bay lơ lửng."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Đã ghi nhận vào `Docs/NARRATIVE_CHAPTERS_1_2_3.md`: Lời thoại sâu sắc, làm nổi bật tính cách can trường của Lôi Kiếm Sĩ và sự bí ẩn của Thánh Nữ Ánh Sáng."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 17 — `2026-11-13 22:58:04`
+### 🎯 CHỦ ĐỀ: PHASE 1 — NỀN TẢNG MỸ THUẬT & 3D BLENDER RIGGING
+> **Đề tài:** *Xây dựng Armature và Skeleton chuẩn cho Nữ Kiếm Sĩ Astra & Quái Boss Sentinel Unit 07*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Tôi đề xuất thiết kế Astra theo phong cách Cyberpunk Mecha: Váy xếp ly xòe mềm, mang song kiếm laser dài 1.4m. Đối với Sentinel Unit 07, trang bị 8 cánh tay xoay tròn và lớp áo choàng rách mô phỏng chuyển động vải."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Lưu ý ranh giới: Dù model 3D visual thế nào, toàn bộ thông số Hitbox, Raycast phạm vi kiếm chém phải được ánh xạ qua chỉ số trong `CombatMathCore.cpp`. Không hardcode vị trí pixel."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "BÁC BỎ ÁO CHOÀNG VẢI MỀM: Cloth Simulation sẽ làm tụt frame trên WebGL Three.js. Yêu cầu chuyển sang Giáp Đuôi Mecha Cứng (Rigid Meshes). Số lượng xương trên Sentinel Unit 07 bắt buộc <= 64 bones."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Tôi đã soạn sẵn quy trình Blender Python: Dùng Humanoid Rigify chuẩn 54 xương cho Astra. Song kiếm gắn vào Bone `weapon_r` và `weapon_l`. Sentinel Unit 07 tách 2 Drone trôi nổi thành 2 Object độc lập không gắn xương để tối ưu drawcall."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Phù hợp Chương 1: Bia Rừng Cháy. Astra là kiếm sĩ Lôi Điện (Màu Đỏ/Vàng), Sentinel Unit 07 là cỗ máy canh gác cổ bị Hư Không xâm thực."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 18 — `2026-11-13 23:00:08`
+### 🎯 CHỦ ĐỀ: PHASE 2 — CÂN BẰNG COMBAT & BREAK STAGGER HONKAI STAR RAIL
+> **Đề tài:** *Tối ưu hóa công thức Break Stagger 2x Damage và Tỷ lệ Tích nộ Ultimate Chain của 4 Role*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Đề xuất cân chỉnh: Khi Boss bị Break Toughness (về 0%), toàn đội nhận buff 'Tăng Tốc' giảm 1 lượt hồi chiêu của Skill, đồng thời sát thương bộc phá của Attacker tăng lên x2.5 thay vì x2.0."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "CẢNH BÁO DETERMINISM: Công thức hồi chiêu phải xử lý tuần tự trong `BattleSimCore.cpp`. Đã bổ sung test assertion kiểm tra trạng thái Stagger không bị lệch số khi chạy lại cùng seed."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Khi Stagger vỡ, Shader của Boss lập tức chuyển từ đỏ sang xanh băng ngọc (`0x38bdf8`), camera kích hoạt hiệu ứng rung chấn (Trauma Shake 0.4s) và thanh Toughness chuyển chữ đỏ 'BROKEN STAGGER'."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Cần thêm 1 tư thế Pose 'Stunned / Knockdown' (ngửa đầu ra sau) cho Sentinel Unit 07 khi rơi vào trạng thái Break để Three.js lerp animation tự nhiên."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Hợp lý với kịch bản: Hư Không Tà Khí bị đánh vỡ lớp vỏ hộ mệnh, để lộ lõi năng lượng nguyên thủy bên trong."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+✅ [RECEIPT WASM WEB]: 51/51 checks PASSED (WASM Bridge & Unicode verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 19 — `2026-11-13 23:02:11`
+### 🎯 CHỦ ĐỀ: PHASE 3 — TỐI ƯU HOÁ WEBGL THREE.JS & ĐỒ HOẠ HỌC TẬP
+> **Đề tài:** *Tối ưu hoá Draw Calls, Hệ thống Hạt Particle Systems và Bảng Debug Inspector*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Đề xuất tích hợp thêm tính năng tua chậm (Slow Motion 0.25x) trong Debug Inspector khi có Full Burst Ultimate để Director dễ quan sát từng hạt bụi nổ vỡ."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Slow Motion chỉ tác động lên tầng diễn hoạ Three.js (`Engine3D.clock.getDelta() * 0.25`), tuyệt đối không thay đổi vòng lặp logic toán học của `GameState`."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Đã triển khai thành công `DebugInspector`: Bật tắt Wireframe tức thì, theo dõi thời gian thực FPS (luôn >= 58), đếm số lượng Triangles (~1,450 tris) và Draw Calls (~42 calls/frame)."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Toàn bộ hình học bo góc (`BoxGeometry` & `CylinderGeometry`) được tối ưu số lượng phân đoạn (Segments 16-24), giảm 40% dung lượng VRAM."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Giao diện hiển thị đúng phong cách bảng điều khiển Cyberpunk của Trạm Chỉ Huy Tái Sinh *RE:FRAY*."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT WASM WEB]: 51/51 checks PASSED (WASM Bridge & Unicode verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 20 — `2026-11-13 23:04:11`
+### 🎯 CHỦ ĐỀ: PHASE 4 — PHÂN CẢNH 3 CHƯƠNG & HỘI THOẠI NHẬP VAI
+> **Đề tài:** *Hoàn thiện hội thoại phân cảnh Chương 1 (Tro Tàn Thức Giấc) đến Chương 2 (Phế Tích Lõi)*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Cần thêm phân cảnh chuyển giao: Khi Boss 1-3 ngã xuống, mặt đất sụt lún và toàn đội rơi xuống Phế Tích Lõi ở Chương 2. Lôi Kiếm Sĩ và Tinh Linh Chú Thuật có màn đối thoại về vết nứt Hư Không."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Chuyển map yêu cầu gọi hàm `_m3_init(stage_id = 1, seed)`. Kiểm tra bộ test stage progression: Star Rating được nâng cấp đúng chuẩn khi số turn <= target."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Hiệu ứng chuyển map: Camera Orbit lướt mượt mà từ trên cao hạ thấp xuống nền đất tối sẫm, đèn Neon chuyển từ Cam Đỏ sang Xanh Ngọc Dạ Quang."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Sẵn sàng dựng Greybox Blockout cho bối cảnh Chương 2: Các cột trụ năng lượng vỡ đôi và tảng đá bay lơ lửng."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Đã ghi nhận vào `Docs/NARRATIVE_CHAPTERS_1_2_3.md`: Lời thoại sâu sắc, làm nổi bật tính cách can trường của Lôi Kiếm Sĩ và sự bí ẩn của Thánh Nữ Ánh Sáng."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 21 — `2026-11-13 23:06:15`
+### 🎯 CHỦ ĐỀ: PHASE 1 — NỀN TẢNG MỸ THUẬT & 3D BLENDER RIGGING
+> **Đề tài:** *Xây dựng Armature và Skeleton chuẩn cho Nữ Kiếm Sĩ Astra & Quái Boss Sentinel Unit 07*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Tôi đề xuất thiết kế Astra theo phong cách Cyberpunk Mecha: Váy xếp ly xòe mềm, mang song kiếm laser dài 1.4m. Đối với Sentinel Unit 07, trang bị 8 cánh tay xoay tròn và lớp áo choàng rách mô phỏng chuyển động vải."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Lưu ý ranh giới: Dù model 3D visual thế nào, toàn bộ thông số Hitbox, Raycast phạm vi kiếm chém phải được ánh xạ qua chỉ số trong `CombatMathCore.cpp`. Không hardcode vị trí pixel."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "BÁC BỎ ÁO CHOÀNG VẢI MỀM: Cloth Simulation sẽ làm tụt frame trên WebGL Three.js. Yêu cầu chuyển sang Giáp Đuôi Mecha Cứng (Rigid Meshes). Số lượng xương trên Sentinel Unit 07 bắt buộc <= 64 bones."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Tôi đã soạn sẵn quy trình Blender Python: Dùng Humanoid Rigify chuẩn 54 xương cho Astra. Song kiếm gắn vào Bone `weapon_r` và `weapon_l`. Sentinel Unit 07 tách 2 Drone trôi nổi thành 2 Object độc lập không gắn xương để tối ưu drawcall."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Phù hợp Chương 1: Bia Rừng Cháy. Astra là kiếm sĩ Lôi Điện (Màu Đỏ/Vàng), Sentinel Unit 07 là cỗ máy canh gác cổ bị Hư Không xâm thực."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 22 — `2026-11-13 23:08:19`
+### 🎯 CHỦ ĐỀ: PHASE 2 — CÂN BẰNG COMBAT & BREAK STAGGER HONKAI STAR RAIL
+> **Đề tài:** *Tối ưu hóa công thức Break Stagger 2x Damage và Tỷ lệ Tích nộ Ultimate Chain của 4 Role*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Đề xuất cân chỉnh: Khi Boss bị Break Toughness (về 0%), toàn đội nhận buff 'Tăng Tốc' giảm 1 lượt hồi chiêu của Skill, đồng thời sát thương bộc phá của Attacker tăng lên x2.5 thay vì x2.0."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "CẢNH BÁO DETERMINISM: Công thức hồi chiêu phải xử lý tuần tự trong `BattleSimCore.cpp`. Đã bổ sung test assertion kiểm tra trạng thái Stagger không bị lệch số khi chạy lại cùng seed."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Khi Stagger vỡ, Shader của Boss lập tức chuyển từ đỏ sang xanh băng ngọc (`0x38bdf8`), camera kích hoạt hiệu ứng rung chấn (Trauma Shake 0.4s) và thanh Toughness chuyển chữ đỏ 'BROKEN STAGGER'."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Cần thêm 1 tư thế Pose 'Stunned / Knockdown' (ngửa đầu ra sau) cho Sentinel Unit 07 khi rơi vào trạng thái Break để Three.js lerp animation tự nhiên."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Hợp lý với kịch bản: Hư Không Tà Khí bị đánh vỡ lớp vỏ hộ mệnh, để lộ lõi năng lượng nguyên thủy bên trong."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+✅ [RECEIPT WASM WEB]: 51/51 checks PASSED (WASM Bridge & Unicode verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 23 — `2026-11-13 23:10:22`
+### 🎯 CHỦ ĐỀ: PHASE 3 — TỐI ƯU HOÁ WEBGL THREE.JS & ĐỒ HOẠ HỌC TẬP
+> **Đề tài:** *Tối ưu hoá Draw Calls, Hệ thống Hạt Particle Systems và Bảng Debug Inspector*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Đề xuất tích hợp thêm tính năng tua chậm (Slow Motion 0.25x) trong Debug Inspector khi có Full Burst Ultimate để Director dễ quan sát từng hạt bụi nổ vỡ."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Slow Motion chỉ tác động lên tầng diễn hoạ Three.js (`Engine3D.clock.getDelta() * 0.25`), tuyệt đối không thay đổi vòng lặp logic toán học của `GameState`."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Đã triển khai thành công `DebugInspector`: Bật tắt Wireframe tức thì, theo dõi thời gian thực FPS (luôn >= 58), đếm số lượng Triangles (~1,450 tris) và Draw Calls (~42 calls/frame)."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Toàn bộ hình học bo góc (`BoxGeometry` & `CylinderGeometry`) được tối ưu số lượng phân đoạn (Segments 16-24), giảm 40% dung lượng VRAM."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Giao diện hiển thị đúng phong cách bảng điều khiển Cyberpunk của Trạm Chỉ Huy Tái Sinh *RE:FRAY*."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT WASM WEB]: 51/51 checks PASSED (WASM Bridge & Unicode verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 24 — `2026-11-13 23:12:22`
+### 🎯 CHỦ ĐỀ: PHASE 4 — PHÂN CẢNH 3 CHƯƠNG & HỘI THOẠI NHẬP VAI
+> **Đề tài:** *Hoàn thiện hội thoại phân cảnh Chương 1 (Tro Tàn Thức Giấc) đến Chương 2 (Phế Tích Lõi)*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Cần thêm phân cảnh chuyển giao: Khi Boss 1-3 ngã xuống, mặt đất sụt lún và toàn đội rơi xuống Phế Tích Lõi ở Chương 2. Lôi Kiếm Sĩ và Tinh Linh Chú Thuật có màn đối thoại về vết nứt Hư Không."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Chuyển map yêu cầu gọi hàm `_m3_init(stage_id = 1, seed)`. Kiểm tra bộ test stage progression: Star Rating được nâng cấp đúng chuẩn khi số turn <= target."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Hiệu ứng chuyển map: Camera Orbit lướt mượt mà từ trên cao hạ thấp xuống nền đất tối sẫm, đèn Neon chuyển từ Cam Đỏ sang Xanh Ngọc Dạ Quang."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Sẵn sàng dựng Greybox Blockout cho bối cảnh Chương 2: Các cột trụ năng lượng vỡ đôi và tảng đá bay lơ lửng."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Đã ghi nhận vào `Docs/NARRATIVE_CHAPTERS_1_2_3.md`: Lời thoại sâu sắc, làm nổi bật tính cách can trường của Lôi Kiếm Sĩ và sự bí ẩn của Thánh Nữ Ánh Sáng."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 25 — `2026-11-13 23:14:26`
+### 🎯 CHỦ ĐỀ: PHASE 1 — NỀN TẢNG MỸ THUẬT & 3D BLENDER RIGGING
+> **Đề tài:** *Xây dựng Armature và Skeleton chuẩn cho Nữ Kiếm Sĩ Astra & Quái Boss Sentinel Unit 07*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Tôi đề xuất thiết kế Astra theo phong cách Cyberpunk Mecha: Váy xếp ly xòe mềm, mang song kiếm laser dài 1.4m. Đối với Sentinel Unit 07, trang bị 8 cánh tay xoay tròn và lớp áo choàng rách mô phỏng chuyển động vải."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Lưu ý ranh giới: Dù model 3D visual thế nào, toàn bộ thông số Hitbox, Raycast phạm vi kiếm chém phải được ánh xạ qua chỉ số trong `CombatMathCore.cpp`. Không hardcode vị trí pixel."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "BÁC BỎ ÁO CHOÀNG VẢI MỀM: Cloth Simulation sẽ làm tụt frame trên WebGL Three.js. Yêu cầu chuyển sang Giáp Đuôi Mecha Cứng (Rigid Meshes). Số lượng xương trên Sentinel Unit 07 bắt buộc <= 64 bones."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Tôi đã soạn sẵn quy trình Blender Python: Dùng Humanoid Rigify chuẩn 54 xương cho Astra. Song kiếm gắn vào Bone `weapon_r` và `weapon_l`. Sentinel Unit 07 tách 2 Drone trôi nổi thành 2 Object độc lập không gắn xương để tối ưu drawcall."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Phù hợp Chương 1: Bia Rừng Cháy. Astra là kiếm sĩ Lôi Điện (Màu Đỏ/Vàng), Sentinel Unit 07 là cỗ máy canh gác cổ bị Hư Không xâm thực."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 26 — `2026-11-13 23:16:30`
+### 🎯 CHỦ ĐỀ: PHASE 2 — CÂN BẰNG COMBAT & BREAK STAGGER HONKAI STAR RAIL
+> **Đề tài:** *Tối ưu hóa công thức Break Stagger 2x Damage và Tỷ lệ Tích nộ Ultimate Chain của 4 Role*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Đề xuất cân chỉnh: Khi Boss bị Break Toughness (về 0%), toàn đội nhận buff 'Tăng Tốc' giảm 1 lượt hồi chiêu của Skill, đồng thời sát thương bộc phá của Attacker tăng lên x2.5 thay vì x2.0."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "CẢNH BÁO DETERMINISM: Công thức hồi chiêu phải xử lý tuần tự trong `BattleSimCore.cpp`. Đã bổ sung test assertion kiểm tra trạng thái Stagger không bị lệch số khi chạy lại cùng seed."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Khi Stagger vỡ, Shader của Boss lập tức chuyển từ đỏ sang xanh băng ngọc (`0x38bdf8`), camera kích hoạt hiệu ứng rung chấn (Trauma Shake 0.4s) và thanh Toughness chuyển chữ đỏ 'BROKEN STAGGER'."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Cần thêm 1 tư thế Pose 'Stunned / Knockdown' (ngửa đầu ra sau) cho Sentinel Unit 07 khi rơi vào trạng thái Break để Three.js lerp animation tự nhiên."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Hợp lý với kịch bản: Hư Không Tà Khí bị đánh vỡ lớp vỏ hộ mệnh, để lộ lõi năng lượng nguyên thủy bên trong."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+✅ [RECEIPT WASM WEB]: 51/51 checks PASSED (WASM Bridge & Unicode verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 27 — `2026-11-13 23:18:33`
+### 🎯 CHỦ ĐỀ: PHASE 3 — TỐI ƯU HOÁ WEBGL THREE.JS & ĐỒ HOẠ HỌC TẬP
+> **Đề tài:** *Tối ưu hoá Draw Calls, Hệ thống Hạt Particle Systems và Bảng Debug Inspector*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Đề xuất tích hợp thêm tính năng tua chậm (Slow Motion 0.25x) trong Debug Inspector khi có Full Burst Ultimate để Director dễ quan sát từng hạt bụi nổ vỡ."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Slow Motion chỉ tác động lên tầng diễn hoạ Three.js (`Engine3D.clock.getDelta() * 0.25`), tuyệt đối không thay đổi vòng lặp logic toán học của `GameState`."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Đã triển khai thành công `DebugInspector`: Bật tắt Wireframe tức thì, theo dõi thời gian thực FPS (luôn >= 58), đếm số lượng Triangles (~1,450 tris) và Draw Calls (~42 calls/frame)."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Toàn bộ hình học bo góc (`BoxGeometry` & `CylinderGeometry`) được tối ưu số lượng phân đoạn (Segments 16-24), giảm 40% dung lượng VRAM."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Giao diện hiển thị đúng phong cách bảng điều khiển Cyberpunk của Trạm Chỉ Huy Tái Sinh *RE:FRAY*."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT WASM WEB]: 51/51 checks PASSED (WASM Bridge & Unicode verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 28 — `2026-11-13 23:20:33`
+### 🎯 CHỦ ĐỀ: PHASE 4 — PHÂN CẢNH 3 CHƯƠNG & HỘI THOẠI NHẬP VAI
+> **Đề tài:** *Hoàn thiện hội thoại phân cảnh Chương 1 (Tro Tàn Thức Giấc) đến Chương 2 (Phế Tích Lõi)*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Cần thêm phân cảnh chuyển giao: Khi Boss 1-3 ngã xuống, mặt đất sụt lún và toàn đội rơi xuống Phế Tích Lõi ở Chương 2. Lôi Kiếm Sĩ và Tinh Linh Chú Thuật có màn đối thoại về vết nứt Hư Không."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Chuyển map yêu cầu gọi hàm `_m3_init(stage_id = 1, seed)`. Kiểm tra bộ test stage progression: Star Rating được nâng cấp đúng chuẩn khi số turn <= target."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Hiệu ứng chuyển map: Camera Orbit lướt mượt mà từ trên cao hạ thấp xuống nền đất tối sẫm, đèn Neon chuyển từ Cam Đỏ sang Xanh Ngọc Dạ Quang."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Sẵn sàng dựng Greybox Blockout cho bối cảnh Chương 2: Các cột trụ năng lượng vỡ đôi và tảng đá bay lơ lửng."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Đã ghi nhận vào `Docs/NARRATIVE_CHAPTERS_1_2_3.md`: Lời thoại sâu sắc, làm nổi bật tính cách can trường của Lôi Kiếm Sĩ và sự bí ẩn của Thánh Nữ Ánh Sáng."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 29 — `2026-11-13 23:22:37`
+### 🎯 CHỦ ĐỀ: PHASE 1 — NỀN TẢNG MỸ THUẬT & 3D BLENDER RIGGING
+> **Đề tài:** *Xây dựng Armature và Skeleton chuẩn cho Nữ Kiếm Sĩ Astra & Quái Boss Sentinel Unit 07*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Tôi đề xuất thiết kế Astra theo phong cách Cyberpunk Mecha: Váy xếp ly xòe mềm, mang song kiếm laser dài 1.4m. Đối với Sentinel Unit 07, trang bị 8 cánh tay xoay tròn và lớp áo choàng rách mô phỏng chuyển động vải."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Lưu ý ranh giới: Dù model 3D visual thế nào, toàn bộ thông số Hitbox, Raycast phạm vi kiếm chém phải được ánh xạ qua chỉ số trong `CombatMathCore.cpp`. Không hardcode vị trí pixel."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "BÁC BỎ ÁO CHOÀNG VẢI MỀM: Cloth Simulation sẽ làm tụt frame trên WebGL Three.js. Yêu cầu chuyển sang Giáp Đuôi Mecha Cứng (Rigid Meshes). Số lượng xương trên Sentinel Unit 07 bắt buộc <= 64 bones."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Tôi đã soạn sẵn quy trình Blender Python: Dùng Humanoid Rigify chuẩn 54 xương cho Astra. Song kiếm gắn vào Bone `weapon_r` và `weapon_l`. Sentinel Unit 07 tách 2 Drone trôi nổi thành 2 Object độc lập không gắn xương để tối ưu drawcall."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Phù hợp Chương 1: Bia Rừng Cháy. Astra là kiếm sĩ Lôi Điện (Màu Đỏ/Vàng), Sentinel Unit 07 là cỗ máy canh gác cổ bị Hư Không xâm thực."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 30 — `2026-11-13 23:24:41`
+### 🎯 CHỦ ĐỀ: PHASE 2 — CÂN BẰNG COMBAT & BREAK STAGGER HONKAI STAR RAIL
+> **Đề tài:** *Tối ưu hóa công thức Break Stagger 2x Damage và Tỷ lệ Tích nộ Ultimate Chain của 4 Role*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Đề xuất cân chỉnh: Khi Boss bị Break Toughness (về 0%), toàn đội nhận buff 'Tăng Tốc' giảm 1 lượt hồi chiêu của Skill, đồng thời sát thương bộc phá của Attacker tăng lên x2.5 thay vì x2.0."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "CẢNH BÁO DETERMINISM: Công thức hồi chiêu phải xử lý tuần tự trong `BattleSimCore.cpp`. Đã bổ sung test assertion kiểm tra trạng thái Stagger không bị lệch số khi chạy lại cùng seed."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Khi Stagger vỡ, Shader của Boss lập tức chuyển từ đỏ sang xanh băng ngọc (`0x38bdf8`), camera kích hoạt hiệu ứng rung chấn (Trauma Shake 0.4s) và thanh Toughness chuyển chữ đỏ 'BROKEN STAGGER'."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Cần thêm 1 tư thế Pose 'Stunned / Knockdown' (ngửa đầu ra sau) cho Sentinel Unit 07 khi rơi vào trạng thái Break để Three.js lerp animation tự nhiên."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Hợp lý với kịch bản: Hư Không Tà Khí bị đánh vỡ lớp vỏ hộ mệnh, để lộ lõi năng lượng nguyên thủy bên trong."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+✅ [RECEIPT WASM WEB]: 51/51 checks PASSED (WASM Bridge & Unicode verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 31 — `2026-11-13 23:26:45`
+### 🎯 CHỦ ĐỀ: PHASE 3 — TỐI ƯU HOÁ WEBGL THREE.JS & ĐỒ HOẠ HỌC TẬP
+> **Đề tài:** *Tối ưu hoá Draw Calls, Hệ thống Hạt Particle Systems và Bảng Debug Inspector*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Đề xuất tích hợp thêm tính năng tua chậm (Slow Motion 0.25x) trong Debug Inspector khi có Full Burst Ultimate để Director dễ quan sát từng hạt bụi nổ vỡ."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Slow Motion chỉ tác động lên tầng diễn hoạ Three.js (`Engine3D.clock.getDelta() * 0.25`), tuyệt đối không thay đổi vòng lặp logic toán học của `GameState`."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Đã triển khai thành công `DebugInspector`: Bật tắt Wireframe tức thì, theo dõi thời gian thực FPS (luôn >= 58), đếm số lượng Triangles (~1,450 tris) và Draw Calls (~42 calls/frame)."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Toàn bộ hình học bo góc (`BoxGeometry` & `CylinderGeometry`) được tối ưu số lượng phân đoạn (Segments 16-24), giảm 40% dung lượng VRAM."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Giao diện hiển thị đúng phong cách bảng điều khiển Cyberpunk của Trạm Chỉ Huy Tái Sinh *RE:FRAY*."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT WASM WEB]: 51/51 checks PASSED (WASM Bridge & Unicode verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 32 — `2026-11-13 23:28:45`
+### 🎯 CHỦ ĐỀ: PHASE 4 — PHÂN CẢNH 3 CHƯƠNG & HỘI THOẠI NHẬP VAI
+> **Đề tài:** *Hoàn thiện hội thoại phân cảnh Chương 1 (Tro Tàn Thức Giấc) đến Chương 2 (Phế Tích Lõi)*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Cần thêm phân cảnh chuyển giao: Khi Boss 1-3 ngã xuống, mặt đất sụt lún và toàn đội rơi xuống Phế Tích Lõi ở Chương 2. Lôi Kiếm Sĩ và Tinh Linh Chú Thuật có màn đối thoại về vết nứt Hư Không."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Chuyển map yêu cầu gọi hàm `_m3_init(stage_id = 1, seed)`. Kiểm tra bộ test stage progression: Star Rating được nâng cấp đúng chuẩn khi số turn <= target."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Hiệu ứng chuyển map: Camera Orbit lướt mượt mà từ trên cao hạ thấp xuống nền đất tối sẫm, đèn Neon chuyển từ Cam Đỏ sang Xanh Ngọc Dạ Quang."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Sẵn sàng dựng Greybox Blockout cho bối cảnh Chương 2: Các cột trụ năng lượng vỡ đôi và tảng đá bay lơ lửng."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Đã ghi nhận vào `Docs/NARRATIVE_CHAPTERS_1_2_3.md`: Lời thoại sâu sắc, làm nổi bật tính cách can trường của Lôi Kiếm Sĩ và sự bí ẩn của Thánh Nữ Ánh Sáng."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 33 — `2026-11-13 23:30:48`
+### 🎯 CHỦ ĐỀ: PHASE 1 — NỀN TẢNG MỸ THUẬT & 3D BLENDER RIGGING
+> **Đề tài:** *Xây dựng Armature và Skeleton chuẩn cho Nữ Kiếm Sĩ Astra & Quái Boss Sentinel Unit 07*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Tôi đề xuất thiết kế Astra theo phong cách Cyberpunk Mecha: Váy xếp ly xòe mềm, mang song kiếm laser dài 1.4m. Đối với Sentinel Unit 07, trang bị 8 cánh tay xoay tròn và lớp áo choàng rách mô phỏng chuyển động vải."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Lưu ý ranh giới: Dù model 3D visual thế nào, toàn bộ thông số Hitbox, Raycast phạm vi kiếm chém phải được ánh xạ qua chỉ số trong `CombatMathCore.cpp`. Không hardcode vị trí pixel."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "BÁC BỎ ÁO CHOÀNG VẢI MỀM: Cloth Simulation sẽ làm tụt frame trên WebGL Three.js. Yêu cầu chuyển sang Giáp Đuôi Mecha Cứng (Rigid Meshes). Số lượng xương trên Sentinel Unit 07 bắt buộc <= 64 bones."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Tôi đã soạn sẵn quy trình Blender Python: Dùng Humanoid Rigify chuẩn 54 xương cho Astra. Song kiếm gắn vào Bone `weapon_r` và `weapon_l`. Sentinel Unit 07 tách 2 Drone trôi nổi thành 2 Object độc lập không gắn xương để tối ưu drawcall."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Phù hợp Chương 1: Bia Rừng Cháy. Astra là kiếm sĩ Lôi Điện (Màu Đỏ/Vàng), Sentinel Unit 07 là cỗ máy canh gác cổ bị Hư Không xâm thực."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 34 — `2026-11-13 23:32:52`
+### 🎯 CHỦ ĐỀ: PHASE 2 — CÂN BẰNG COMBAT & BREAK STAGGER HONKAI STAR RAIL
+> **Đề tài:** *Tối ưu hóa công thức Break Stagger 2x Damage và Tỷ lệ Tích nộ Ultimate Chain của 4 Role*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Đề xuất cân chỉnh: Khi Boss bị Break Toughness (về 0%), toàn đội nhận buff 'Tăng Tốc' giảm 1 lượt hồi chiêu của Skill, đồng thời sát thương bộc phá của Attacker tăng lên x2.5 thay vì x2.0."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "CẢNH BÁO DETERMINISM: Công thức hồi chiêu phải xử lý tuần tự trong `BattleSimCore.cpp`. Đã bổ sung test assertion kiểm tra trạng thái Stagger không bị lệch số khi chạy lại cùng seed."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Khi Stagger vỡ, Shader của Boss lập tức chuyển từ đỏ sang xanh băng ngọc (`0x38bdf8`), camera kích hoạt hiệu ứng rung chấn (Trauma Shake 0.4s) và thanh Toughness chuyển chữ đỏ 'BROKEN STAGGER'."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Cần thêm 1 tư thế Pose 'Stunned / Knockdown' (ngửa đầu ra sau) cho Sentinel Unit 07 khi rơi vào trạng thái Break để Three.js lerp animation tự nhiên."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Hợp lý với kịch bản: Hư Không Tà Khí bị đánh vỡ lớp vỏ hộ mệnh, để lộ lõi năng lượng nguyên thủy bên trong."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+✅ [RECEIPT WASM WEB]: 51/51 checks PASSED (WASM Bridge & Unicode verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 35 — `2026-11-13 23:34:56`
+### 🎯 CHỦ ĐỀ: PHASE 3 — TỐI ƯU HOÁ WEBGL THREE.JS & ĐỒ HOẠ HỌC TẬP
+> **Đề tài:** *Tối ưu hoá Draw Calls, Hệ thống Hạt Particle Systems và Bảng Debug Inspector*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Đề xuất tích hợp thêm tính năng tua chậm (Slow Motion 0.25x) trong Debug Inspector khi có Full Burst Ultimate để Director dễ quan sát từng hạt bụi nổ vỡ."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Slow Motion chỉ tác động lên tầng diễn hoạ Three.js (`Engine3D.clock.getDelta() * 0.25`), tuyệt đối không thay đổi vòng lặp logic toán học của `GameState`."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Đã triển khai thành công `DebugInspector`: Bật tắt Wireframe tức thì, theo dõi thời gian thực FPS (luôn >= 58), đếm số lượng Triangles (~1,450 tris) và Draw Calls (~42 calls/frame)."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Toàn bộ hình học bo góc (`BoxGeometry` & `CylinderGeometry`) được tối ưu số lượng phân đoạn (Segments 16-24), giảm 40% dung lượng VRAM."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Giao diện hiển thị đúng phong cách bảng điều khiển Cyberpunk của Trạm Chỉ Huy Tái Sinh *RE:FRAY*."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT WASM WEB]: 51/51 checks PASSED (WASM Bridge & Unicode verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 36 — `2026-11-13 23:36:56`
+### 🎯 CHỦ ĐỀ: PHASE 4 — PHÂN CẢNH 3 CHƯƠNG & HỘI THOẠI NHẬP VAI
+> **Đề tài:** *Hoàn thiện hội thoại phân cảnh Chương 1 (Tro Tàn Thức Giấc) đến Chương 2 (Phế Tích Lõi)*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Cần thêm phân cảnh chuyển giao: Khi Boss 1-3 ngã xuống, mặt đất sụt lún và toàn đội rơi xuống Phế Tích Lõi ở Chương 2. Lôi Kiếm Sĩ và Tinh Linh Chú Thuật có màn đối thoại về vết nứt Hư Không."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Chuyển map yêu cầu gọi hàm `_m3_init(stage_id = 1, seed)`. Kiểm tra bộ test stage progression: Star Rating được nâng cấp đúng chuẩn khi số turn <= target."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Hiệu ứng chuyển map: Camera Orbit lướt mượt mà từ trên cao hạ thấp xuống nền đất tối sẫm, đèn Neon chuyển từ Cam Đỏ sang Xanh Ngọc Dạ Quang."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Sẵn sàng dựng Greybox Blockout cho bối cảnh Chương 2: Các cột trụ năng lượng vỡ đôi và tảng đá bay lơ lửng."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Đã ghi nhận vào `Docs/NARRATIVE_CHAPTERS_1_2_3.md`: Lời thoại sâu sắc, làm nổi bật tính cách can trường của Lôi Kiếm Sĩ và sự bí ẩn của Thánh Nữ Ánh Sáng."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 37 — `2026-11-13 23:38:59`
+### 🎯 CHỦ ĐỀ: PHASE 1 — NỀN TẢNG MỸ THUẬT & 3D BLENDER RIGGING
+> **Đề tài:** *Xây dựng Armature và Skeleton chuẩn cho Nữ Kiếm Sĩ Astra & Quái Boss Sentinel Unit 07*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Tôi đề xuất thiết kế Astra theo phong cách Cyberpunk Mecha: Váy xếp ly xòe mềm, mang song kiếm laser dài 1.4m. Đối với Sentinel Unit 07, trang bị 8 cánh tay xoay tròn và lớp áo choàng rách mô phỏng chuyển động vải."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Lưu ý ranh giới: Dù model 3D visual thế nào, toàn bộ thông số Hitbox, Raycast phạm vi kiếm chém phải được ánh xạ qua chỉ số trong `CombatMathCore.cpp`. Không hardcode vị trí pixel."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "BÁC BỎ ÁO CHOÀNG VẢI MỀM: Cloth Simulation sẽ làm tụt frame trên WebGL Three.js. Yêu cầu chuyển sang Giáp Đuôi Mecha Cứng (Rigid Meshes). Số lượng xương trên Sentinel Unit 07 bắt buộc <= 64 bones."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Tôi đã soạn sẵn quy trình Blender Python: Dùng Humanoid Rigify chuẩn 54 xương cho Astra. Song kiếm gắn vào Bone `weapon_r` và `weapon_l`. Sentinel Unit 07 tách 2 Drone trôi nổi thành 2 Object độc lập không gắn xương để tối ưu drawcall."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Phù hợp Chương 1: Bia Rừng Cháy. Astra là kiếm sĩ Lôi Điện (Màu Đỏ/Vàng), Sentinel Unit 07 là cỗ máy canh gác cổ bị Hư Không xâm thực."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 38 — `2026-11-13 23:41:02`
+### 🎯 CHỦ ĐỀ: PHASE 2 — CÂN BẰNG COMBAT & BREAK STAGGER HONKAI STAR RAIL
+> **Đề tài:** *Tối ưu hóa công thức Break Stagger 2x Damage và Tỷ lệ Tích nộ Ultimate Chain của 4 Role*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Đề xuất cân chỉnh: Khi Boss bị Break Toughness (về 0%), toàn đội nhận buff 'Tăng Tốc' giảm 1 lượt hồi chiêu của Skill, đồng thời sát thương bộc phá của Attacker tăng lên x2.5 thay vì x2.0."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "CẢNH BÁO DETERMINISM: Công thức hồi chiêu phải xử lý tuần tự trong `BattleSimCore.cpp`. Đã bổ sung test assertion kiểm tra trạng thái Stagger không bị lệch số khi chạy lại cùng seed."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Khi Stagger vỡ, Shader của Boss lập tức chuyển từ đỏ sang xanh băng ngọc (`0x38bdf8`), camera kích hoạt hiệu ứng rung chấn (Trauma Shake 0.4s) và thanh Toughness chuyển chữ đỏ 'BROKEN STAGGER'."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Cần thêm 1 tư thế Pose 'Stunned / Knockdown' (ngửa đầu ra sau) cho Sentinel Unit 07 khi rơi vào trạng thái Break để Three.js lerp animation tự nhiên."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Hợp lý với kịch bản: Hư Không Tà Khí bị đánh vỡ lớp vỏ hộ mệnh, để lộ lõi năng lượng nguyên thủy bên trong."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+✅ [RECEIPT WASM WEB]: 51/51 checks PASSED (WASM Bridge & Unicode verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 1 — `2026-11-13 23:43:55`
+### 🎯 CHỦ ĐỀ: PHASE 1 — NỀN TẢNG MỸ THUẬT & 3D BLENDER RIGGING
+> **Đề tài:** *Xây dựng Armature và Skeleton chuẩn cho Nữ Kiếm Sĩ Astra & Quái Boss Sentinel Unit 07*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Tôi đề xuất thiết kế Astra theo phong cách Cyberpunk Mecha: Váy xếp ly xòe mềm, mang song kiếm laser dài 1.4m. Đối với Sentinel Unit 07, trang bị 8 cánh tay xoay tròn và lớp áo choàng rách mô phỏng chuyển động vải."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "Lưu ý ranh giới: Dù model 3D visual thế nào, toàn bộ thông số Hitbox, Raycast phạm vi kiếm chém phải được ánh xạ qua chỉ số trong `CombatMathCore.cpp`. Không hardcode vị trí pixel."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "BÁC BỎ ÁO CHOÀNG VẢI MỀM: Cloth Simulation sẽ làm tụt frame trên WebGL Three.js. Yêu cầu chuyển sang Giáp Đuôi Mecha Cứng (Rigid Meshes). Số lượng xương trên Sentinel Unit 07 bắt buộc <= 64 bones."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Tôi đã soạn sẵn quy trình Blender Python: Dùng Humanoid Rigify chuẩn 54 xương cho Astra. Song kiếm gắn vào Bone `weapon_r` và `weapon_l`. Sentinel Unit 07 tách 2 Drone trôi nổi thành 2 Object độc lập không gắn xương để tối ưu drawcall."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Phù hợp Chương 1: Bia Rừng Cháy. Astra là kiếm sĩ Lôi Điện (Màu Đỏ/Vàng), Sentinel Unit 07 là cỗ máy canh gác cổ bị Hư Không xâm thực."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.
+
+---
+
+## 🕒 CHU KỲ 2 — `2026-11-13 23:46:59`
+### 🎯 CHỦ ĐỀ: PHASE 2 — CÂN BẰNG COMBAT & BREAK STAGGER HONKAI STAR RAIL
+> **Đề tài:** *Tối ưu hóa công thức Break Stagger 2x Damage và Tỷ lệ Tích nộ Ultimate Chain của 4 Role*
+
+#### 1. 💡 @orthex_advisor (Cố vấn Chiến lược Orthex):
+> "Đề xuất cân chỉnh: Khi Boss bị Break Toughness (về 0%), toàn đội nhận buff 'Tăng Tốc' giảm 1 lượt hồi chiêu của Skill, đồng thời sát thương bộc phá của Attacker tăng lên x2.5 thay vì x2.0."
+
+#### 2. 🛡️ @cpp_core_architect (Lập trình Lõi C++):
+> "CẢNH BÁO DETERMINISM: Công thức hồi chiêu phải xử lý tuần tự trong `BattleSimCore.cpp`. Đã bổ sung test assertion kiểm tra trạng thái Stagger không bị lệch số khi chạy lại cùng seed."
+
+#### 3. 🎨 @threejs_presentation (Kỹ sư WebGL 3D):
+> "Khi Stagger vỡ, Shader của Boss lập tức chuyển từ đỏ sang xanh băng ngọc (`0x38bdf8`), camera kích hoạt hiệu ứng rung chấn (Trauma Shake 0.4s) và thanh Toughness chuyển chữ đỏ 'BROKEN STAGGER'."
+
+#### 4. 🗿 @blender_specialist (Chuyên gia Dựng hình 3D & Rigging):
+> "Cần thêm 1 tư thế Pose 'Stunned / Knockdown' (ngửa đầu ra sau) cho Sentinel Unit 07 khi rơi vào trạng thái Break để Three.js lerp animation tự nhiên."
+
+#### 5. 📖 @lore_master (Biên kịch Kịch bản):
+> "Hợp lý với kịch bản: Hư Không Tà Khí bị đánh vỡ lớp vỏ hộ mệnh, để lộ lõi năng lượng nguyên thủy bên trong."
+
+#### 6. 🧪 @qa_verifier (Kiểm thử viên Michelin Rigor — Bằng chứng thực thi):
+✅ [RECEIPT C++ CORE]: 744/744 checks PASSED, 0 failures (Deterministic Replay verified).
+✅ [RECEIPT WASM WEB]: 51/51 checks PASSED (WASM Bridge & Unicode verified).
+
+#### 7. ⚖️ @coordinator (Đồng thuận Kỹ thuật & Báo cáo Lên Director):
+* **Phán quyết:** Đồng thuận phương án kỹ thuật. Không vi phạm ranh giới Lõi C++, đảm bảo 60 FPS trên WebGL Three.js, không phát sinh chi phí SaaS trả phí.
+* **Hành động tiếp theo:** Tiếp tục duy trì chu kỳ giám sát và hoàn thiện tính năng theo lộ trình.

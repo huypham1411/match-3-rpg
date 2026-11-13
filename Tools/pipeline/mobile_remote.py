@@ -20,9 +20,18 @@ import sys
 import json
 import time
 import socket
+import ctypes
 import subprocess
 from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
+
+# [WINDOWS KEEP-AWAKE]: Giữ kết nối mạng và CPU chạy xuyên đêm để nhận lệnh từ điện thoại
+ES_CONTINUOUS = 0x80000000
+ES_SYSTEM_REQUIRED = 0x00000001
+try:
+    ctypes.windll.kernel32.SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED)
+except Exception:
+    pass
 
 WORKSPACE_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 DISCUSSIONS_DIR = os.path.join(WORKSPACE_ROOT, "Docs", "discussions")
