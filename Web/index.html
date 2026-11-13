@@ -25,6 +25,7 @@
     </div>
   </div>
   <div class="topbar-actions">
+    <button id="btnTutorial" class="btn btn-primary" type="button" title="Xem hướng dẫn chi tiết và cơ chế 4 role">📘 Hướng dẫn & Cơ chế Role <kbd>?</kbd></button>
     <label class="select-wrap">
       <span>Màn</span>
       <select id="stageSelect"></select>
@@ -201,6 +202,236 @@
       <button id="btnNextMap" class="btn btn-ghost" type="button">Màn kế tiếp</button>
     </div>
     <p class="hint">Bấm nút ×, bấm ra ngoài, hoặc nhấn Esc để đóng bảng này và xem lại bàn nối.</p>
+  </div>
+</div>
+
+<!-- ===================== MODAL HƯỚNG DẪN & CƠ CHẾ ROLE ===================== -->
+<div id="tutorialModal" class="tutorial-modal" hidden>
+  <div class="tutorial-backdrop" id="tutorialBackdrop"></div>
+  <div class="tutorial-dialog">
+    <div class="tutorial-head">
+      <div class="tutorial-head-left">
+        <span class="tutorial-badge">TACTICAL GUIDE</span>
+        <h2 class="tutorial-title">HƯỚNG DẪN TÁC CHIẾN & CƠ CHẾ 4 ROLE</h2>
+      </div>
+      <button id="btnCloseTutorial" class="tutorial-close" type="button" title="Đóng (Esc)" aria-label="Đóng hướng dẫn">×</button>
+    </div>
+
+    <!-- Thanh chuyển Tab -->
+    <div class="tutorial-tabs" role="tablist">
+      <button class="tut-tab-btn active" data-tab="tab-roles" type="button">⚔️ 4 Role Tác Chiến</button>
+      <button class="tut-tab-btn" data-tab="tab-match3" type="button">🧩 Luật Nối & Khối Đặc Biệt</button>
+      <button class="tut-tab-btn" data-tab="tab-stagger" type="button">💥 Break Stagger & Ultimate</button>
+      <button class="tut-tab-btn" data-tab="tab-shortcuts" type="button">⌨️ Bảng Phím Tắt</button>
+    </div>
+
+    <!-- Nội dung từng Tab -->
+    <div class="tutorial-body">
+
+      <!-- TAB 1: 4 ROLE TÁC CHIẾN -->
+      <div id="tab-roles" class="tut-tab-pane active">
+        <p class="tut-lead">
+          Đội hình gồm <strong>4 Construct</strong> với 4 vai trò tương hỗ. Mỗi role liên kết trực tiếp với một màu khối năng lượng trên bàn nối: 
+          <strong>Cứ nối màu nào thì nhân vật mang màu đó sẽ lập tức xuất chiêu!</strong>
+        </p>
+
+        <div class="role-grid">
+          <!-- Role 1: Attacker -->
+          <div class="role-card role-attacker">
+            <div class="role-card-head">
+              <span class="role-icon">⚔️</span>
+              <div>
+                <h3 class="role-name">ATTACKER // TIÊN PHONG</h3>
+                <span class="role-char">Astra (Lôi Kiếm Sĩ) · Màu Đỏ 🔥</span>
+              </div>
+            </div>
+            <p class="role-desc">Sát thương chủ lực của toàn đội. Mỗi khi match khối Đỏ, Astra lao lên tấn công chém thẳng mục tiêu.</p>
+            <ul class="role-perks">
+              <li><strong>Sát thương chí mạng</strong>: Khi Boss bị <span class="text-crit">BREAK (vỡ thanh trắng)</span>, sát thương của Astra được nhân đôi (+100%).</li>
+              <li><strong>Kỹ năng (Phím 1)</strong>: <em>Trảm Lôi</em> — Gây sát thương điện cực lớn lên mục tiêu đã chọn.</li>
+              <li><strong>Ultimate (Num 1)</strong>: <em>Lôi Đình Trảm</em> — Chuỗi 3 đòn chém bộc phá liên tiếp phá hủy giáp địch.</li>
+            </ul>
+          </div>
+
+          <!-- Role 2: Supporter -->
+          <div class="role-card role-supporter">
+            <div class="role-card-head">
+              <span class="role-icon">🔮</span>
+              <div>
+                <h3 class="role-name">SUPPORTER // HỖ TRỢ</h3>
+                <span class="role-char">Tinh Linh Chú Thuật · Màu Lam 💧</span>
+              </div>
+            </div>
+            <p class="role-desc">Buff công kích, gia tăng nạp Ultimate và phá giải bẫy chướng ngại vật trên bàn.</p>
+            <ul class="role-perks">
+              <li><strong>Buff Cổ Vũ</strong>: Nối khối Lam gia tăng chỉ số ATK cho toàn đội duy trì theo số turn.</li>
+              <li><strong>Kỹ năng (Phím 2)</strong>: <em>Gỡ Phong Ấn</em> — Bật chế độ nhắm, bấm vào bất kỳ ô Đá ▨ hoặc Bẫy ☠️ để gỡ sạch ngay lập tức!</li>
+              <li><strong>Ultimate (Num 2)</strong>: <em>Chú Thuật Khởi Nguyên</em> — Bơm lượng lớn nộ Ultimate cho cả đội và kéo dài thời gian Break của Boss thêm 1 lượt.</li>
+            </ul>
+          </div>
+
+          <!-- Role 3: Healer -->
+          <div class="role-card role-healer">
+            <div class="role-card-head">
+              <span class="role-icon">💚</span>
+              <div>
+                <h3 class="role-name">HEALER // TRỊ LIỆU</h3>
+                <span class="role-char">Thánh Nữ Ánh Sáng · Màu Lục 🍃</span>
+              </div>
+            </div>
+            <p class="role-desc">Duy trì sự sống cho toàn đội, xóa bỏ độc tố và hiệu ứng bất lợi do trùm gây ra.</p>
+            <ul class="role-perks">
+              <li><strong>Hồi Máu Đội Hình</strong>: Nối khối Lục hồi phục HP ngay cho toàn đội; combo càng cao lượng hồi máu tăng theo cấp số nhân!</li>
+              <li><strong>Kỹ năng (Phím 3)</strong>: <em>Thanh Tẩy Quang Minh</em> — Cứu nguy khẩn cấp cho thành viên thấp máu nhất và xóa sạch debuff xấu.</li>
+              <li><strong>Ultimate (Num 3)</strong>: <em>Thánh Vực Bất Diệt</em> — Hồi phục 50% HP cho cả đội và tạo màng chắn quang học chặn đòn tấn công kế tiếp của địch.</li>
+            </ul>
+          </div>
+
+          <!-- Role 4: Defender -->
+          <div class="role-card role-defender">
+            <div class="role-card-head">
+              <span class="role-icon">🛡️</span>
+              <div>
+                <h3 class="role-name">DEFENDER // HỘ VỆ</h3>
+                <span class="role-char">Thiết Giáp Vệ Binh · Màu Vàng ⚡</span>
+              </div>
+            </div>
+            <p class="role-desc">Tấm khiên thép của đội ngũ, giảm sát thương nhận vào và khiêu khích hỏa lực của quái.</p>
+            <ul class="role-perks">
+              <li><strong>Deflector Tích Nạp</strong>: Match cụm 4 khối tích tụ điểm Deflector chắn sát thương ở cuối turn.</li>
+              <li><strong>End Turn Defense</strong>: Nếu kết thúc lượt (Tab) mà không tốn lượt di chuyển, Defender giảm tới 60% sát thương đòn đánh của địch!</li>
+              <li><strong>Kỹ năng (Phím 4)</strong>: <em>Khiêu Khích Thiết Giáp</em> — Ép quái chỉ được tấn công vào Defender và tăng gấp đôi điểm DEF.</li>
+              <li><strong>Ultimate (Num 4)</strong>: <em>Pháo Đài Bất Khả</em> — Phản lại 50% sát thương nhận vào về phía địch và làm choáng quái thường.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: LUẬT NỐI & KHỐI ĐẶC BIỆT -->
+      <div id="tab-match3" class="tut-tab-pane">
+        <div class="specials-grid">
+          <div class="special-item">
+            <span class="special-badge badge-rocket">✸ Vuông 2×2</span>
+            <h4>Tên Lửa Tầm Nhiệt (Square Breaker)</h4>
+            <p>Ghép 4 khối tạo thành hình vuông 2×2. Tên lửa tự động tìm và phá hủy vật cản hoặc bẫy đếm ngược xa nhất trên bàn.</p>
+          </div>
+          <div class="special-item">
+            <span class="special-badge badge-laser">═ 4 Dọc / ║ 4 Ngang</span>
+            <h4>Tia Sét Xuyên Hàng / Cột (Line Laser)</h4>
+            <p>Ghép 4 khối thẳng hàng. Khi kích hoạt sẽ quét sạch toàn bộ một hàng ngang hoặc một cột dọc, giải phóng cả bàn cờ.</p>
+          </div>
+          <div class="special-item">
+            <span class="special-badge badge-bomb">💣 Góc 5 Ô (L / T)</span>
+            <h4>Bom Khối Năng Lượng 3×3 (Area Bomb)</h4>
+            <p>Ghép 5 khối tạo thành góc chữ L hoặc chữ T. Nhấp đúp (double-click) hoặc hoán đổi để kích nổ diện rộng 3×3 gây sát thương khủng khiếp.</p>
+          </div>
+          <div class="special-item">
+            <span class="special-badge badge-rainbow">✦ 5 Ô Thẳng Hàng</span>
+            <h4>Cầu Vồng Toàn Năng (SwapAll Rainbow)</h4>
+            <p>Đổi chỗ với bất kỳ màu nào sẽ kích nổ TOÀN BỘ tất cả các khối mang màu đó trên khắp bàn đấu!</p>
+          </div>
+          <div class="special-item">
+            <span class="special-badge badge-trap">☠️ Bẫy Đếm Ngược</span>
+            <h4>Bẫy Của Địch (Hazard Countdown)</h4>
+            <p>Địch gài lên bàn đấu có số lượt đếm lùi. Hãy match kề bên hoặc dùng kỹ năng Supporter gỡ trước khi hết giờ nổ gây sát thương lớn!</p>
+          </div>
+          <div class="special-item">
+            <span class="special-badge badge-obs">▨ Đá Phong Ấn</span>
+            <h4>Vật Cản Của Boss (Obstacle)</h4>
+            <p>Khối phong ấn không thể hoán đổi. Phải nổ bom, dùng tia sét kề bên hoặc dùng kỹ năng Supporter để đập vỡ.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: BREAK STAGGER & ULTIMATE -->
+      <div id="tab-stagger" class="tut-tab-pane">
+        <div class="mechanic-card">
+          <h3>1. Thanh Sức Bền Trắng (Toughness / Break Stagger chuẩn HSR)</h3>
+          <p>
+            Mỗi con Boss và quái tinh anh đều có <strong>Thanh Sức Bền màu trắng</strong> nằm ngay phía trên thanh HP đỏ.
+          </p>
+          <ul>
+            <li>Tấn công bằng các đòn đánh thường và kỹ năng tương thích sẽ bào mòn thanh sức bền này.</li>
+            <li>Khi thanh Toughness giảm về 0, Boss rơi vào trạng thái <strong>WEAKNESS BROKEN</strong>: Bị làm choáng, không thể tung tuyệt chiêu trong 1–2 lượt, và nhận thêm <strong>+100% sát thương (Gấp đôi)</strong> từ mọi nguồn đòn đánh!</li>
+            <li><em>Chiến thuật</em>: Canh thời điểm Boss vừa bị Break để xả toàn bộ Ultimate của Astra và toàn đội nhằm tối đa hóa lượng sát thương!</li>
+          </ul>
+        </div>
+
+        <div class="mechanic-card" style="margin-top: 14px;">
+          <h3>2. Hệ Thống Vòng Tròn Năng Lượng Ultimate & Full Burst</h3>
+          <p>
+            Mỗi thành viên sở hữu một <strong>Vòng Tròn Năng Lượng</strong> bao quanh avatar đại diện.
+          </p>
+          <ul>
+            <li>Mỗi lần match màu tương thích, nổ combo hoặc nhận đòn sẽ tích lũy % năng lượng.</li>
+            <li>Khi đạt <strong>100%</strong>, vòng tròn chuyển sang màu vàng kim phát sáng rực rỡ và xoay xung nhịp.</li>
+            <li><strong>Bấm trực tiếp vào Avatar</strong> hoặc nhấn phím <kbd>Num 1..4</kbd> để kích hoạt đòn Ultimate bất kỳ lúc nào mà không tốn lượt đi!</li>
+            <li>Nếu xả liên tiếp nhiều Ultimate trong cùng một turn, bạn sẽ kích hoạt hiệu ứng <strong>FULL BURST CHAIN</strong> với cắt cảnh toàn màn hình hoành tráng!</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- TAB 4: BẢNG PHÍM TẮT -->
+      <div id="tab-shortcuts" class="tut-tab-pane">
+        <table class="shortcuts-table">
+          <thead>
+            <tr>
+              <th>Thao Tác</th>
+              <th>Phím Tắt</th>
+              <th>Tác Dụng Chi Tiết</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><kbd>Click Chuột Trái</kbd></td>
+              <td>Chọn ô / Đổi chỗ</td>
+              <td>Chọn ô đầu tiên, sau đó click ô kề bên để đổi chỗ tạo match-3.</td>
+            </tr>
+            <tr>
+              <td><kbd>Click Quái 3D</kbd></td>
+              <td>Nhắm mục tiêu 3D</td>
+              <td>Click trực tiếp vào bất kỳ con quái 3D nào trên đấu trường để khóa mục tiêu tấn công.</td>
+            </tr>
+            <tr>
+              <td><kbd>Phím 1..4</kbd></td>
+              <td>Dùng Kỹ Năng</td>
+              <td>Kích hoạt Skill đặc biệt của nhân vật 1..4 (Trảm Lôi, Gỡ Bẫy, Thanh Tẩy, Khiêu Khích).</td>
+            </tr>
+            <tr>
+              <td><kbd>NumPad 1..4</kbd></td>
+              <td>Bộc Phá Ultimate</td>
+              <td>Xả chiêu nộ tất sát của nhân vật 1..4 khi vòng tròn năng lượng đạt 100%.</td>
+            </tr>
+            <tr>
+              <td><kbd>Phím Tab</kbd></td>
+              <td>Chuyển Mục Tiêu</td>
+              <td>Chuyển nhanh mục tiêu tấn công vòng tròn giữa các quái còn sống trên sân.</td>
+            </tr>
+            <tr>
+              <td><kbd>Phím H</kbd></td>
+              <td>Gợi Ý Nước Đi</td>
+              <td>Bật / tắt viền nhấp nháy chỉ ra cặp ô có thể match tối ưu nhất trên bàn.</td>
+            </tr>
+            <tr>
+              <td><kbd>Phím R</kbd></td>
+              <td>Chơi Lại (Restart)</td>
+              <td>Khởi động lại ngay màn chơi hiện tại với cùng hạt giống ngẫu nhiên.</td>
+            </tr>
+            <tr>
+              <td><kbd>Phím ?</kbd> / <kbd>F1</kbd></td>
+              <td>Hướng Dẫn (Tutorial)</td>
+              <td>Mở / đóng bảng thông tin chi tiết và cơ chế 4 role này.</td>
+            </tr>
+            <tr>
+              <td><kbd>Phím Esc</kbd></td>
+              <td>Đóng Cửa Sổ</td>
+              <td>Đóng bảng kết quả, đóng hướng dẫn, hoặc hủy chọn kỹ năng chỉ định.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
   </div>
 </div>
 

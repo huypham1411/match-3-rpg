@@ -622,14 +622,57 @@ function bindControls() {
     });
   }
 
+  // Điều khiển Modal Hướng Dẫn & Cơ Chế 4 Role
+  const tutModal = $('tutorialModal');
+  const btnTut = $('btnTutorial');
+  const btnCloseTut = $('btnCloseTutorial');
+  const tutBackdrop = $('tutorialBackdrop');
+
+  function openTutorial() {
+    if (tutModal) tutModal.hidden = false;
+  }
+  function closeTutorial() {
+    if (tutModal) tutModal.hidden = true;
+  }
+  function toggleTutorial() {
+    if (!tutModal) return;
+    tutModal.hidden = !tutModal.hidden;
+  }
+
+  if (btnTut) btnTut.addEventListener('click', () => openTutorial());
+  if (btnCloseTut) btnCloseTut.addEventListener('click', () => closeTutorial());
+  if (tutBackdrop) tutBackdrop.addEventListener('click', () => closeTutorial());
+
+  // Chuyển Tab trong Hướng Dẫn
+  const tutTabBtns = document.querySelectorAll('.tut-tab-btn');
+  tutTabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.dataset.tab;
+      tutTabBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.tut-tab-pane').forEach(pane => {
+        pane.classList.remove('active');
+      });
+      const activePane = $(targetId);
+      if (activePane) activePane.classList.add('active');
+    });
+  });
+
   window.addEventListener('keydown', (event) => {
     const key = event.key;
 
     if (key === 'Escape') {
+      if (tutModal && !tutModal.hidden) { closeTutorial(); return; }
       if ($('banner').hidden === false) { dismissBanner(); return; }
       if (targetingSkillMember !== null) { targetingSkillMember = null; toast('Đã hủy chọn kỹ năng chỉ định.', false); render(); return; }
       selected = null;
       render();
+      return;
+    }
+
+    if (key === '?' || key === 'F1') {
+      event.preventDefault();
+      toggleTutorial();
       return;
     }
 
