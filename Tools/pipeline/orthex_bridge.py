@@ -237,9 +237,16 @@ def main():
         run_watch_loop()
     elif args.debate:
         res = evaluate_proposal(args.debate)
+        with open(OUTBOX_FILE, "w", encoding="utf-8") as f:
+            f.write(res)
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(f"\n\n## HIỆP 1 (DEBATE CLI) - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write("### Đề xuất từ Orthex / Director:\n" + args.debate + "\n\n")
+            f.write("### Phản biện từ Antigravity Arena:\n" + res + "\n")
+        sync_active_plan(res)
         print(res)
         set_clipboard(res)
-        print("\n[OK] Đã sao chép phản biện vào Clipboard!")
+        print("\n[OK] Đã sao chép phản biện vào Clipboard và đồng bộ active-plan.md!")
     elif args.sync:
         if os.path.exists(OUTBOX_FILE):
             with open(OUTBOX_FILE, "r", encoding="utf-8") as f:
