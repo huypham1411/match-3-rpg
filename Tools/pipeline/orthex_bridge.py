@@ -4,13 +4,12 @@ Tools/pipeline/orthex_bridge.py
 ===============================================================================
 CẦU NỐI ĐỐI THOẠI ĐA AGENT (AI-TO-AI DIALECTICAL BRIDGE) GIỮA ORTHEX & ANTIGRAVITY
 Tuân thủ nghiêm ngặt triết lý "Michelin Rigor" & "Arena" của Lauren Tan (@poteto).
+HỖ TRỢ GLOBAL: Tự động nhận diện thư mục dự án hiện tại (os.getcwd()).
 
-Tính năng:
-  1. --watch / --clip : Lắng nghe Clipboard. Khi bạn copy câu trả lời từ Orthex,
-                        tool tự động bắt text -> phân tích phản biện -> nạp câu
-                        trả lời ngược lại vào Clipboard -> bạn chỉ việc Ctrl+V vào Orthex!
-  2. --debate "text"  : Đưa trực tiếp đề xuất vào vòng mổ xẻ Red-Teaming 4 trụ cột.
-  3. --sync           : Đồng bộ kế hoạch đã chốt vào .orthex/active-plan.md.
+Cách dùng:
+  orthex-bridge --watch     (Lắng nghe Clipboard liên tục)
+  orthex-bridge --debate "..."
+  orthex-bridge --sync
 ===============================================================================
 """
 
@@ -22,7 +21,19 @@ import argparse
 import subprocess
 from datetime import datetime
 
-WORKSPACE_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+def get_workspace_root() -> str:
+    """Tự động tìm thư mục gốc của dự án hiện tại (dựa vào .git, .orthex hoặc cwd)."""
+    curr = os.path.abspath(os.getcwd())
+    while True:
+        if os.path.exists(os.path.join(curr, ".git")) or os.path.exists(os.path.join(curr, ".orthex")):
+            return curr
+        parent = os.path.dirname(curr)
+        if parent == curr:
+            break
+        curr = parent
+    return os.path.abspath(os.getcwd())
+
+WORKSPACE_ROOT = get_workspace_root()
 DISCUSSIONS_DIR = os.path.join(WORKSPACE_ROOT, "Docs", "discussions")
 INBOX_FILE = os.path.join(DISCUSSIONS_DIR, "orthex_inbox.md")
 OUTBOX_FILE = os.path.join(DISCUSSIONS_DIR, "orthex_outbox.md")
@@ -63,15 +74,15 @@ def set_clipboard(text: str) -> bool:
 
 def evaluate_proposal(proposal_text: str, round_num: int = 1) -> str:
     """
-    Đánh giá đề xuất theo 4 trụ cột MatchRPG + Lauren Tan Michelin Rigor:
+    Đánh giá đề xuất theo 4 trụ cột Pstack Michelin Rigor (Lauren Tan Framework):
     1. C++ Determinism (Không engine leak, seed FMatchRng, test 744 pass)
     2. WebGL Three.js Performance (60 FPS, drawcall, bone count <= 64)
     3. 3D Blender / Free Pipeline (Lưới sạch, không bẫy trả phí Meshy Pro, dễ học rigging)
-    4. Cốt truyện 3 Chương & Cơ chế 4 Role
+    4. Cốt truyện & Gameplay Invariants
     """
     text_lower = proposal_text.lower()
     
-    # 1. Phát hiện rủi ro Lõi C++
+    # 1. Ranh giới Lõi C++
     cpp_critique = []
     if any(k in text_lower for k in ["uobject", "aactor", "coreminimal", "fstring"]):
         cpp_critique.append("CẢNH BÁO VI PHẠM: Luật chơi phát hiện từ khóa rò rỉ Unreal (`UObject`/`AActor`/`FString`). Lõi `Core/` bắt buộc phải là C++ độc lập thuần túy qua `MatchCoreCompat.h`.")
@@ -80,7 +91,7 @@ def evaluate_proposal(proposal_text: str, round_num: int = 1) -> str:
     if not cpp_critique:
         cpp_critique.append("Đạt chuẩn ranh giới Lõi C++ độc lập (bảo toàn 744 test assertions trong `Tools/host_tests/`).")
 
-    # 2. Phát hiện rủi ro Hiệu năng WebGL Three.js
+    # 2. Hiệu năng WebGL Three.js
     web_critique = []
     if any(k in text_lower for k in ["4k", "8k", "subdivision", "cloth simulation", "vải mềm"]):
         web_critique.append("RỦI RO HIỆU NĂNG: Mô phỏng vải mềm hoặc texture 4K sẽ gây tụt FPS nghiêm trọng trên WebGL Three.js. Yêu cầu nén texture tối đa 1024x1024 và dùng mesh cứng (Rigid Bone).")
@@ -89,13 +100,13 @@ def evaluate_proposal(proposal_text: str, round_num: int = 1) -> str:
     if not web_critique:
         web_critique.append("Đạt ngân sách hiệu năng hiển thị (60 FPS trên WebGL, tối ưu drawcall).")
 
-    # 3. Phát hiện rủi ro Mỹ thuật 3D & Công cụ Trả phí
+    # 3. Mỹ thuật 3D & Công cụ Trả phí
     tool_critique = []
     if "meshy pro" in text_lower or "trả phí" in text_lower or "subscription" in text_lower:
         tool_critique.append("BÁC BỎ BẪY TRẢ PHÍ: Tuyệt đối không dùng tính năng trả phí của Meshy. Dự án sử dụng Tencent Hunyuan3D 2.0 (Free), Blender Python scripting và Adobe Mixamo (Free 100%).")
     tool_critique.append("YÊU CẦU FILE BLENDER NGUỒN: Xuất file `.blend` có tổ chức Armature rõ ràng để Director tự kiểm tra và học tập kỹ thuật Rigging cơ bản.")
 
-    # 4. Tính tương thích Cốt truyện 3 Chương & Role
+    # 4. Tính tương thích Cốt truyện & Gameplay
     story_critique = []
     if any(k in text_lower for k in ["astra", "chimera", "sentinel"]):
         story_critique.append("Khớp với kịch bản chuẩn trong `Docs/NARRATIVE_CHAPTERS_1_2_3.md` (Chương 1: Tro Tàn / Chương 2: Phế Tích Lõi).")
@@ -105,7 +116,7 @@ def evaluate_proposal(proposal_text: str, round_num: int = 1) -> str:
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     response = f"""# [ANTIGRAVITY ARENA] PHẢN BIỆN ĐỐI THOẠI — HIỆP {round_num}
-*Thời gian:* `{timestamp}` | *Tiêu chuẩn:* **Pstack Michelin Rigor (Lauren Tan Framework)**
+*Thời gian:* `{timestamp}` | *Dự án:* `{os.path.basename(WORKSPACE_ROOT)}` | *Tiêu chuẩn:* **Pstack Michelin Rigor (Lauren Tan)**
 
 ---
 
@@ -132,9 +143,9 @@ def evaluate_proposal(proposal_text: str, round_num: int = 1) -> str:
 ---
 
 ### 3. ĐỀ XUẤT ĐIỀU CHỈNH TỐI ƯU (SYNTHESIS & COUNTER-PROPOSAL)
-1. **Kiến trúc:** Giữ vững nguyên tắc Decoupled Core. Toàn bộ logic giải thuật phải nằm trong `Source/MatchRPG/Public/Core/`.
-2. **Thực thi 3D:** Sử dụng Blender Python Scripting để tạo xương (Armature) tự động, giúp User vừa có model sạch vừa học được cách phân chia Weight Paint trong Blender.
-3. **Phân phối:** Đảm bảo test 744 C++ assertions và 51 WASM checks luôn đạt 100% trước khi commit.
+1. **Kiến trúc:** Giữ vững nguyên tắc Decoupled Core của `pstack`. Tách bạch Lõi mô phỏng và Tầng diễn hoạ.
+2. **Thực thi 3D:** Sử dụng Blender Python Scripting để tạo xương (Armature) tự động, giúp Director vừa có model sạch vừa học được cách phân chia Weight Paint trong Blender.
+3. **Phân phối:** Đảm bảo test C++ assertions và WASM checks luôn đạt 100% trước khi commit.
 
 ---
 
@@ -144,7 +155,8 @@ def evaluate_proposal(proposal_text: str, round_num: int = 1) -> str:
     return response
 
 def sync_active_plan(latest_content: str):
-    """Cập nhật kế hoạch vào .orthex/active-plan.md để app Orthex tự nạp."""
+    """Cập nhật kế hoạch vào .orthex/active-plan.md nếu thư mục .orthex tồn tại."""
+    os.makedirs(os.path.dirname(PLAN_FILE), exist_ok=True)
     header = f"""# Active Plan (Đồng bộ từ Multi-Agent Arena)
 *Cập nhật lúc:* {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
@@ -156,7 +168,8 @@ def sync_active_plan(latest_content: str):
 def run_watch_loop():
     """Vòng lặp lắng nghe Clipboard liên tục (2s/lượt)."""
     print("=" * 70)
-    print("🔥 ORTHEX <-> ANTIGRAVITY CLIPBOARD SMART BRIDGE (RUNNING)")
+    print("🔥 ORTHEX <-> ANTIGRAVITY CLIPBOARD SMART BRIDGE (GLOBAL RUNNING)")
+    print(f"📁 Workspace: {WORKSPACE_ROOT}")
     print("=" * 70)
     print("[*] Cơ chế hoạt động:")
     print("    1. Trong Orthex, bạn chọn câu trả lời và bấm [Ctrl + C].")
@@ -174,36 +187,28 @@ def run_watch_loop():
             time.sleep(0.5)
             curr_text = get_clipboard()
             
-            # Kiểm tra nếu clipboard có text mới và không phải do chính tool vừa ghi ra
             if curr_text and curr_text != last_text and not curr_text.startswith("# [ANTIGRAVITY ARENA]"):
                 print(f"\n[+] BẮT ĐƯỢC ĐỀ XUẤT TỪ ORTHEX! (Độ dài: {len(curr_text)} ký tự)")
                 print(f"[*] Đang thực hiện phản biện theo Lauren Tan Michelin Rigor...")
 
-                # Ghi vào Inbox
                 with open(INBOX_FILE, "w", encoding="utf-8") as f:
                     f.write(curr_text)
 
-                # Sinh phản biện
                 response = evaluate_proposal(curr_text, round_count)
 
-                # Ghi vào Outbox
                 with open(OUTBOX_FILE, "w", encoding="utf-8") as f:
                     f.write(response)
 
-                # Ghi log nối tiếp
                 with open(LOG_FILE, "a", encoding="utf-8") as f:
                     f.write(f"\n\n## HIỆP {round_count} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
                     f.write("### Đề xuất từ Orthex:\n" + curr_text + "\n\n")
                     f.write("### Phản biện từ Antigravity:\n" + response + "\n")
 
-                # Đồng bộ active-plan.md cho app Orthex
                 sync_active_plan(response)
 
-                # Nạp ngược vào Clipboard
                 set_clipboard(response)
                 last_text = response
 
-                # Phát chuông thông báo
                 sys.stdout.write('\a')
                 sys.stdout.flush()
 
@@ -221,7 +226,7 @@ def run_watch_loop():
             time.sleep(1)
 
 def main():
-    parser = argparse.ArgumentParser(description="Cầu nối phản biện đa Agent Orthex <-> Antigravity")
+    parser = argparse.ArgumentParser(description="Cầu nối phản biện đa Agent Orthex <-> Antigravity (Global)")
     parser.add_argument("--watch", "--clip", action="store_true", help="Chạy vòng lặp lắng nghe Clipboard tự động")
     parser.add_argument("--debate", type=str, help="Chạy phản biện đơn lẻ cho một đoạn văn bản")
     parser.add_argument("--sync", action="store_true", help="Đồng bộ outbox vào .orthex/active-plan.md")
@@ -242,7 +247,6 @@ def main():
         else:
             print("[!] Chưa có outbox để đồng bộ.")
     else:
-        # Mặc định in hướng dẫn
         parser.print_help()
 
 if __name__ == "__main__":
