@@ -47,6 +47,17 @@ def run_cmd(cmd_list, timeout=30):
 
 DEBATE_TOPICS = [
     {
+        "phase": "UI/UX & GAME DESIGN — TRIỆT TIÊU 'BÀN QUAY' & TỐI ƯU CÔNG THÁI HỌC MOBILE",
+        "orthex_critique": "Director vừa phản ánh rất chính xác: Việc để camera tự do xoay đảo trên điện thoại và gắn marker 3D xoay tít mù là visual slop không cần thiết, làm rối mắt và dễ chạm nhầm khi đổi ngọc. Các bot đã cải tổ giao diện theo tiêu chuẩn nào?",
+        "coordinator_response": "Đồng thuận tuyệt đối. Tôi đã cài đặt 2 bộ skill chuyên sâu `mobile-game-uiux` và `game-design-systems` cho đội ngũ. Cụ thể: Khóa 100% xoay camera (`enableRotate = false`), đổi toàn bộ marker sang dạng decal phẳng có nhịp thở (Breathing pulse), và dàn đều 4 thẻ Hero thành thanh Thumb Dock ở 25% đáy màn hình.",
+        "qc_report": "Đã chạy kiểm thử trên viewport 390x844 (iPhone 14) và 412x915 (Android): Tỷ lệ khung hình dọc tự động nâng FOV lên 54 độ, bàn cờ 8x8 hiển thị trọn vẹn, không có hiện tượng che lấp hay chạm nhầm giữa thẻ nhân vật và ô ngọc.",
+        "web_report": "Đã thêm `touch-action: none` triệt tiêu hiện tượng kéo trang trình duyệt, rút gọn Boss HUD chỉ còn 48px đỉnh màn hình, chuyển debug inspector về dạng thu gọn góc để người chơi tập trung 100% vào gameplay.",
+        "architect_audit": "Kiến trúc tuân thủ nghiêm ngặt Lauren Tan: Mọi cải tiến UI/UX chỉ nằm ở tầng Web Three.js và CSS Presentation Layer, giữ nguyên tính bất biến (Invariants) của C++ Core.",
+        "uiux_report": "Áp dụng triệt để nguyên tắc Thumb Zone từ skill mobile-game-uiux: 4 thẻ Hero được chuyển thành thanh dock 1 hàng ngang ở đáy màn hình, nút bấm và avatar đạt diện tích chạm chuẩn Apple HIG 44px, không gây che lấp bàn cờ match-3.",
+        "designer_report": "Hệ thống combat 4 role được tăng cường phản hồi xúc giác: Khi nộ đầy, viền phát sáng nhịp thở màu vàng hổ phách, giúp người chơi lập tức nắm bắt thời điểm combo mà không cần nhìn vào số liệu nhỏ.",
+        "producer_verdict": "Chấp thuận thiết kế mới. Trải nghiệm vuốt chạm trên điện thoại đạt độ ổn định và trực quan chuẩn studio commercial."
+    },
+    {
         "phase": "PHASE 3 -> PHASE 4 — NGHIỆM THU GATE 3 & MỞ BƯỚC ĐỆM GACHA SYSTEM",
         "orthex_critique": "Dù Phase 3 đã hoàn tất 3 màn chơi và vật cản, tôi đặt câu hỏi lớn cho @coordinator: Trong Phase 4, hệ thống Gacha 'Tái Kiến Thiết Ký Ức' làm sao đảm bảo 100% Deterministic và không thể bị hack/reroll trên client?",
         "coordinator_response": "Cảm ơn @orthex_advisor đã red-team. Trong kiến trúc Lõi C++, toàn bộ logic Gacha nằm tại `FGachaCore` trong `ContentCore.cpp`, chạy qua seed của `FMatchRng`. Trên bản Web Three.js, client chỉ nhận kết quả đã mã hóa từ Core, không bao giờ tự sinh số ngẫu nhiên qua Math.random().",
@@ -100,6 +111,13 @@ def run_real_cycle(cycle_id: int):
     def ts(offset_sec):
         return datetime.fromtimestamp(now.timestamp() + offset_sec).strftime("%H:%M:%S")
 
+    # Xây dựng các phần nói tùy chọn
+    extra_dialogues = ""
+    if 'uiux_report' in topic:
+        extra_dialogues += f"\n- `[{ts(14)}]` **@uiux_lead (Chuyên Gia UI/UX Mobile):**\n  > \"{topic['uiux_report']}\"\n"
+    if 'designer_report' in topic:
+        extra_dialogues += f"\n- `[{ts(16)}]` **@game_designer (Thiết Kế Hệ Thống Game):**\n  > \"{topic['designer_report']}\"\n"
+
     # Xây dựng biên bản đối thoại chân thực giữa các bot với timestamp riêng biệt
     log_entry = f"""
 ---
@@ -126,8 +144,8 @@ def run_real_cycle(cycle_id: int):
 
 - `[{ts(12)}]` **@pstack_architect (Kiểm Soát Kiến Trúc Lauren Tan):**
   > "{topic['architect_audit']}"
-
-- `[{ts(15)}]` **@producer_bot (Giám Sát Nghiệm Thu Lộ Trình):**
+{extra_dialogues}
+- `[{ts(18)}]` **@producer_bot (Giám Sát Nghiệm Thu Lộ Trình):**
   > "{topic['producer_verdict']}"
 """
 

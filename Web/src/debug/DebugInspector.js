@@ -75,6 +75,12 @@ export class DebugInspector {
     initButtons() {
         const body = document.getElementById('debugBody');
         const btnToggle = document.getElementById('btnToggleDebug');
+        // Tự động thu gọn trên màn hình điện thoại để không che khuất không gian chơi
+        if (window.innerWidth < 768) {
+            body.style.display = 'none';
+            btnToggle.textContent = 'Mở rộng';
+        }
+
         btnToggle.addEventListener('click', () => {
             if (body.style.display === 'none') {
                 body.style.display = 'block';

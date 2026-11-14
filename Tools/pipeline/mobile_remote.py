@@ -99,6 +99,8 @@ HTML_PAGE = """<!DOCTYPE html>
         .bot-msg.dev { border-left-color: #3b82f6; }
         .bot-msg.architect { border-left-color: #f59e0b; }
         .bot-msg.producer { border-left-color: #ec4899; }
+        .bot-msg.uiux { border-left-color: #06b6d4; }
+        .bot-msg.designer { border-left-color: #8b5cf6; }
 
         .bot-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
         .bot-tag { font-size: 12px; font-weight: 800; }
@@ -108,6 +110,8 @@ HTML_PAGE = """<!DOCTYPE html>
         .bot-tag.dev { color: #60a5fa; }
         .bot-tag.architect { color: #fbbf24; }
         .bot-tag.producer { color: #f472b6; }
+        .bot-tag.uiux { color: #22d3ee; }
+        .bot-tag.designer { color: #a78bfa; }
 
         .bot-timestamp { font-size: 11px; color: #94a3b8; font-family: monospace; background: #1e293b; padding: 2px 6px; border-radius: 4px; }
         .bot-text { font-size: 13px; line-height: 1.5; color: #cbd5e1; white-space: pre-wrap; word-break: break-word; }
@@ -233,6 +237,8 @@ HTML_PAGE = """<!DOCTYPE html>
                     else if (botName.includes('web') || botName.includes('dev')) { botClass = 'dev'; icon = '💻'; }
                     else if (botName.includes('architect')) { botClass = 'architect'; icon = '🏛️'; }
                     else if (botName.includes('producer')) { botClass = 'producer'; icon = '📋'; }
+                    else if (botName.includes('uiux')) { botClass = 'uiux'; icon = '🎨'; }
+                    else if (botName.includes('game') || botName.includes('designer')) { botClass = 'designer'; icon = '🎲'; }
 
                     html += `
                         <div class="bot-msg ${botClass}">

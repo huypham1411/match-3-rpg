@@ -46,11 +46,25 @@ export class Engine3D {
     /** 2. Khởi tạo Camera Phối Cảnh (Perspective Camera) */
     initCamera() {
         const aspect = this.width / this.height;
-        // FOV: 45 độ, Near: 0.1, Far: 1000 đơn vị
+        // FOV & Vị trí tối ưu hóa cho màn hình dọc (Mobile Portrait) và ngang (Desktop)
         this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 100);
-        // Đặt góc camera bao quát cả Sàn Đấu 3D (trên) và Bàn Cờ 3D (dưới)
-        this.camera.position.set(0, 14, 20);
-        this.camera.lookAt(0, 0, 0);
+        this.updateCameraForDevice(aspect);
+    }
+
+    /** Tự động cân chỉnh góc nhìn Camera theo kích thước thiết bị */
+    updateCameraForDevice(aspect) {
+        if (aspect < 1.0) {
+            // Mobile Portrait: Mở rộng góc FOV 54 độ để bàn 8x8 hiển thị trọn vẹn, không bị tràn viền
+            this.camera.fov = 54;
+            this.camera.position.set(0, 16.5, 18.0);
+            this.camera.lookAt(0, -0.5, 0);
+        } else {
+            // Desktop / Landscape: Góc nhìn điện ảnh chuẩn 45 độ
+            this.camera.fov = 45;
+            this.camera.position.set(0, 14, 20);
+            this.camera.lookAt(0, 0, 0);
+        }
+        this.camera.updateProjectionMatrix();
     }
 
     /** 3. Khởi tạo Trình Render WebGL */
@@ -98,13 +112,20 @@ export class Engine3D {
         this.scene.add(crimsonRimLight);
     }
 
-    /** 5. Bộ điều khiển xoay chuột (OrbitControls) */
+    /** 5. Bộ điều khiển xoay chuột (OrbitControls) - Khóa xoay để bàn cờ match-3 luôn ổn định tuyệt đối */
     initControls() {
         if (typeof THREE.OrbitControls !== 'undefined') {
             this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
-            this.controls.enableDamping = true; // Chuyển động xoay mượt mà có quán tính
+            this.controls.enableDamping = true;
             this.controls.dampingFactor = 0.05;
-            this.controls.maxPolarAngle = Math.PI / 2 + 0.1; // Giới hạn không bị xoay lộn ngược dưới sàn
+            
+            // [TIÊU CHUẨN MOBILE GAME UX]: KHÓA XOAY CAMERA
+            // Người chơi vuốt chạm màn hình là để hoán đổi ngọc, không được để camera bị lắc lư hoặc xoay đảo
+            this.controls.enableRotate = false;
+            this.controls.enablePan = false;
+            this.controls.enableZoom = false;
+
+            this.controls.maxPolarAngle = Math.PI / 2 + 0.1;
             this.controls.minDistance = 6;
             this.controls.maxDistance = 45;
         }
@@ -116,8 +137,9 @@ export class Engine3D {
             this.width = this.container.clientWidth || window.innerWidth;
             this.height = this.container.clientHeight || window.innerHeight;
 
-            this.camera.aspect = this.width / this.height;
-            this.camera.updateProjectionMatrix();
+            const aspect = this.width / this.height;
+            this.camera.aspect = aspect;
+            this.updateCameraForDevice(aspect);
 
             this.renderer.setSize(this.width, this.height);
             this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));

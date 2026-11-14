@@ -41,9 +41,16 @@ export class Board3D {
         this.boardGroup = new THREE.Group();
         this.scene.add(this.boardGroup);
 
-        // Vị trí đặt bàn cờ trong không gian 3D (nằm phía trước, nghiêng nhẹ)
-        this.boardGroup.position.set(0, -1.0, 4.5);
-        this.boardGroup.rotation.x = -Math.PI / 4.5; // Nghiêng 40 độ tạo góc nhìn phối cảnh đẹp mắt
+        // Vị trí đặt bàn cờ trong không gian 3D: Cố định góc nhìn phẳng gần như Isometric Top-Down
+        // Giúp người chơi trên điện thoại nhìn rõ ô, dễ thao tác chạm mà không bị nghiêng lệch
+        const isMobile = window.innerWidth < 768 || (window.innerWidth / window.innerHeight) < 1.0;
+        if (isMobile) {
+            this.boardGroup.position.set(0, -1.2, 3.2);
+            this.boardGroup.rotation.x = -Math.PI / 14; // Nghiêng phẳng nhẹ 12.8 độ, tối ưu chạm ngón cái trên mobile
+        } else {
+            this.boardGroup.position.set(0, -0.6, 4.0);
+            this.boardGroup.rotation.x = -Math.PI / 10; // Nghiêng 18 độ trên desktop
+        }
 
         this.tileMeshes = [];      // Mảng 2 chiều 8x8 chứa THREE.Mesh
         this.raycaster = new THREE.Raycaster();
@@ -225,7 +232,7 @@ export class Board3D {
         });
     }
 
-    /** Gắn hiệu ứng thị giác cho Ngọc Đặc Biệt */
+    /** Gắn ký hiệu thị giác phẳng (Embossed Tactical Marker) cho Ngọc Đặc Biệt - Không xoay rối mắt */
     attachSpecialMarker(r, c, specialType) {
         const mesh = this.tileMeshes[r][c];
         if (!mesh) return;
@@ -237,22 +244,41 @@ export class Board3D {
         let markerGeo;
         let markerMat;
 
-        if (specialType === 1 || specialType === 2) {
-            // Tia Laser hàng/cột: Vòng hào quang Neon sáng rực
-            markerGeo = new THREE.TorusGeometry(0.35, 0.08, 8, 24);
-            markerMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        if (specialType === 1) {
+            // LineRow: Vạch Laser ngang sắc nét phẳng
+            markerGeo = new THREE.BoxGeometry(this.tileSize * 0.78, 0.14, 0.08);
+            markerMat = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                emissive: 0x00f0ff,
+                emissiveIntensity: 1.0,
+                metalness: 0.8,
+                roughness: 0.2
+            });
+        } else if (specialType === 2) {
+            // LineCol: Vạch Laser dọc sắc nét phẳng
+            markerGeo = new THREE.BoxGeometry(0.14, this.tileSize * 0.78, 0.08);
+            markerMat = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                emissive: 0x00f0ff,
+                emissiveIntensity: 1.0,
+                metalness: 0.8,
+                roughness: 0.2
+            });
         } else if (specialType === 3) {
-            // Bom 3x3: Lõi năng lượng đỏ nhấp nháy
-            markerGeo = new THREE.SphereGeometry(0.28, 12, 12);
-            markerMat = new THREE.MeshBasicMaterial({ color: 0xff0055 });
+            // Bom 3x3: Vòng tâm ngắm đa hướng phẳng (Tactical Reticle Ring)
+            markerGeo = new THREE.RingGeometry(0.12, 0.28, 24);
+            markerMat = new THREE.MeshBasicMaterial({
+                color: 0xff3366,
+                side: THREE.DoubleSide
+            });
         } else if (specialType === 4) {
-            // SwapAll / Lỗ đen vũ trụ: Viên kim cương bát diện xoay tròn
-            markerGeo = new THREE.OctahedronGeometry(0.36, 0);
+            // SwapAll / Lỗ đen vũ trụ: Biểu tượng Kim Cương đa giác cố định (Prismatic Core)
+            markerGeo = new THREE.OctahedronGeometry(0.3, 0);
             markerMat = new THREE.MeshStandardMaterial({
                 color: 0x00f0ff,
                 emissive: 0xffffff,
-                emissiveIntensity: 0.8,
-                metalness: 0.9,
+                emissiveIntensity: 0.9,
+                metalness: 0.95,
                 roughness: 0.1
             });
         }
@@ -260,7 +286,10 @@ export class Board3D {
         if (markerGeo) {
             const marker = new THREE.Mesh(markerGeo, markerMat);
             marker.name = 'special_marker';
-            marker.position.z = 0.3; // Nổi lên bề mặt khối
+            marker.position.z = 0.26; // Nổi vừa vặn trên mặt phẳng khối
+            if (specialType === 4) {
+                marker.rotation.z = Math.PI / 4; // Cố định góc kim cương, không quay
+            }
             marker.userData = { isSpecialMarker: true, specialType };
             mesh.add(marker);
         }
@@ -355,15 +384,15 @@ export class Board3D {
             }
         }
 
-        // Xoay nhẹ các viên ngọc đặc biệt (Octahedron / Torus) để tạo sự sống động
+        // [ANTI-VISUAL SLOP]: Hiệu ứng thở nhẹ (Subtle Pulse) thay vì xoay mòng mòng gây rối mắt
+        const pulse = Math.sin(elapsed * 2.8) * 0.06 + 1.0;
         for (let r = 0; r < this.state.height; r++) {
             for (let c = 0; c < this.state.width; c++) {
                 const mesh = this.tileMeshes[r][c];
                 if (mesh) {
                     const marker = mesh.getObjectByName('special_marker');
                     if (marker) {
-                        marker.rotation.z += delta * 2.5;
-                        marker.rotation.y += delta * 1.5;
+                        marker.scale.set(pulse, pulse, 1.0);
                     }
                 }
             }
