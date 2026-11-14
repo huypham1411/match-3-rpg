@@ -154,22 +154,32 @@ export class BoardEngine {
 
     initCamera() {
         const aspect = this.width / this.height;
-        this.camera = new THREE.PerspectiveCamera(44, aspect, 0.1, 100);
+        this.camera = new THREE.OrthographicCamera(-5, 5, 5, -5, 0.1, 100);
+        this.camera.position.set(0, 0, 10);
+        this.camera.lookAt(0, 0, 0);
         this.updateCameraForDevice(aspect);
     }
 
     updateCameraForDevice(aspect) {
+        // [FLAT 2D VIEWPORT]: Khóa hoàn toàn góc nhìn phẳng trực diện, triệt tiêu chiều sâu 3D gây mỏi mắt
+        // Đảm bảo toàn bộ 64 ô bàn cờ hiển thị vuông vức, kích thước đều tăm tắp như Candy Crush
+        const boardDimension = 10.0;
+        let viewW, viewH;
         if (aspect < 1.0) {
-            // Mobile Portrait: Góc nhìn phẳng tối ưu chạm ngón cái
-            this.camera.fov = 44;
-            this.camera.position.set(0, 14.5, 8.5);
-            this.camera.lookAt(0, -0.2, 0);
+            // Mobile Portrait: Vừa khít bề ngang màn hình
+            viewW = boardDimension * 1.04;
+            viewH = viewW / aspect;
         } else {
-            // Desktop: Cân bằng góc nhìn
-            this.camera.fov = 38;
-            this.camera.position.set(0, 16.0, 9.0);
-            this.camera.lookAt(0, 0, 0);
+            // Desktop: Vừa khít chiều cao container
+            viewH = boardDimension * 1.06;
+            viewW = viewH * aspect;
         }
+        this.camera.left = -viewW / 2;
+        this.camera.right = viewW / 2;
+        this.camera.top = viewH / 2;
+        this.camera.bottom = -viewH / 2;
+        this.camera.position.set(0, 0, 10);
+        this.camera.lookAt(0, 0, 0);
         this.camera.updateProjectionMatrix();
     }
 
@@ -180,26 +190,21 @@ export class BoardEngine {
         });
         this.renderer.setSize(this.width, this.height);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        this.renderer.shadowMap.enabled = true;
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.shadowMap.enabled = false; // Bàn cờ phẳng 2D không cần shadow map gây nhoè góc
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.25;
+        this.renderer.toneMappingExposure = 1.1;
 
         this.container.appendChild(this.renderer.domElement);
     }
 
     initLights() {
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+        // Chiếu sáng phẳng 2D đồng đều trên toàn bộ 64 ô cờ
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
         this.scene.add(ambientLight);
 
-        const keyLight = new THREE.DirectionalLight(0xffffff, 1.4);
-        keyLight.position.set(5, 18, 12);
-        keyLight.castShadow = true;
+        const keyLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        keyLight.position.set(0, 0, 10);
         this.scene.add(keyLight);
-
-        const topCyan = new THREE.PointLight(0x00f0ff, 1.5, 15);
-        topCyan.position.set(0, 8, 4);
-        this.scene.add(topCyan);
     }
 
     initResizeHandler() {

@@ -733,11 +733,12 @@ class RemoteHandler(BaseHTTPRequestHandler):
         elif self.path == "/api/run-tests":
             test_bat = os.path.join(WORKSPACE_ROOT, "Tools", "host_tests", "build_and_run.bat")
             res_c = subprocess.run([test_bat], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
+            res_strict = subprocess.run(["node", "Web/test_strict_swap.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
             res_specials = subprocess.run(["node", "Web/test_specials.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
             res_wasm = subprocess.run(["node", "Web/smoke_test.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
             res_p3 = subprocess.run(["node", "Web/test_phase3.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
 
-            output = f"=== TEST SPECIAL GEMS (9 CHECKS) ===\n{res_specials.stdout}\n\n=== TEST PHASE 3 WEB (16 CHECKS) ===\n{res_p3.stdout}\n\n=== TEST C++ CORE (744 ASSERTIONS) ===\n{res_c.stdout}\n\n=== TEST WASM (51 CHECKS) ===\n{res_wasm.stdout}"
+            output = f"=== TEST STRICT SWAP & REVERT (8 CHECKS) ===\n{res_strict.stdout}\n\n=== TEST SPECIAL GEMS (9 CHECKS) ===\n{res_specials.stdout}\n\n=== TEST PHASE 3 WEB (16 CHECKS) ===\n{res_p3.stdout}\n\n=== TEST C++ CORE (744 ASSERTIONS) ===\n{res_c.stdout}\n\n=== TEST WASM (51 CHECKS) ===\n{res_wasm.stdout}"
 
             self.send_compressed_response(json.dumps({"output": output}).encode("utf-8"), "application/json; charset=utf-8")
 

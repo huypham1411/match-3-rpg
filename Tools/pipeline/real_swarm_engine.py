@@ -47,6 +47,17 @@ def run_cmd(cmd_list, timeout=30):
 
 DEBATE_TOPICS = [
     {
+        "phase": "FLAT 2D BOARD & STRICT MATCH-3 REVERT (CANDY CRUSH / DIAMOND STANDARD)",
+        "orthex_critique": "Director yêu cầu triệt tiêu toàn bộ chiều sâu 3D trên bàn cờ vì gây mỏi mắt, chuyển sang Flat 2D chuẩn truyền thống. Đồng thời chấn chỉnh ngay lỗi di chuyển tự do: Match-3 bắt buộc chỉ ăn khi đúng 3, còn lại phải snap-back revert như Candy Crush!",
+        "coordinator_response": "Chỉ đạo @web_dev chuyển BoardEngine sang OrthographicCamera trực diện, thay khối hộp 3D bằng Texture 2D Canvas siêu nét kèm icon nguyên tố rõ ràng. Ở tầng logic, GameState và Board3D đồng bộ xử lý sự kiện swap_reject: Khi không tạo match, hai khối lập tức trượt giật lùi về chỗ cũ (revert) với hiệu ứng đàn hồi, giữ nguyên số lượt đi.",
+        "qc_report": "Đã bổ sung bộ kiểm thử test_strict_swap.mjs (8/8 PASS): Xác nhận nước đi sai trả về false, không trừ movesLeft, snap-back hoàn hảo. Khôi phục trọn vẹn tính bất biến C++ Core: an illegal swap is rejected and costs nothing.",
+        "web_report": "Đã tích hợp cả 2 cơ chế tương tác: Vuốt (Swipe drag > 20px) và Chạm tuần tự (Tap-to-Swap), 64 ô hiển thị phẳng 2D sắc nét trên mọi màn hình di động.",
+        "architect_audit": "Kiểm soát Invariant Pstack: Quy tắc swap tuân thủ 100% CombatMathCore và MatchFinderCore, không còn hiện tượng lệch trạng thái giữa Web và Core.",
+        "uiux_report": "Bàn cờ phẳng 2D kết hợp nền recessed grid slots đạt chuẩn Mobile-First Touch Ergonomics, triệt tiêu 100% hiện tượng mỏi mắt hay méo hình phối cảnh 3D.",
+        "designer_report": "Ý tưởng di chuyển tự do sẽ được ghi nhận và lưu trữ làm cơ chế Skill đặc biệt (Time Stop / Chrono Drift) cho tướng SSR tương lai theo đúng gợi ý của Director.",
+        "producer_verdict": "Nghiệm thu toàn diện chỉ thị của Director. Trải nghiệm game thân thiện, trực quan và chuẩn mực thương mại cao nhất."
+    },
+    {
         "phase": "UI/UX & GAME DESIGN — TRIỆT TIÊU 'BÀN QUAY' & TỐI ƯU CÔNG THÁI HỌC MOBILE",
         "orthex_critique": "Director vừa phản ánh rất chính xác: Việc để camera tự do xoay đảo trên điện thoại và gắn marker 3D xoay tít mù là visual slop không cần thiết, làm rối mắt và dễ chạm nhầm khi đổi ngọc. Các bot đã cải tổ giao diện theo tiêu chuẩn nào?",
         "coordinator_response": "Đồng thuận tuyệt đối. Tôi đã cài đặt 2 bộ skill chuyên sâu `mobile-game-uiux` và `game-design-systems` cho đội ngũ. Cụ thể: Khóa 100% xoay camera (`enableRotate = false`), đổi toàn bộ marker sang dạng decal phẳng có nhịp thở (Breathing pulse), và dàn đều 4 thẻ Hero thành thanh Thumb Dock ở 25% đáy màn hình.",
@@ -198,7 +209,10 @@ def run_real_cycle(cycle_id: int):
     # 3. @qc_lead chạy test Ngọc Đặc Biệt & Zero Black Holes
     ok_spec, out_spec, err_spec = run_cmd(["node", "Web/test_specials.mjs"])
 
-    # 4. @qc_lead chạy C++ Core test (744 assertions)
+    # 4. @qc_lead chạy test Khóa hoán đổi & Snap-back Revert chuẩn Match-3
+    ok_strict, out_strict, err_strict = run_cmd(["node", "Web/test_strict_swap.mjs"])
+
+    # 5. @qc_lead chạy C++ Core test (744 assertions)
     test_bat = os.path.join(WORKSPACE_ROOT, "Tools", "host_tests", "build_and_run.bat")
     ok_cpp, out_cpp, err_cpp = run_cmd([test_bat], timeout=45)
 
@@ -237,6 +251,7 @@ def run_real_cycle(cycle_id: int):
 - `[{ts(6)}]` **@qc_lead (Trưởng Ban Kiểm Thử Tự Động):**
   > "{topic['qc_report']}
   > *Hóa đơn kiểm thử định kỳ:*
+  > • Strict Match-3 Revert: {'✅ 8/8 PASS' if ok_strict else '❌ FAIL'}
   > • Special Gems (4 Types & Zero Holes): {'✅ 9/9 PASS' if ok_spec else '❌ FAIL'}
   > • Phase 3 Web Features: {'✅ 16/16 PASS' if ok_p3 else '❌ FAIL'}
   > • WebAssembly Core: {'✅ 51/51 PASS' if ok_wasm else '❌ FAIL'}

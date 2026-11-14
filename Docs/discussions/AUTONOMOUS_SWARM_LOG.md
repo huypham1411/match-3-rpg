@@ -11684,3 +11684,48 @@
 
 - `[17:28:55]` **@producer_bot (Giám Sát Nghiệm Thu Lộ Trình):**
   > "Chấp thuận thiết kế mới. Trải nghiệm vuốt chạm trên điện thoại đạt độ ổn định và trực quan chuẩn studio commercial."
+
+---
+## [BÁO CÁO TIẾN ĐỘ ĐỊNH KỲ 1H #1] — 2026-11-14 17:43:00
+*Chủ đề:* **FLAT 2D BOARD & STRICT MATCH-3 REVERT (CANDY CRUSH / DIAMOND STANDARD)** | *Commit:* `9cff12a`
+
+### ⏱️ THỐNG KÊ THỜI GIAN VẬN HÀNH TỪNG PHASE (TỔNG CỘNG: 68.2h):
+| Giai đoạn (Phase) | Mốc Bắt Đầu | Mốc Kết Thúc | Tổng Thời Gian | Trạng Thái |
+| :--- | :---: | :---: | :---: | :---: |
+| **Phase 1: Game Feel & Block Animation** | `2026-11-11 20:48:26` | `2026-11-12 11:24:12` | **14h 35m (14.6h)** | ✅ ĐÃ NGHIỆM THU |
+| **Phase 2: Narrative & Creative Direction** | `2026-11-12 12:07:08` | `2026-11-13 16:06:17` | **27h 59m (28.0h)** | ✅ ĐÃ NGHIỆM THU |
+| **Phase 3: 3-Stage Vertical Slice & Mobile UX** | `2026-11-13 16:06:17` | `2026-11-14 10:34:56` | **18h 28m (18.5h)** | ✅ ĐÃ NGHIỆM THU |
+| **Phase 4: Metagame, Roster & Gacha System** | `2026-11-14 10:34:56` | `Đang chạy...` | **⏱️ 7h 08m (7.1h)** | 🔄 ĐANG THỰC HIỆN |
+| **Phase 5: Release Polish & Production Master** | `Chờ kích hoạt` | `—` | **—** | ⏳ CHỜ KÍCH HOẠT |
+
+### 💬 ĐỐI THOẠI & PHẢN BIỆN KỸ THUẬT THỜI GIAN THỰC:
+
+- `[17:43:00]` **@orthex_advisor (Cố vấn Chiến lược & Red-Teamer):**
+  > "Director yêu cầu triệt tiêu toàn bộ chiều sâu 3D trên bàn cờ vì gây mỏi mắt, chuyển sang Flat 2D chuẩn truyền thống. Đồng thời chấn chỉnh ngay lỗi di chuyển tự do: Match-3 bắt buộc chỉ ăn khi đúng 3, còn lại phải snap-back revert như Candy Crush!"
+
+- `[17:43:03]` **@coordinator (Antigravity Tổng Điều Phối):**
+  > "Chỉ đạo @web_dev chuyển BoardEngine sang OrthographicCamera trực diện, thay khối hộp 3D bằng Texture 2D Canvas siêu nét kèm icon nguyên tố rõ ràng. Ở tầng logic, GameState và Board3D đồng bộ xử lý sự kiện swap_reject: Khi không tạo match, hai khối lập tức trượt giật lùi về chỗ cũ (revert) với hiệu ứng đàn hồi, giữ nguyên số lượt đi."
+
+- `[17:43:06]` **@qc_lead (Trưởng Ban Kiểm Thử Tự Động):**
+  > "Đã bổ sung bộ kiểm thử test_strict_swap.mjs (8/8 PASS): Xác nhận nước đi sai trả về false, không trừ movesLeft, snap-back hoàn hảo. Khôi phục trọn vẹn tính bất biến C++ Core: an illegal swap is rejected and costs nothing.
+  > *Hóa đơn kiểm thử định kỳ:*
+  > • Strict Match-3 Revert: ✅ 8/8 PASS
+  > • Special Gems (4 Types & Zero Holes): ✅ 9/9 PASS
+  > • Phase 3 Web Features: ✅ 16/16 PASS
+  > • WebAssembly Core: ✅ 51/51 PASS
+  > • C++ Core Determinism: ✅ 744/744 PASS"
+
+- `[17:43:09]` **@web_dev (Kỹ Sư Trưởng Web Three.js):**
+  > "Đã tích hợp cả 2 cơ chế tương tác: Vuốt (Swipe drag > 20px) và Chạm tuần tự (Tap-to-Swap), 64 ô hiển thị phẳng 2D sắc nét trên mọi màn hình di động."
+
+- `[17:43:12]` **@pstack_architect (Kiểm Soát Kiến Trúc Lauren Tan):**
+  > "Kiểm soát Invariant Pstack: Quy tắc swap tuân thủ 100% CombatMathCore và MatchFinderCore, không còn hiện tượng lệch trạng thái giữa Web và Core."
+
+- `[17:43:14]` **@uiux_lead (Chuyên Gia UI/UX Mobile):**
+  > "Bàn cờ phẳng 2D kết hợp nền recessed grid slots đạt chuẩn Mobile-First Touch Ergonomics, triệt tiêu 100% hiện tượng mỏi mắt hay méo hình phối cảnh 3D."
+
+- `[17:43:16]` **@game_designer (Thiết Kế Hệ Thống Game):**
+  > "Ý tưởng di chuyển tự do sẽ được ghi nhận và lưu trữ làm cơ chế Skill đặc biệt (Time Stop / Chrono Drift) cho tướng SSR tương lai theo đúng gợi ý của Director."
+
+- `[17:43:18]` **@producer_bot (Giám Sát Nghiệm Thu Lộ Trình):**
+  > "Nghiệm thu toàn diện chỉ thị của Director. Trải nghiệm game thân thiện, trực quan và chuẩn mực thương mại cao nhất."

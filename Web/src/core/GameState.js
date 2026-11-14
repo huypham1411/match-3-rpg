@@ -345,23 +345,30 @@ export class GameState {
         }
 
         // Hoán đổi tạm thời
-        const temp = this.grid[r1][c1];
-        const tempSpec = this.specialGrid[r1][c1];
-        this.grid[r1][c1] = this.grid[r2][c2];
-        this.specialGrid[r1][c1] = this.specialGrid[r2][c2];
-        this.grid[r2][c2] = temp;
-        this.specialGrid[r2][c2] = tempSpec;
+        const orig1 = this.grid[r1][c1];
+        const origSpec1 = this.specialGrid[r1][c1];
+        const orig2 = this.grid[r2][c2];
+        const origSpec2 = this.specialGrid[r2][c2];
+
+        this.grid[r1][c1] = orig2;
+        this.specialGrid[r1][c1] = origSpec2;
+        this.grid[r2][c2] = orig1;
+        this.specialGrid[r2][c2] = origSpec1;
 
         // Tìm match
         const matches = this.findMatches();
-        if (matches.length === 0) {
-            // Nước đi không hợp lệ -> Trả về vị trí cũ
-            await new Promise(res => setTimeout(res, 200));
-            this.grid[r2][c2] = this.grid[r1][c1];
-            this.specialGrid[r2][c2] = this.specialGrid[r1][c1];
-            this.grid[r1][c1] = temp;
-            this.specialGrid[r1][c1] = tempSpec;
+        const isFusion = this.isSpecialFusion(origSpec1, origSpec2);
+
+        if (matches.length === 0 && !isFusion) {
+            // [STRICT MATCH-3 RULE - REVERT]: Nước đi không tạo được 3-match -> Snap back về chỗ cũ
+            await new Promise(res => setTimeout(res, 180));
+            this.grid[r1][c1] = orig1;
+            this.specialGrid[r1][c1] = origSpec1;
+            this.grid[r2][c2] = orig2;
+            this.specialGrid[r2][c2] = origSpec2;
+
             events.emit('swap_reject', { from: { r: r1, c: c1 }, to: { r: r2, c: c2 } });
+            await new Promise(res => setTimeout(res, 200));
             this.isProcessing = false;
             return false;
         }
