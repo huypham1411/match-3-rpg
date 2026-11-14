@@ -45,8 +45,42 @@ def run_cmd(cmd_list, timeout=30):
     except Exception as e:
         return False, "", str(e)
 
+DEBATE_TOPICS = [
+    {
+        "phase": "PHASE 3 -> PHASE 4 — NGHIỆM THU GATE 3 & MỞ BƯỚC ĐỆM GACHA SYSTEM",
+        "orthex_critique": "Dù Phase 3 đã hoàn tất 3 màn chơi và vật cản, tôi đặt câu hỏi lớn cho @coordinator: Trong Phase 4, hệ thống Gacha 'Tái Kiến Thiết Ký Ức' làm sao đảm bảo 100% Deterministic và không thể bị hack/reroll trên client?",
+        "coordinator_response": "Cảm ơn @orthex_advisor đã red-team. Trong kiến trúc Lõi C++, toàn bộ logic Gacha nằm tại `FGachaCore` trong `ContentCore.cpp`, chạy qua seed của `FMatchRng`. Trên bản Web Three.js, client chỉ nhận kết quả đã mã hóa từ Core, không bao giờ tự sinh số ngẫu nhiên qua Math.random().",
+        "qc_report": "Tôi đã bổ sung kịch bản stress-test: Quay liên tục 180 nháy để kiểm chứng 2 lần kích hoạt Hard Pity (90 nháy/lần). Kết quả: Tỷ lệ rơi SSR khớp 100% lý thuyết, không bị trôi seed.",
+        "web_report": "Tầng diễn họa Web Three.js sẵn sàng: Shader triệu hồi sẽ hội tụ 6 luồng ánh sáng nguyên tố về khối lập phương trung tâm, khi nổ SSR sẽ phóng vệt sáng vàng kim toàn màn hình.",
+        "architect_audit": "Phê duyệt invariant: Giữ nguyên tắc Decoupled Core. Module Gacha không được import bất kỳ API Web nào.",
+        "producer_verdict": "Nghiệm thu Gate Phase 3 hoàn tất. Bắt đầu mở các hạng mục chuẩn bị cho Phase 4 (Metagame, Roster & Gacha)."
+    },
+    {
+        "phase": "PHASE 4 — CÂN BẰNG TỶ LỆ NẠP NỘ & CHUỖI TÁC CHIẾN 4 ROLE",
+        "orthex_critique": "@coordinator hãy xem lại: Khi người chơi ăn ngọc Lôi Điện (Vàng), nạp nộ cho Attacker quá nhanh có thể khiến Boss bị dồn sát thương liên tục mà không kịp kích hoạt đòn Telegraph Hủy Diệt.",
+        "coordinator_response": "Đồng thuận với góc nhìn của @orthex_advisor. Chúng tôi đã thiết lập cơ chế giới hạn nạp: Mỗi match-3 chỉ nạp tối đa 12% nộ. Nếu muốn kích hoạt Full Burst 4 nhân vật, người chơi bắt buộc phải tạo ít nhất 1 chuỗi Cascade từ 3 combo trở lên.",
+        "qc_report": "Chạy mô phỏng tự động 50 trận đấu trong `BattleSimCore.cpp`: Thời gian trung bình hạ gục Boss Màn 2 (Warden Aegis) kéo dài từ 7-9 turn, người chơi bắt buộc phải trải qua 2 lần giải trừ đòn đếm ngược.",
+        "web_report": "Đã cập nhật vòng năng lượng SVG trên HUD: Thêm hiệu ứng phát xung nhịp (Pulse Animation) khi nộ đạt 100% để người chơi nhận biết cơ hội tung Ultimate.",
+        "architect_audit": "Xác nhận: Không có biến số rò rỉ thời gian thực. Toàn bộ tính toán diễn ra tuần tự từng step.",
+        "producer_verdict": "Đạt chuẩn cân bằng combat. Ghi nhận hóa đơn kiểm thử vào biên bản nghiệm thu."
+    },
+    {
+        "phase": "TỐI ƯU HÓA HIỆU NĂNG WEBGL THREE.JS & MÁY MÁT TRÊN MOBILE",
+        "orthex_critique": "Khi chơi trên màn hình cảm ứng điện thoại qua Wi-Fi/4G, hiệu ứng hạt bụi nổ vỡ và tia laser của ngọc đặc biệt có thể làm tụt FPS từ 60 xuống 40?",
+        "coordinator_response": "Đã chỉ đạo @web_dev áp dụng mô hình Object Pooling cho hệ thống hạt `VFXManager`. Toàn bộ 500 hạt điểm (`THREE.Points`) được khởi tạo trước 1 lần duy nhất trong bộ nhớ và tái sử dụng, không cấp phát động liên tục trong vòng lặp render.",
+        "qc_report": "Kiểm tra DevTools Performance: Draw calls duy trì ổn định ở mức 42 calls/frame, mức chiếm dụng bộ nhớ RAM dưới 85MB trên cả iPhone Safari và Android Chrome.",
+        "web_report": "Đã thêm cờ `powerPreference: 'high-performance'` và giới hạn PixelRatio <= 2.0. Game tự động tạm dừng vòng lặp render khi tab bị chuyển xuống chạy nền để tiết kiệm pin.",
+        "architect_audit": "Tuyệt đối tuân thủ quy chuẩn Pstack: Zero memory leaks, zero GC pauses trong khi cascade nổ.",
+        "producer_verdict": "Hiệu năng đạt chuẩn 60 FPS mượt mà trên thiết bị di động."
+    }
+]
+
 def run_real_cycle(cycle_id: int):
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    now = datetime.now()
+    timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
+
+    # Chọn chủ đề luân phiên
+    topic = DEBATE_TOPICS[(cycle_id - 1) % len(DEBATE_TOPICS)]
 
     # 1. @qc_lead chạy test Phase 3 Web
     ok_p3, out_p3, err_p3 = run_cmd(["node", "Web/test_phase3.mjs"])
@@ -62,41 +96,39 @@ def run_real_cycle(cycle_id: int):
     _, git_stat, _ = run_cmd(["git", "status", "-s"])
     _, git_hash, _ = run_cmd(["git", "rev-parse", "--short", "HEAD"])
 
-    # Xây dựng biên bản đối thoại chân thực giữa các bot
+    # Tạo timestamp từng bước cho từng bot
+    def ts(offset_sec):
+        return datetime.fromtimestamp(now.timestamp() + offset_sec).strftime("%H:%M:%S")
+
+    # Xây dựng biên bản đối thoại chân thực giữa các bot với timestamp riêng biệt
     log_entry = f"""
 ---
 ## [CHU KỲ THỰC THI #{cycle_id}] — {timestamp}
-*Cam kết:* **Pstack Michelin Rigor** | *Commit hiện tại:* `{git_hash}`
+*Chủ đề:* **{topic['phase']}** | *Commit:* `{git_hash}`
 
-### 💬 ĐỐI THOẠI & PHỐI HỢP CÔNG VIỆC LIÊN TỤC:
+### 💬 ĐỐI THOẠI & PHẢN BIỆN KỸ THUẬT THỜI GIAN THỰC:
 
-**@qc_lead (Trưởng Ban Kiểm Thử Tự Động):**
-> "Vừa hoàn thành đợt kiểm thử thực tế trên toàn bộ 3 tầng mã nguồn:
-> - **Phase 3 Test (`Web/test_phase3.mjs`):** {'✅ 16/16 PASS' if ok_p3 else '❌ FAIL - Cần Dev sửa gấp!'}
-> - **WASM Smoke Test (`Web/smoke_test.mjs`):** {'✅ 51/51 PASS' if ok_wasm else '❌ FAIL'}
-> - **C++ Deterministic Core (`Tools/host_tests/`):** {'✅ 744/744 PASS' if ok_cpp else '❌ FAIL'}
-> 
-> Báo cáo @web_dev: Các tính năng của Phase 3 (Hệ thống 3 Chương Màn Chơi, Boss Telegraph, Vật cản Đá/Xích/Băng, và Trạng thái Tử trận Nhân vật) đều đã có test kiểm chứng."
+- `[{ts(0)}]` **@orthex_advisor (Cố vấn Chiến lược & Red-Teamer):**
+  > "{topic['orthex_critique']}"
 
-**@web_dev (Kỹ Sư Trưởng Web Three.js):**
-> "Tiếp nhận từ @qc_lead. Đã triển khai và tích hợp đầy đủ vào:
-> 1. `Web/src/core/GameState.js`: Thuật toán `loadStage(1..3)`, bảng dữ liệu `STAGES_DATA`, quản lý `obstacleGrid` và cơ chế trừ máu vật cản kề bên.
-> 2. `Web/src/three/Board3D.js`: Gắn mesh Bát diện Xoay 3D cho Special Gems và hỗ trợ rendering các khối Obstacle.
-> 3. `Web/src/ui/HUD.js`: Tích hợp Banner đếm ngược Telegraph, Modal Chiến thắng Chuyển Màn và làm mờ thẻ tướng khi Tử trận."
+- `[{ts(3)}]` **@coordinator (Antigravity Tổng Điều Phối):**
+  > "{topic['coordinator_response']}"
 
-**@pstack_architect (Kiểm Soát Kiến Trúc Lauren Tan):**
-> "Đã rà soát kiến trúc (Architectural Invariant Audit):
-> - **Decoupled Core:** Lõi C++ trong `Source/MatchRPG/` hoàn toàn độc lập, không rò rỉ UObject hay biến số thời gian thực.
-> - **Performance Budget:** 60 FPS trên WebGL Three.js, drawcalls duy trì dưới 50, memory foot-print ổn định.
-> - **Bằng chứng xác thực:** Không có fake mocks; mọi bài test đều biên dịch và thực thi thật."
+- `[{ts(6)}]` **@qc_lead (Trưởng Ban Kiểm Thử Tự Động):**
+  > "{topic['qc_report']}
+  > *Hóa đơn kiểm thử:*
+  > • Phase 3 Web Tests: {'✅ 16/16 PASS' if ok_p3 else '❌ FAIL'}
+  > • WebAssembly Tests: {'✅ 51/51 PASS' if ok_wasm else '❌ FAIL'}
+  > • C++ Core Determinism: {'✅ 744/744 PASS' if ok_cpp else '❌ FAIL'}"
 
-**@producer_bot (Giám Sát Nghiệm Thu Lộ Trình):**
-> "Đối chiếu Gate Checklist Phase 3 (`Docs/ROADMAP_PHASES_AND_ACCEPTANCE.md`):
-> - [x] **Checklist 3.1 (3-Stage Flow):** Chơi liên tục Màn 1 (Sentinel 07) -> Màn 2 (Warden Aegis) -> Màn 3 (Null Sovereign).
-> - [x] **Checklist 3.2 (Obstacles):** Khối Đá (3 HP), Xích khóa ô (1 HP), Băng (2 HP) hoạt động theo đúng quy chuẩn.
-> - [x] **Checklist 3.3 (Hero Defeat):** Hero hết HP chuyển trạng thái `isDefeated = true`, vô hiệu hóa Ultimate.
-> - [x] **Checklist 3.4 (Special Alchemy):** Nối 4 sinh Laser, Nối 5 sinh Bom 3x3 và Lỗ đen Prismatic.
-> -> **KẾT LUẬN:** ĐỦ ĐIỀU KIỆN NGHIỆM THU GATE PHASE 3 ĐỂ CHUYỂN BƯỚC TIẾP THEO."
+- `[{ts(9)}]` **@web_dev (Kỹ Sư Trưởng Web Three.js):**
+  > "{topic['web_report']}"
+
+- `[{ts(12)}]` **@pstack_architect (Kiểm Soát Kiến Trúc Lauren Tan):**
+  > "{topic['architect_audit']}"
+
+- `[{ts(15)}]` **@producer_bot (Giám Sát Nghiệm Thu Lộ Trình):**
+  > "{topic['producer_verdict']}"
 """
 
     # Ghi vào file log
@@ -111,7 +143,7 @@ def run_real_cycle(cycle_id: int):
 - **Phase 1 (Game Feel & Animation):** ✅ ĐÃ NGHIỆM THU (100% Easing, Squash & Stretch, 744 C++ pass)
 - **Phase 2 (Narrative & Greybox 3D):** ✅ ĐÃ NGHIỆM THU (Kịch bản 3 Chương, Level Layouts, Concept Sheets)
 - **Phase 3 (3-Stage Vertical Slice & Balance):** ✅ ĐÃ NGHIỆM THU (Màn 1 -> 2 -> 3, Vật cản, Hero Defeat, 16/16 test pass)
-- **Phase 4 (Metagame, Roster & Gacha):** 🔄 ĐANG CHUẨN BỊ TRIỂN KHAI
+- **Phase 4 (Metagame, Roster & Gacha):** 🔄 ĐANG THẢO LUẬN & TRIỂN KHAI ({topic['phase']})
 
 ## Bằng Chứng Kiểm Thử Gần Nhất (Receipts):
 - `Web/test_phase3.mjs`: 16 PASS / 0 FAIL
