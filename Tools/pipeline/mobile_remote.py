@@ -733,17 +733,9 @@ class RemoteHandler(BaseHTTPRequestHandler):
             with open(queue_file, "w", encoding="utf-8") as f:
                 json.dump(queue, f, ensure_ascii=False, indent=2)
 
-            # 2. Gọi Orthex Bridge debate
-            bridge_script = os.path.join(WORKSPACE_ROOT, "Tools", "pipeline", "orthex_bridge.py")
-            cmd = ["py", "-3", bridge_script, "--debate", cmd_text]
-            res = subprocess.run(cmd, cwd=WORKSPACE_ROOT, capture_output=True, text=True)
-
-            # 3. Kích hoạt Swarm Engine ghi nhận chỉ thị và phân công hành động
-            swarm_script = os.path.join(WORKSPACE_ROOT, "Tools", "pipeline", "real_swarm_engine.py")
-            subprocess.run(["py", "-3", swarm_script, "--once"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
-
-            reply = f"✅ ĐÃ TIẾP NHẬN CHỈ THỊ (ID #{cmd_entry['id']}):\n\"{cmd_text}\"\n\nĐội ngũ Bot & Coordinator đã tiếp nhận vào hàng đợi và đang thực thi cập nhật game."
-            self.send_compressed_response(json.dumps({"response": reply, "details": res.stdout}).encode("utf-8"), "application/json; charset=utf-8")
+            # 2. Phản hồi xác nhận tiếp nhận vào hàng đợi chỉ thị
+            reply = f"✅ ĐÃ TIẾP NHẬN CHỈ THỊ (ID #{cmd_entry['id']}):\n\"{cmd_text}\"\n\nChỉ thị đã được đưa vào hàng đợi chính thức (MOBILE_COMMAND_QUEUE.json). Coordinator và các tổ chuyên trách (Designer, Dev, QC) sẽ tiếp nhận và thực thi."
+            self.send_compressed_response(json.dumps({"response": reply, "details": "Đã lưu vào MOBILE_COMMAND_QUEUE.json"}).encode("utf-8"), "application/json; charset=utf-8")
 
         elif self.path == "/api/trigger-cycle":
             daemon_script = os.path.join(WORKSPACE_ROOT, "Tools", "pipeline", "real_swarm_engine.py")
