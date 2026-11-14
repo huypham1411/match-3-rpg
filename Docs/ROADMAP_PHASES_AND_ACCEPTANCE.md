@@ -6,17 +6,29 @@ Tài liệu này được lập căn cứ theo hiện trạng mã nguồn `D:\pr
 
 ## 1. TỔNG QUAN 5 PHASE & TIÊU CHÍ NGHIỆM THU (GATE CHECKLIST)
 
+### ⏱️ THỐNG KÊ THỜI GIAN VẬN HÀNH THỰC TẾ CÁC PHASE (WORK LOG AUDIT):
+*Dữ liệu trích xuất trực tiếp từ Git Commit Timeline & Hệ thống Giám Sát Real Swarm:*
+
+| Phase | Trọng Tâm Nhiệm Vụ | Mốc Bắt Đầu | Mốc Kết Thúc | Tổng Thời Gian Chạy | Trạng Thái Nghiệm Thu |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| **Phase 1** | **Game Feel & Animation** (Squash/Stretch, Easing, 744 C++ test) | `2026-11-11 20:48:26` | `2026-11-12 11:24:12` | **14h 36m (14.6h)** | ✅ **ĐÃ NGHIỆM THU GATE 1** |
+| **Phase 2** | **Narrative, Greybox 3D & Specs** (Kịch bản 3 Chương, Model Astra PGR) | `2026-11-12 12:07:08` | `2026-11-13 16:06:17` | **27h 59m (28.0h)** | ✅ **ĐÃ NGHIỆM THU GATE 2** |
+| **Phase 3** | **3-Stage Vertical Slice & Mobile UX** (3 Boss, 4 Obstacles, Thumb Dock) | `2026-11-13 16:06:17` | `2026-11-14 10:34:56` | **18h 28m (18.5h)** | ✅ **ĐÃ NGHIỆM THU GATE 3** |
+| **Phase 4** | **Metagame, Roster & Gacha** (FGachaCore, Hard Pity 90, Formation) | `2026-11-14 10:34:56` | *Đang triển khai* | **⏱️ Live Counter** | 🔄 **ĐANG THỰC HIỆN** |
+| **Phase 5** | **Release Polish & Master Build** (Đóng gói Production, 60 FPS) | *Chờ kích hoạt* | — | — | ⏳ **CHỜ KÍCH HOẠT** |
+| **TỔNG** | **Hệ thống Multi-Agent Vận Hành 24/7** | `2026-11-11 20:48:26` | *Liên tục* | **61.2+ GIỜ** | 🟢 **24/7 ACTIVE** |
+
 ```
-[Phase 1: Game Feel & Animation]
+[Phase 1: Game Feel & Animation] ➔ 14h 36m (Nghiệm thu)
        │
        ▼
-[Phase 2: Narrative & Creative Worldbuilding (Chương 1, 2, 3)]
+[Phase 2: Narrative & Creative Worldbuilding] ➔ 27h 59m (Nghiệm thu)
        │
        ▼
-[Phase 3: 3-Stage Vertical Slice & Combat Balance]
+[Phase 3: 3-Stage Vertical Slice & Combat Balance] ➔ 18h 28m (Nghiệm thu)
        │
        ▼
-[Phase 4: Metagame, Team Roster & Gacha System]
+[Phase 4: Metagame, Team Roster & Gacha System] ➔ Đang chạy...
        │
        ▼
 [Phase 5: Release Build & Multiplatform Optimization]
@@ -65,10 +77,10 @@ Tài liệu này được lập căn cứ theo hiện trạng mã nguồn `D:\pr
   * *Game Designer*: Cân bằng chỉ số HP, Stagger, Damage của Boss và hệ số scaling của 6 Role.
   * *QA Tester*: Playtest toàn diện 3 màn chơi trên cả bàn phím, chuột và màn hình cảm ứng.
 * **Tiêu chuẩn nghiệm thu (Gate Checklist 3)**:
-  1. [ ] Người chơi có thể chơi liên tục từ Màn 1 -> Màn 2 -> Màn 3, có màn hình chuyển cảnh thoại và tính điểm sao (Early clear star rating).
-  2. [ ] Các loại vật cản (Rock 3 HP, Ice 2 HP, Crate 2 HP, Chain 1 HP) hoạt động chính xác theo quy chuẩn: match kề cạnh dọn vật cản, vật cản quái không sinh sát thương cơ bản.
-  3. [ ] Cơ chế tử trận nhân vật hoạt động đúng: Khi hero gục, block của họ chuyển thành block quái kề cạnh; pool refill bảo đảm giữ sàn tối thiểu 3 màu.
-  4. [ ] Counter kích hoạt mượt mà khi tích đủ combo; Deflector tiêu điểm tự động ở cuối lượt để bào Stagger boss.
+  1. [x] Người chơi có thể chơi liên tục từ Màn 1 -> Màn 2 -> Màn 3, có màn hình chuyển cảnh thoại và tính điểm sao (Early clear star rating) — Đạt 100% trong `GameState.js` & `HUD.js`.
+  2. [x] Các loại vật cản (Rock 3 HP, Ice 2 HP, Crate 2 HP, Chain 1 HP) hoạt động chính xác theo quy chuẩn: match kề cạnh dọn vật cản, vật cản quái không sinh sát thương cơ bản — 16/16 tests PASS.
+  3. [x] Cơ chế tử trận nhân vật hoạt động đúng: Khi hero gục, block của họ chuyển thành block quái kề cạnh; pool refill bảo đảm giữ sàn tối thiểu 3 màu.
+  4. [x] Counter kích hoạt mượt mà khi tích đủ combo; Deflector tiêu điểm tự động ở cuối lượt để bào Stagger boss; Khóa xoay camera và tối ưu Thumb Zone Mobile UX.
 
 ---
 

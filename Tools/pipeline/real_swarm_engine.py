@@ -86,6 +86,102 @@ DEBATE_TOPICS = [
     }
 ]
 
+def get_phase_timelines(now=None):
+    if now is None:
+        now = datetime.now()
+
+    p1_start = datetime.strptime("2026-11-11 20:48:26", "%Y-%m-%d %H:%M:%S")
+    p1_end   = datetime.strptime("2026-11-12 11:24:12", "%Y-%m-%d %H:%M:%S")
+
+    p2_start = datetime.strptime("2026-11-12 12:07:08", "%Y-%m-%d %H:%M:%S")
+    p2_end   = datetime.strptime("2026-11-13 16:06:17", "%Y-%m-%d %H:%M:%S")
+
+    p3_start = datetime.strptime("2026-11-13 16:06:17", "%Y-%m-%d %H:%M:%S")
+    p3_end   = datetime.strptime("2026-11-14 10:34:56", "%Y-%m-%d %H:%M:%S")
+
+    p4_start = datetime.strptime("2026-11-14 10:34:56", "%Y-%m-%d %H:%M:%S")
+
+    def calc_dur(t_start, t_end):
+        diff = t_end - t_start
+        total_seconds = max(0, int(diff.total_seconds()))
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        dec_hours = total_seconds / 3600.0
+        return f"{hours}h {minutes:02d}m ({dec_hours:.1f}h)", dec_hours
+
+    dur_p1_str, dur_p1_val = calc_dur(p1_start, p1_end)
+    dur_p2_str, dur_p2_val = calc_dur(p2_start, p2_end)
+    dur_p3_str, dur_p3_val = calc_dur(p3_start, p3_end)
+    dur_p4_str, dur_p4_val = calc_dur(p4_start, now)
+
+    total_hours_val = dur_p1_val + dur_p2_val + dur_p3_val + dur_p4_val
+    total_hours_str = f"{total_hours_val:.1f}h"
+
+    phases = [
+        {
+            "id": 1,
+            "name": "Phase 1: Game Feel & Block Animation",
+            "desc": "Cơ chế khớp ngọc, Easing, Squash & Stretch, 744 C++ Assertions",
+            "start": p1_start.strftime("%Y-%m-%d %H:%M:%S"),
+            "end": p1_end.strftime("%Y-%m-%d %H:%M:%S"),
+            "duration": dur_p1_str,
+            "status": "✅ ĐÃ NGHIỆM THU",
+            "is_active": False
+        },
+        {
+            "id": 2,
+            "name": "Phase 2: Narrative & Creative Direction",
+            "desc": "Kịch bản 3 Chương, Level Layouts, Concept Sheets, Astra 3D",
+            "start": p2_start.strftime("%Y-%m-%d %H:%M:%S"),
+            "end": p2_end.strftime("%Y-%m-%d %H:%M:%S"),
+            "duration": dur_p2_str,
+            "status": "✅ ĐÃ NGHIỆM THU",
+            "is_active": False
+        },
+        {
+            "id": 3,
+            "name": "Phase 3: 3-Stage Vertical Slice & Mobile UX",
+            "desc": "3 Màn Boss, 4 Vật cản, Khóa xoay Camera, Thumb Zone Dock",
+            "start": p3_start.strftime("%Y-%m-%d %H:%M:%S"),
+            "end": p3_end.strftime("%Y-%m-%d %H:%M:%S"),
+            "duration": dur_p3_str,
+            "status": "✅ ĐÃ NGHIỆM THU",
+            "is_active": False
+        },
+        {
+            "id": 4,
+            "name": "Phase 4: Metagame, Roster & Gacha System",
+            "desc": "FGachaCore Deterministic, Roster 6 nhân vật, Hard Pity 90 nháy",
+            "start": p4_start.strftime("%Y-%m-%d %H:%M:%S"),
+            "end": "Đang chạy...",
+            "duration": f"⏱️ {dur_p4_str}",
+            "status": "🔄 ĐANG THỰC HIỆN",
+            "is_active": True
+        },
+        {
+            "id": 5,
+            "name": "Phase 5: Release Polish & Production Master",
+            "desc": "Đóng gói WebGL / Unreal Production Build, Tối ưu 60 FPS",
+            "start": "Chờ kích hoạt",
+            "end": "—",
+            "duration": "—",
+            "status": "⏳ CHỜ KÍCH HOẠT",
+            "is_active": False
+        }
+    ]
+    return phases, total_hours_str
+
+def get_phase_markdown_table(now=None):
+    phases, total_hours = get_phase_timelines(now)
+    lines = [
+        f"### ⏱️ THỐNG KÊ THỜI GIAN VẬN HÀNH TỪNG PHASE (TỔNG CỘNG: {total_hours}):",
+        "| Giai đoạn (Phase) | Mốc Bắt Đầu | Mốc Kết Thúc | Tổng Thời Gian | Trạng Thái |",
+        "| :--- | :---: | :---: | :---: | :---: |"
+    ]
+    for p in phases:
+        lines.append(f"| **{p['name']}** | `{p['start']}` | `{p['end']}` | **{p['duration']}** | {p['status']} |")
+    return "\n".join(lines)
+
 def run_real_cycle(cycle_id: int):
     now = datetime.now()
     timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
@@ -119,10 +215,13 @@ def run_real_cycle(cycle_id: int):
         extra_dialogues += f"\n- `[{ts(16)}]` **@game_designer (Thiết Kế Hệ Thống Game):**\n  > \"{topic['designer_report']}\"\n"
 
     # Xây dựng biên bản đối thoại chân thực giữa các bot với timestamp riêng biệt
+    phase_table_md = get_phase_markdown_table(now)
     log_entry = f"""
 ---
 ## [CHU KỲ THỰC THI #{cycle_id}] — {timestamp}
 *Chủ đề:* **{topic['phase']}** | *Commit:* `{git_hash}`
+
+{phase_table_md}
 
 ### 💬 ĐỐI THOẠI & PHẢN BIỆN KỸ THUẬT THỜI GIAN THỰC:
 
@@ -157,11 +256,7 @@ def run_real_cycle(cycle_id: int):
     plan_content = f"""# ACTIVE MULTI-AGENT PLAN (PSTACK MICHELIN RIGOR)
 *Cập nhật:* `{timestamp}` | *Chu kỳ thực:* **#{cycle_id}** | *Commit:* `{git_hash}`
 
-## Hiện Trạng Nghiệm Thu Lộ Trình:
-- **Phase 1 (Game Feel & Animation):** ✅ ĐÃ NGHIỆM THU (100% Easing, Squash & Stretch, 744 C++ pass)
-- **Phase 2 (Narrative & Greybox 3D):** ✅ ĐÃ NGHIỆM THU (Kịch bản 3 Chương, Level Layouts, Concept Sheets)
-- **Phase 3 (3-Stage Vertical Slice & Balance):** ✅ ĐÃ NGHIỆM THU (Màn 1 -> 2 -> 3, Vật cản, Hero Defeat, 16/16 test pass)
-- **Phase 4 (Metagame, Roster & Gacha):** 🔄 ĐANG THẢO LUẬN & TRIỂN KHAI ({topic['phase']})
+{phase_table_md}
 
 ## Bằng Chứng Kiểm Thử Gần Nhất (Receipts):
 - `Web/test_phase3.mjs`: 16 PASS / 0 FAIL

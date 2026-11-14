@@ -53,7 +53,92 @@ def get_local_ip():
 
 LOCAL_IP = get_local_ip()
 
-HTML_PAGE = """<!DOCTYPE html>
+def get_phase_timelines(now=None):
+    if now is None:
+        now = datetime.now()
+
+    p1_start = datetime.strptime("2026-11-11 20:48:26", "%Y-%m-%d %H:%M:%S")
+    p1_end   = datetime.strptime("2026-11-12 11:24:12", "%Y-%m-%d %H:%M:%S")
+
+    p2_start = datetime.strptime("2026-11-12 12:07:08", "%Y-%m-%d %H:%M:%S")
+    p2_end   = datetime.strptime("2026-11-13 16:06:17", "%Y-%m-%d %H:%M:%S")
+
+    p3_start = datetime.strptime("2026-11-13 16:06:17", "%Y-%m-%d %H:%M:%S")
+    p3_end   = datetime.strptime("2026-11-14 10:34:56", "%Y-%m-%d %H:%M:%S")
+
+    p4_start = datetime.strptime("2026-11-14 10:34:56", "%Y-%m-%d %H:%M:%S")
+
+    def calc_dur(t_start, t_end):
+        diff = t_end - t_start
+        total_seconds = max(0, int(diff.total_seconds()))
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        dec_hours = total_seconds / 3600.0
+        return f"{hours}h {minutes:02d}m ({dec_hours:.1f}h)", dec_hours
+
+    dur_p1_str, dur_p1_val = calc_dur(p1_start, p1_end)
+    dur_p2_str, dur_p2_val = calc_dur(p2_start, p2_end)
+    dur_p3_str, dur_p3_val = calc_dur(p3_start, p3_end)
+    dur_p4_str, dur_p4_val = calc_dur(p4_start, now)
+
+    total_hours_val = dur_p1_val + dur_p2_val + dur_p3_val + dur_p4_val
+    total_hours_str = f"{total_hours_val:.1f}h"
+
+    phases = [
+        {
+            "id": 1,
+            "name": "Phase 1: Game Feel & Block Animation",
+            "desc": "Cơ chế khớp ngọc, Easing, Squash & Stretch, 744 C++ Assertions",
+            "start": p1_start.strftime("%Y-%m-%d %H:%M:%S"),
+            "end": p1_end.strftime("%Y-%m-%d %H:%M:%S"),
+            "duration": dur_p1_str,
+            "status": "✅ ĐÃ NGHIỆM THU",
+            "is_active": False
+        },
+        {
+            "id": 2,
+            "name": "Phase 2: Narrative & Creative Direction",
+            "desc": "Kịch bản 3 Chương, Level Layouts, Concept Sheets, Astra 3D",
+            "start": p2_start.strftime("%Y-%m-%d %H:%M:%S"),
+            "end": p2_end.strftime("%Y-%m-%d %H:%M:%S"),
+            "duration": dur_p2_str,
+            "status": "✅ ĐÃ NGHIỆM THU",
+            "is_active": False
+        },
+        {
+            "id": 3,
+            "name": "Phase 3: 3-Stage Vertical Slice & Mobile UX",
+            "desc": "3 Màn Boss, 4 Vật cản, Khóa xoay Camera, Thumb Zone Dock",
+            "start": p3_start.strftime("%Y-%m-%d %H:%M:%S"),
+            "end": p3_end.strftime("%Y-%m-%d %H:%M:%S"),
+            "duration": dur_p3_str,
+            "status": "✅ ĐÃ NGHIỆM THU",
+            "is_active": False
+        },
+        {
+            "id": 4,
+            "name": "Phase 4: Metagame, Roster & Gacha System",
+            "desc": "FGachaCore Deterministic, Roster 6 nhân vật, Hard Pity 90 nháy",
+            "start": p4_start.strftime("%Y-%m-%d %H:%M:%S"),
+            "end": "Đang chạy...",
+            "duration": f"⏱️ {dur_p4_str}",
+            "status": "🔄 ĐANG THỰC HIỆN",
+            "is_active": True
+        },
+        {
+            "id": 5,
+            "name": "Phase 5: Release Polish & Production Master",
+            "desc": "Đóng gói WebGL / Unreal Production Build, Tối ưu 60 FPS",
+            "start": "Chờ kích hoạt",
+            "end": "—",
+            "duration": "—",
+            "status": "⏳ CHỜ KÍCH HOẠT",
+            "is_active": False
+        }
+    ]
+    return phases, total_hours_str
+
+HTML_PAGE = r"""<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -119,12 +204,43 @@ HTML_PAGE = """<!DOCTYPE html>
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 99; justify-content: center; align-items: center; padding: 20px; }
         .modal-content { background: #111827; border: 1px solid #00f0ff; border-radius: 10px; padding: 16px; width: 100%; max-height: 80vh; overflow-y: auto; }
         .btn-close { background: #374151; color: #fff; border: none; padding: 8px 12px; border-radius: 4px; float: right; font-weight: 700; margin-bottom: 10px; cursor: pointer; }
+
+        /* BẢNG THỐNG KÊ THỜI GIAN PHASE */
+        .stats-card { background: #111827; border: 1px solid #1e293b; border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .stats-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .stats-title { font-size: 12px; font-weight: 800; color: #00f0ff; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; }
+        .total-hours-badge { background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #34d399; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 12px; font-family: monospace; }
+        
+        .phase-timeline-list { display: flex; flex-direction: column; gap: 8px; }
+        .phase-item { background: #0f172a; border: 1px solid #1e293b; border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; }
+        .phase-item.active { border-color: #00f0ff; background: rgba(0, 240, 255, 0.05); }
+        .phase-item-top { display: flex; justify-content: space-between; align-items: center; }
+        .phase-name { font-size: 12px; font-weight: 700; color: #f8fafc; }
+        .phase-duration { font-size: 12px; font-weight: 800; font-family: monospace; color: #fbbf24; }
+        .phase-item.active .phase-duration { color: #00f0ff; }
+        .phase-item-mid { font-size: 10px; color: #94a3b8; display: flex; justify-content: space-between; align-items: center; }
+        .phase-timestamps { font-family: monospace; font-size: 10px; color: #cbd5e1; }
+        .phase-status-tag { font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 3px; }
+        .phase-status-tag.done { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .phase-status-tag.active { background: rgba(0, 240, 255, 0.2); color: #00f0ff; }
+        .phase-status-tag.pending { background: rgba(148, 163, 184, 0.2); color: #94a3b8; }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="header-title">🎮 RE:FRAY DIRECTOR</div>
         <div class="status-badge"><div class="pulse-dot"></div> 24/7 ONLINE</div>
+    </div>
+
+    <!-- BẢNG THỐNG KÊ THỜI GIAN VẬN HÀNH TỪNG PHASE -->
+    <div class="stats-card">
+        <div class="stats-header">
+            <span class="stats-title">⏱️ TIẾN ĐỘ & TỔNG THỜI GIAN CHẠY TỪNG PHASE</span>
+            <span class="total-hours-badge" id="totalHoursBadge">TỔNG: ĐANG TÍNH...</span>
+        </div>
+        <div class="phase-timeline-list" id="phaseTimelineList">
+            <div style="color:#64748b; font-size:11px; text-align:center; padding:8px;">Đang tải dữ liệu tiến độ...</div>
+        </div>
     </div>
 
     <!-- CÁC NÚT ĐIỀU KHIỂN NHANH -->
@@ -216,6 +332,17 @@ HTML_PAGE = """<!DOCTYPE html>
                         ${topic ? `<div style="font-size:11px; color:#fbbf24; font-weight:700; margin-bottom:10px;">🎯 ${escapeHtml(topic)}</div>` : ''}
                         <div class="cycle-dialogues">
                 `;
+
+                // Nếu chu kỳ có thống kê thời gian Phase
+                const phaseStatsMatch = cycleText.match(/###\\s*⏱️\\s*THỐNG KÊ THỜI GIAN[^\n]*\n([\s\S]*?)(?=###\\s*💬|$)/i);
+                if (phaseStatsMatch) {
+                    html += `
+                        <div style="background:#0a0e1a; border:1px solid #1e293b; border-radius:6px; padding:8px 10px; margin-bottom:10px; font-size:11px;">
+                            <div style="color:#00f0ff; font-weight:700; margin-bottom:4px;">⏱️ BẢNG THỜI GIAN CHẠY PHASE TẠI CHU KỲ NÀY:</div>
+                            <pre style="white-space:pre-wrap; font-family:monospace; color:#cbd5e1; font-size:10px; margin:0;">${escapeHtml(phaseStatsMatch[0].trim())}</pre>
+                        </div>
+                    `;
+                }
 
                 // Parse từng lượt nói của Bot kèm Timestamp
                 const botRegex = /-\\s*`\\[?([0-9:]+)\\]?`\\s*\\*\\*@([a-zA-Z0-9_]+)\\s*\\(([^)]+)\\):\\*\\*\\s*(?:>\\s*"|>\\s*|")(.*?)(?="?\\n\\s*-|"?[ \\t]*\\n\\s*##|$)/gis;
@@ -332,9 +459,43 @@ HTML_PAGE = """<!DOCTYPE html>
             document.getElementById('resultModal').style.display = 'none';
         }
 
-        // Tự động làm mới log mỗi 5 giây
+        async function fetchPhaseStats() {
+            try {
+                const res = await fetch('/api/phase-stats');
+                const data = await res.json();
+                document.getElementById('totalHoursBadge').textContent = 'TỔNG: ' + data.total_hours;
+                
+                const container = document.getElementById('phaseTimelineList');
+                let html = '';
+                data.phases.forEach(p => {
+                    let tagClass = 'done';
+                    if (p.is_active) tagClass = 'active';
+                    else if (p.status.includes('CHỜ')) tagClass = 'pending';
+
+                    html += `
+                        <div class="phase-item ${p.is_active ? 'active' : ''}">
+                            <div class="phase-item-top">
+                                <span class="phase-name">${escapeHtml(p.name)}</span>
+                                <span class="phase-duration">${escapeHtml(p.duration)}</span>
+                            </div>
+                            <div class="phase-item-mid">
+                                <span class="phase-timestamps">📅 ${escapeHtml(p.start)} ➔ ${escapeHtml(p.end)}</span>
+                                <span class="phase-status-tag ${tagClass}">${escapeHtml(p.status)}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch (e) {
+                console.error('Lỗi tải thống kê phase:', e);
+            }
+        }
+
+        // Tự động làm mới log & tiến độ phase mỗi 5 giây
         setInterval(fetchLog, 5000);
+        setInterval(fetchPhaseStats, 5000);
         fetchLog();
+        fetchPhaseStats();
     </script>
 </body>
 </html>
@@ -350,6 +511,15 @@ class RemoteHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
             self.wfile.write(HTML_PAGE.encode("utf-8"))
+            return
+
+        elif req_path == "/api/phase-stats":
+            phases, total_hours = get_phase_timelines()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache")
+            self.end_headers()
+            self.wfile.write(json.dumps({"phases": phases, "total_hours": total_hours}).encode("utf-8"))
             return
 
         elif req_path == "/api/log":
