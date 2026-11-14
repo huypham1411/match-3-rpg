@@ -17,6 +17,8 @@ Cách dùng:
 
 import os
 import sys
+import re
+import html
 import json
 import time
 import gzip
@@ -139,22 +141,122 @@ def get_phase_timelines(now=None):
     ]
     return phases, total_hours_str
 
-def get_recent_swarm_log(max_cycles=8):
+def render_swarm_log_html(max_cycles=8):
     if not os.path.exists(SWARM_LOG_FILE):
-        return "Chưa có log."
+        return '<div style="color:#64748b; text-align:center; padding:20px;">Chưa có dữ liệu thảo luận.</div>'
+
     try:
         with open(SWARM_LOG_FILE, "r", encoding="utf-8") as f:
             content = f.read()
 
-        parts = content.split("\n## [CHU KỲ")
-        if len(parts) <= max_cycles + 1:
-            return content
+        raw_blocks = re.split(r'\n---\s*\n##\s*', content)
+        recent_blocks = raw_blocks[-max_cycles:]
 
-        header = parts[0]
-        recent = parts[-max_cycles:]
-        return header + "\n" + "\n## [CHU KỲ".join(recent)
+        cards_html = []
+        for idx, b in enumerate(reversed(recent_blocks)):
+            is_latest = (idx == 0)
+            clean_b = b.strip()
+            if not clean_b:
+                continue
+
+            header_m = re.search(r'\[?(BÁO CÁO[^\]\n]+|CHU KỲ[^\]\n]+|🕒[^—\n]+)\]?\s*—\s*([0-9\- :]+|`[0-9\- :]+`)', clean_b)
+            raw_label = header_m.group(1).strip() if header_m else "BÁO CÁO ĐỊNH KỲ 1H"
+            timestamp = header_m.group(2).strip('` ') if header_m else ""
+
+            # Trích xuất số thứ tự chu kỳ nếu có
+            num_m = re.search(r'#(\d+)', raw_label)
+            cycle_num = num_m.group(1) if num_m else str(len(recent_blocks) - idx)
+
+            if "BÁO CÁO" in raw_label.upper():
+                display_label = f"BÁO CÁO ĐỊNH KỲ 1 GIỜ #{cycle_num}"
+            else:
+                display_label = f"CHU KỲ #{cycle_num}"
+
+            commit_m = re.search(r'\*Commit:\*\s*`([^`]+)`', clean_b)
+            commit = commit_m.group(1) if commit_m else ""
+
+            topic_m = re.search(r'\*Chủ đề:\*\s*\*\*([^\*]+)\*\*', clean_b)
+            topic = topic_m.group(1) if topic_m else ""
+
+            bot_matches = list(re.finditer(r'-\s*`\[?([0-9:]+)\]?`\s*\*\*@([a-zA-Z0-9_]+)\s*\(([^)]+)\):\*\*\s*(?:\n\s*>\s*|\n\s*)*["“]?([\s\S]*?)(?=["”]?\s*\n-\s*`|\n###|\n##|$)', clean_b))
+
+            # Nếu là format cũ ####
+            if not bot_matches:
+                bot_matches = list(re.finditer(r'####\s*\d+\.\s*([^\s]+)?\s*@([a-zA-Z0-9_]+)\s*\(([^)]+)\):\s*(?:\n\s*>\s*|\n\s*)*["“]?([\s\S]*?)(?=["”]?\s*\n####|\n---|\n##|$)', clean_b))
+
+            dialogues_html = []
+            for bm in bot_matches:
+                groups = bm.groups()
+                if len(groups) == 4 and groups[0] and ":" in groups[0]:
+                    t_time = groups[0]
+                    t_name = groups[1]
+                    t_role = groups[2]
+                    t_msg = groups[3].strip()
+                elif len(groups) == 4:
+                    t_time = "-"
+                    t_name = groups[1]
+                    t_role = groups[2]
+                    t_msg = groups[3].strip()
+                else:
+                    continue
+
+                t_msg = re.sub(r'^\s*>\s*', '', t_msg, flags=re.MULTILINE).strip('"“” \n')
+
+                bot_class = 'coordinator'
+                icon = '👑'
+                name_lower = t_name.lower()
+                if 'orthex' in name_lower:
+                    bot_class = 'orthex'; icon = '🟣'
+                elif 'qc' in name_lower or 'qa' in name_lower:
+                    bot_class = 'qc'; icon = '🧪'
+                elif 'web' in name_lower or 'dev' in name_lower or 'three' in name_lower:
+                    bot_class = 'dev'; icon = '💻'
+                elif 'architect' in name_lower or 'cpp' in name_lower:
+                    bot_class = 'architect'; icon = '🏛️'
+                elif 'producer' in name_lower:
+                    bot_class = 'producer'; icon = '📋'
+                elif 'uiux' in name_lower:
+                    bot_class = 'uiux'; icon = '🎨'
+                elif 'designer' in name_lower or 'lore' in name_lower or 'game' in name_lower:
+                    bot_class = 'designer'; icon = '🎲'
+
+                escaped_msg = html.escape(t_msg).replace('\n', '<br>')
+                dialogues_html.append(f"""
+                    <div class="bot-msg {bot_class}">
+                        <div class="bot-meta">
+                            <span class="bot-tag {bot_class}">{icon} @{html.escape(t_name)} <small style="color:#94a3b8; font-weight:400;">({html.escape(t_role)})</small></span>
+                            <span class="bot-timestamp">⏱️ {html.escape(t_time)}</span>
+                        </div>
+                        <div class="bot-text">{escaped_msg}</div>
+                    </div>
+                """)
+
+            if not dialogues_html:
+                dialogues_html.append(f'<div class="bot-text" style="font-size:12px; color:#94a3b8;">{html.escape(clean_b[:1200])}</div>')
+
+            card_class = "cycle-card latest" if is_latest else "cycle-card"
+            latest_badge = "⚡ [MỚI NHẤT] " if is_latest else ""
+            commit_tag = f'<span class="cycle-commit">{commit}</span>' if commit else ""
+            topic_tag = f'<div style="font-size:11px; color:#fbbf24; font-weight:700; margin-bottom:10px;">🎯 {html.escape(topic)}</div>' if topic else ""
+
+            cards_html.append(f"""
+                <div class="{card_class}">
+                    <div class="cycle-header">
+                        <div class="cycle-title">
+                            {latest_badge}{display_label} {('• ' + timestamp) if timestamp else ''}
+                        </div>
+                        {commit_tag}
+                    </div>
+                    {topic_tag}
+                    <div class="cycle-dialogues">
+                        {"".join(dialogues_html)}
+                    </div>
+                </div>
+            """)
+
+        return "\n".join(cards_html) if cards_html else '<div style="color:#64748b; text-align:center; padding:20px;">Chưa có dữ liệu thảo luận.</div>'
     except Exception as e:
-        return f"Lỗi đọc log: {e}"
+        return f'<div style="color:#ef4444; padding:20px;">Lỗi xử lý log: {html.escape(str(e))}</div>'
 
 HTML_PAGE = r"""<!DOCTYPE html>
 <html lang="vi">
@@ -285,11 +387,11 @@ HTML_PAGE = r"""<!DOCTYPE html>
     <!-- NHẬT KÝ THẢO LUẬN TRỰC TIẾP (MỚI NHẤT TRÊN CÙNG) -->
     <div class="log-section">
         <div class="log-header-bar">
-            <div class="card-title" style="margin-bottom:0;">📜 ĐỐI THOẠI BOT & HÓA ĐƠN THỰC THI</div>
+            <div class="card-title" style="margin-bottom:0;">📜 ĐỐI THOẠI BOT & HÓA ĐƠN THỰC THI (GOM 1H / LẦN)</div>
             <span class="log-badge-top">⚡ MỚI NHẤT TRÊN CÙNG</span>
         </div>
         <div class="chat-stream" id="logStream">
-            <div style="color:#64748b; text-align:center; padding:20px;">Đang tải dữ liệu từ máy tính...</div>
+            <!-- SSR_LOG_STREAM -->
         </div>
     </div>
 
@@ -308,124 +410,15 @@ HTML_PAGE = r"""<!DOCTYPE html>
             return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
 
-        function renderLogStream(rawLog) {
-            const container = document.getElementById('logStream');
-            if (!rawLog || !rawLog.trim()) {
-                container.innerHTML = '<div style="color:#64748b; text-align:center; padding:20px;">Chưa có dữ liệu thảo luận.</div>';
-                return;
-            }
-
-            // Tách theo chu kỳ
-            const rawCycles = rawLog.split(/---\\s*\\n##\\s*\\[CHU KỲ/i);
-            const parsedCycles = [];
-
-            for (let i = 0; i < rawCycles.length; i++) {
-                const chunk = rawCycles[i].trim();
-                if (!chunk) continue;
-                const fullChunk = (i > 0 ? '## [CHU KỲ ' : '') + chunk;
-                parsedCycles.push(fullChunk);
-            }
-
-            // ĐẢO NGƯỢC: CHU KỲ MỚI NHẤT LÊN ĐẦU TIÊN
-            parsedCycles.reverse();
-
-            let html = '';
-            const displayCycles = parsedCycles.slice(0, 8); // Giữ 8 chu kỳ gần nhất
-
-            displayCycles.forEach((cycleText, idx) => {
-                const isLatest = idx === 0;
-
-                const headerMatch = cycleText.match(/##\\s*\\[CHU KỲ THỰC THI\\s*#?(\\d+)\\]\\s*—\\s*([^\\n]+)/i);
-                const cycleNum = headerMatch ? headerMatch[1] : (displayCycles.length - idx);
-                const cycleTime = headerMatch ? headerMatch[2] : '';
-
-                const commitMatch = cycleText.match(/\\*Commit:\\*\\s*`([^`]+)`/i);
-                const commitHash = commitMatch ? commitMatch[1] : '';
-
-                const topicMatch = cycleText.match(/\\*Chủ đề:\\*\\s*\\*\\*([^\\*]+)\\*\\*/i);
-                const topic = topicMatch ? topicMatch[1] : '';
-
-                html += `
-                    <div class="cycle-card ${isLatest ? 'latest' : ''}">
-                        <div class="cycle-header">
-                            <div class="cycle-title">
-                                ${isLatest ? '⚡ [MỚI NHẤT] ' : ''}CHU KỲ #${cycleNum} ${cycleTime ? '• ' + cycleTime : ''}
-                            </div>
-                            ${commitHash ? `<span class="cycle-commit">${commitHash}</span>` : ''}
-                        </div>
-                        ${topic ? `<div style="font-size:11px; color:#fbbf24; font-weight:700; margin-bottom:10px;">🎯 ${escapeHtml(topic)}</div>` : ''}
-                        <div class="cycle-dialogues">
-                `;
-
-                // Nếu chu kỳ có thống kê thời gian Phase
-                const phaseStatsMatch = cycleText.match(/###\\s*⏱️\\s*THỐNG KÊ THỜI GIAN[^\n]*\n([\s\S]*?)(?=###\\s*💬|$)/i);
-                if (phaseStatsMatch) {
-                    html += `
-                        <div style="background:#0a0e1a; border:1px solid #1e293b; border-radius:6px; padding:8px 10px; margin-bottom:10px; font-size:11px;">
-                            <div style="color:#00f0ff; font-weight:700; margin-bottom:4px;">⏱️ BẢNG THỜI GIAN CHẠY PHASE TẠI CHU KỲ NÀY:</div>
-                            <pre style="white-space:pre-wrap; font-family:monospace; color:#cbd5e1; font-size:10px; margin:0;">${escapeHtml(phaseStatsMatch[0].trim())}</pre>
-                        </div>
-                    `;
-                }
-
-                // Parse từng lượt nói của Bot kèm Timestamp
-                const botRegex = /-\\s*`\\[?([0-9:]+)\\]?`\\s*\\*\\*@([a-zA-Z0-9_]+)\\s*\\(([^)]+)\\):\\*\\*\\s*(?:>\\s*"|>\\s*|")(.*?)(?="?\\n\\s*-|"?[ \\t]*\\n\\s*##|$)/gis;
-                let match;
-                let count = 0;
-
-                while ((match = botRegex.exec(cycleText)) !== null) {
-                    count++;
-                    const timeStr = match[1];
-                    const botName = match[2];
-                    const botRole = match[3];
-                    let msg = match[4].trim();
-                    msg = msg.replace(/^>\\s*/gm, '').replace(/^"|"$/g, '').trim();
-
-                    let botClass = 'coordinator';
-                    let icon = '👑';
-                    if (botName.includes('orthex')) { botClass = 'orthex'; icon = '🟣'; }
-                    else if (botName.includes('qc')) { botClass = 'qc'; icon = '🧪'; }
-                    else if (botName.includes('web') || botName.includes('dev')) { botClass = 'dev'; icon = '💻'; }
-                    else if (botName.includes('architect')) { botClass = 'architect'; icon = '🏛️'; }
-                    else if (botName.includes('producer')) { botClass = 'producer'; icon = '📋'; }
-                    else if (botName.includes('uiux')) { botClass = 'uiux'; icon = '🎨'; }
-                    else if (botName.includes('game') || botName.includes('designer')) { botClass = 'designer'; icon = '🎲'; }
-
-                    html += `
-                        <div class="bot-msg ${botClass}">
-                            <div class="bot-meta">
-                                <span class="bot-tag ${botClass}">${icon} @${botName} <small style="color:#94a3b8; font-weight:400;">(${botRole})</small></span>
-                                <span class="bot-timestamp">⏱️ ${timeStr}</span>
-                            </div>
-                            <div class="bot-text">${escapeHtml(msg)}</div>
-                        </div>
-                    `;
-                }
-
-                if (count === 0) {
-                    html += `<div class="bot-text" style="font-size:12px; color:#94a3b8;">${escapeHtml(cycleText)}</div>`;
-                }
-
-                html += `
-                        </div>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
-        }
-
-        let lastLogRaw = '';
         async function fetchLog() {
             try {
                 const res = await fetch('/api/log');
                 const data = await res.json();
-                if (data.log !== lastLogRaw) {
-                    lastLogRaw = data.log;
-                    renderLogStream(data.log);
+                if (data && data.html) {
+                    document.getElementById('logStream').innerHTML = data.html;
                 }
             } catch (e) {
-                document.getElementById('logStream').innerHTML = '<div style="color:#ef4444; padding:20px;">Lỗi kết nối máy tính: ' + e + '</div>';
+                console.error('Lỗi tải log:', e);
             }
         }
 
@@ -551,20 +544,14 @@ HTML_PAGE = r"""<!DOCTYPE html>
         }, 1000);
         updateCountdownUI();
 
-        /* SSR_INJECT_DATA */
-        if (typeof window.__INITIAL_DATA__ !== 'undefined' && window.__INITIAL_DATA__) {
-            lastLogRaw = window.__INITIAL_DATA__.log;
-            renderLogStream(window.__INITIAL_DATA__.log);
-        } else {
-            fetchLog();
-            fetchPhaseStats();
-        }
+        // Dữ liệu ban đầu đã được nạp sẵn tức thì qua Server-Side Rendering (SSR).
+        // Trình duyệt không cần parse regex, hiển thị ngay lập tức khi mở trang!
     </script>
 </body>
 </html>
 """
 
-def render_dashboard_ssr(phases, total_hours, recent_log):
+def render_dashboard_ssr(phases, total_hours, log_html):
     phase_items_html = ""
     for p in phases:
         tag_class = "done" if "ĐÃ" in p["status"] else ("active" if p["is_active"] else "pending")
@@ -582,12 +569,10 @@ def render_dashboard_ssr(phases, total_hours, recent_log):
             </div>
         """
 
-    initial_payload = json.dumps({"phases": phases, "total_hours": total_hours, "log": recent_log})
-    
     html = HTML_PAGE
     html = html.replace('id="totalHoursBadge">TỔNG: ĐANG TÍNH...', f'id="totalHoursBadge">TỔNG: {total_hours}')
     html = html.replace('<div style="color:#64748b; font-size:11px; text-align:center; padding:8px;">Đang tải dữ liệu tiến độ...</div>', phase_items_html)
-    html = html.replace('/* SSR_INJECT_DATA */', f'window.__INITIAL_DATA__ = {initial_payload};')
+    html = html.replace('<!-- SSR_LOG_STREAM -->', log_html)
     return html
 
 _FILE_CACHE = {}
@@ -612,14 +597,19 @@ class RemoteHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(content_bytes)
 
+    def do_HEAD(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.end_headers()
+
     def do_GET(self):
         parsed_url = urllib.parse.urlparse(self.path)
         req_path = parsed_url.path
 
         if req_path in ["/", "/index.html"]:
             phases, total_hours = get_phase_timelines()
-            recent_log = get_recent_swarm_log(max_cycles=8)
-            rendered_html = render_dashboard_ssr(phases, total_hours, recent_log)
+            log_html = render_swarm_log_html(max_cycles=8)
+            rendered_html = render_dashboard_ssr(phases, total_hours, log_html)
             self.send_compressed_response(rendered_html.encode("utf-8"), "text/html; charset=utf-8", "no-cache")
             return
 
@@ -630,9 +620,9 @@ class RemoteHandler(BaseHTTPRequestHandler):
             return
 
         elif req_path == "/api/log":
-            # Chỉ gửi 8 chu kỳ gần nhất để tải siêu tốc dưới 50ms trên điện thoại
-            content = get_recent_swarm_log(max_cycles=8)
-            body = json.dumps({"log": content}).encode("utf-8")
+            # Gửi HTML đối thoại bot gom 1 giờ / lần
+            log_html = render_swarm_log_html(max_cycles=8)
+            body = json.dumps({"html": log_html}).encode("utf-8")
             self.send_compressed_response(body, "application/json; charset=utf-8", "no-cache")
             return
 
@@ -743,10 +733,11 @@ class RemoteHandler(BaseHTTPRequestHandler):
         elif self.path == "/api/run-tests":
             test_bat = os.path.join(WORKSPACE_ROOT, "Tools", "host_tests", "build_and_run.bat")
             res_c = subprocess.run([test_bat], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
+            res_specials = subprocess.run(["node", "Web/test_specials.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
             res_wasm = subprocess.run(["node", "Web/smoke_test.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
             res_p3 = subprocess.run(["node", "Web/test_phase3.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
 
-            output = f"=== TEST PHASE 3 WEB (16 CHECKS) ===\n{res_p3.stdout}\n\n=== TEST C++ CORE (744 ASSERTIONS) ===\n{res_c.stdout}\n\n=== TEST WASM (51 CHECKS) ===\n{res_wasm.stdout}"
+            output = f"=== TEST SPECIAL GEMS (9 CHECKS) ===\n{res_specials.stdout}\n\n=== TEST PHASE 3 WEB (16 CHECKS) ===\n{res_p3.stdout}\n\n=== TEST C++ CORE (744 ASSERTIONS) ===\n{res_c.stdout}\n\n=== TEST WASM (51 CHECKS) ===\n{res_wasm.stdout}"
 
             self.send_compressed_response(json.dumps({"output": output}).encode("utf-8"), "application/json; charset=utf-8")
 
