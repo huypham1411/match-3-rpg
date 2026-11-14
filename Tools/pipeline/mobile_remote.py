@@ -21,7 +21,9 @@ import json
 import time
 import socket
 import ctypes
+import mimetypes
 import subprocess
+import urllib.parse
 from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
@@ -204,48 +206,73 @@ HTML_PAGE = f"""<!DOCTYPE html>
 
 class RemoteHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        if self.path == "/" or self.path == "/index.html":
+        parsed_url = urllib.parse.urlparse(self.path)
+        req_path = parsed_url.path
+
+        if req_path in ["/", "/index.html"]:
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
             self.wfile.write(HTML_PAGE.encode("utf-8"))
-        elif self.path == "/api/log":
+            return
+
+        elif req_path == "/api/log":
             content = "Chưa có log."
             if os.path.exists(SWARM_LOG_FILE):
                 with open(SWARM_LOG_FILE, "r", encoding="utf-8") as f:
                     content = f.read()
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache")
             self.end_headers()
             self.wfile.write(json.dumps({"log": content}).encode("utf-8"))
-        elif self.path.startswith("/game"):
-            # Chuyển hướng hoặc mở Web Three.js
+            return
+
+        elif req_path in ["/game", "/game/", "/game/index.html"]:
             web_path = os.path.join(WORKSPACE_ROOT, "Web", "index.html")
             if os.path.exists(web_path):
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Cache-Control", "no-cache")
                 self.end_headers()
                 with open(web_path, "rb") as f:
                     self.wfile.write(f.read())
+                return
             else:
                 self.send_response(404)
                 self.end_headers()
+                return
+
+        # Phục vụ các file tĩnh trong Web/ (css, src, vendor, etc.)
+        rel_path = req_path
+        if rel_path.startswith("/game/"):
+            rel_path = rel_path[len("/game/"):]
         else:
-            # Phục vụ các file tĩnh trong Web/ (css, src)
-            clean_path = self.path.lstrip("/")
-            full_path = os.path.join(WORKSPACE_ROOT, "Web", clean_path)
-            if os.path.exists(full_path) and os.path.isfile(full_path):
-                self.send_response(200)
-                if full_path.endswith(".css"):
-                    self.send_header("Content-Type", "text/css")
-                elif full_path.endswith(".js"):
-                    self.send_header("Content-Type", "application/javascript")
-                self.end_headers()
-                with open(full_path, "rb") as f:
-                    self.wfile.write(f.read())
-            else:
-                self.send_response(404)
-                self.end_headers()
+            rel_path = rel_path.lstrip("/")
+
+        full_path = os.path.normpath(os.path.join(WORKSPACE_ROOT, "Web", rel_path))
+        web_root = os.path.normpath(os.path.join(WORKSPACE_ROOT, "Web"))
+
+        if full_path.startswith(web_root) and os.path.isfile(full_path):
+            self.send_response(200)
+            mime, _ = mimetypes.guess_type(full_path)
+            if full_path.endswith(".js") or full_path.endswith(".mjs"):
+                mime = "application/javascript; charset=utf-8"
+            elif full_path.endswith(".css"):
+                mime = "text/css; charset=utf-8"
+            elif full_path.endswith(".wasm"):
+                mime = "application/wasm"
+            elif not mime:
+                mime = "application/octet-stream"
+
+            self.send_header("Content-Type", mime)
+            self.send_header("Cache-Control", "no-cache")
+            self.end_headers()
+            with open(full_path, "rb") as f:
+                self.wfile.write(f.read())
+        else:
+            self.send_response(404)
+            self.end_headers()
 
     def do_POST(self):
         length = int(self.headers.get("Content-Length", 0))

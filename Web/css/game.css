@@ -376,3 +376,57 @@ body, html {
     border-color: #38bdf8;
     color: #38bdf8;
 }
+
+/* ==================== MOBILE RESPONSIVE STYLES ==================== */
+@media (max-width: 768px) {
+    #hudOverlay {
+        padding: 8px 10px;
+    }
+
+    .hud-topbar {
+        flex-direction: column;
+        gap: 6px;
+        width: 100%;
+    }
+
+    .boss-hud-card {
+        width: 100%;
+        max-width: 100%;
+        padding: 8px 10px;
+    }
+
+    .turn-counter-badge {
+        align-self: flex-start;
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+
+    .squad-container {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+        width: 100%;
+    }
+
+    .hero-tactical-card {
+        width: 100%;
+        padding: 6px 8px;
+        gap: 6px;
+    }
+
+    .hero-name {
+        font-size: 11px;
+    }
+
+    .hero-role-tag {
+        font-size: 9px;
+    }
+
+    .debug-inspector-panel {
+        top: auto;
+        bottom: 80px;
+        right: 10px;
+        max-height: 40vh;
+        width: calc(100vw - 20px);
+    }
+}
