@@ -29,7 +29,73 @@ export class VFXManager {
 
         // Khi Boss dính đòn -> Bắn tia lửa điện tại tâm Boss trên sàn đấu
         events.on('damage_dealt', () => {
-            this.spawnHitSparks(0, 1.8, -1.8, 0xff0055);
+            this.spawnHitSparks(0, 1.45, -1.9, 0xff0055);
+        });
+
+        // Đòn phản kích (Counter) -> Vụ nổ vàng bộc phá
+        events.on('counter_attack', () => {
+            this.spawnHitSparks(0, 1.45, -1.9, 0xfbbf24);
+        });
+
+        // Chiêu nộ Ultimate -> Bão ánh sáng cực đại
+        events.on('ultimate_executed', () => {
+            this.spawnHitSparks(0, 1.45, -1.9, 0xa855f7);
+            this.spawnHitSparks(0, 2.0, -1.9, 0x00f0ff);
+        });
+
+        // Hồi máu hoặc hồi sinh -> Tinh tú màu ngọc bích bay lên quanh đội hình
+        events.on('heal_triggered', () => {
+            [-2.3, -0.75, 0.75, 2.3].forEach(x => {
+                this.spawnHealSparkles(x, 0.5, 1.2);
+            });
+        });
+
+        events.on('hero_revived', ({ hero }) => {
+            const roleX = { Attacker: -2.3, Supporter: -0.75, Healer: 0.75, Defender: 2.3 }[hero.role] || 0;
+            this.spawnHealSparkles(roleX, 0.5, 1.2);
+            this.spawnHitSparks(roleX, 1.2, 1.2, 0x10b981);
+        });
+    }
+
+    /** Tạo hạt ánh sáng hồi máu / hồi sinh bay bồng bềnh */
+    spawnHealSparkles(x, y, z) {
+        const count = 18;
+        const geo = new THREE.BufferGeometry();
+        const positions = new Float32Array(count * 3);
+        const velocities = [];
+
+        for (let i = 0; i < count; i++) {
+            positions[i * 3] = (Math.random() - 0.5) * 0.6;
+            positions[i * 3 + 1] = Math.random() * 0.4;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 0.6;
+
+            velocities.push({
+                x: (Math.random() - 0.5) * 0.8,
+                y: Math.random() * 2.2 + 1.0,
+                z: (Math.random() - 0.5) * 0.8
+            });
+        }
+
+        geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const mat = new THREE.PointsMaterial({
+            color: 0x34d399,
+            size: 0.2,
+            transparent: true,
+            opacity: 1.0,
+            blending: THREE.AdditiveBlending
+        });
+
+        const points = new THREE.Points(geo, mat);
+        points.position.set(x, y, z);
+        if (this.arenaScene) this.arenaScene.add(points);
+
+        this.emitters.push({
+            scene: this.arenaScene,
+            points,
+            geo,
+            mat,
+            velocities,
+            life: 0.65
         });
     }
 

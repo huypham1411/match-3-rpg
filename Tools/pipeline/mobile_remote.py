@@ -713,16 +713,37 @@ class RemoteHandler(BaseHTTPRequestHandler):
             data = json.loads(body) if body else {}
             cmd_text = data.get("command", "")
 
-            # 1. Gọi Orthex Bridge debate
+            # 1. Lưu vào hàng đợi chỉ thị Command Queue chính thức
+            queue_file = os.path.join(WORKSPACE_ROOT, "Docs", "discussions", "MOBILE_COMMAND_QUEUE.json")
+            queue = []
+            if os.path.exists(queue_file):
+                try:
+                    with open(queue_file, "r", encoding="utf-8") as f:
+                        queue = json.load(f)
+                except Exception:
+                    queue = []
+
+            cmd_entry = {
+                "id": len(queue) + 1,
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "command": cmd_text,
+                "status": "DISPATCHED_TO_SWARM"
+            }
+            queue.append(cmd_entry)
+            with open(queue_file, "w", encoding="utf-8") as f:
+                json.dump(queue, f, ensure_ascii=False, indent=2)
+
+            # 2. Gọi Orthex Bridge debate
             bridge_script = os.path.join(WORKSPACE_ROOT, "Tools", "pipeline", "orthex_bridge.py")
             cmd = ["py", "-3", bridge_script, "--debate", cmd_text]
             res = subprocess.run(cmd, cwd=WORKSPACE_ROOT, capture_output=True, text=True)
 
-            # 2. Kích hoạt Swarm Engine ghi nhận chỉ thị và phân công hành động
+            # 3. Kích hoạt Swarm Engine ghi nhận chỉ thị và phân công hành động
             swarm_script = os.path.join(WORKSPACE_ROOT, "Tools", "pipeline", "real_swarm_engine.py")
             subprocess.run(["py", "-3", swarm_script, "--once"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
 
-            self.send_compressed_response(json.dumps({"response": res.stdout}).encode("utf-8"), "application/json; charset=utf-8")
+            reply = f"✅ ĐÃ TIẾP NHẬN CHỈ THỊ (ID #{cmd_entry['id']}):\n\"{cmd_text}\"\n\nĐội ngũ Bot & Coordinator đã tiếp nhận vào hàng đợi và đang thực thi cập nhật game."
+            self.send_compressed_response(json.dumps({"response": reply, "details": res.stdout}).encode("utf-8"), "application/json; charset=utf-8")
 
         elif self.path == "/api/trigger-cycle":
             daemon_script = os.path.join(WORKSPACE_ROOT, "Tools", "pipeline", "real_swarm_engine.py")

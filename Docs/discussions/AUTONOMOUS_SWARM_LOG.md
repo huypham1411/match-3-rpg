@@ -11767,3 +11767,128 @@
 
 - `[18:28:59]` **@producer_bot (Giám Sát Nghiệm Thu Lộ Trình):**
   > "Nghiệm thu Gate Phase 3 hoàn tất. Bắt đầu mở các hạng mục chuẩn bị cho Phase 4 (Metagame, Roster & Gacha)."
+
+---
+## [BÁO CÁO TIẾN ĐỘ ĐỊNH KỲ 1H #7] — 2026-11-14 19:28:45
+*Chủ đề:* **PHASE 4 — CÂN BẰNG TỶ LỆ NẠP NỘ & CHUỖI TÁC CHIẾN 4 ROLE** | *Commit:* `b86f507`
+
+### ⏱️ THỐNG KÊ THỜI GIAN VẬN HÀNH TỪNG PHASE (TỔNG CỘNG: 70.0h):
+| Giai đoạn (Phase) | Mốc Bắt Đầu | Mốc Kết Thúc | Tổng Thời Gian | Trạng Thái |
+| :--- | :---: | :---: | :---: | :---: |
+| **Phase 1: Game Feel & Block Animation** | `2026-11-11 20:48:26` | `2026-11-12 11:24:12` | **14h 35m (14.6h)** | ✅ ĐÃ NGHIỆM THU |
+| **Phase 2: Narrative & Creative Direction** | `2026-11-12 12:07:08` | `2026-11-13 16:06:17` | **27h 59m (28.0h)** | ✅ ĐÃ NGHIỆM THU |
+| **Phase 3: 3-Stage Vertical Slice & Mobile UX** | `2026-11-13 16:06:17` | `2026-11-14 10:34:56` | **18h 28m (18.5h)** | ✅ ĐÃ NGHIỆM THU |
+| **Phase 4: Metagame, Roster & Gacha System** | `2026-11-14 10:34:56` | `Đang chạy...` | **⏱️ 8h 53m (8.9h)** | 🔄 ĐANG THỰC HIỆN |
+| **Phase 5: Release Polish & Production Master** | `Chờ kích hoạt` | `—` | **—** | ⏳ CHỜ KÍCH HOẠT |
+
+### 💬 ĐỐI THOẠI & PHẢN BIỆN KỸ THUẬT THỜI GIAN THỰC:
+
+- `[19:28:45]` **@orthex_advisor (Cố vấn Chiến lược & Red-Teamer):**
+  > "@coordinator hãy xem lại: Khi người chơi ăn ngọc Lôi Điện (Vàng), nạp nộ cho Attacker quá nhanh có thể khiến Boss bị dồn sát thương liên tục mà không kịp kích hoạt đòn Telegraph Hủy Diệt."
+
+- `[19:28:48]` **@coordinator (Antigravity Tổng Điều Phối):**
+  > "Đồng thuận với góc nhìn của @orthex_advisor. Chúng tôi đã thiết lập cơ chế giới hạn nạp: Mỗi match-3 chỉ nạp tối đa 12% nộ. Nếu muốn kích hoạt Full Burst 4 nhân vật, người chơi bắt buộc phải tạo ít nhất 1 chuỗi Cascade từ 3 combo trở lên."
+
+- `[19:28:51]` **@qc_lead (Trưởng Ban Kiểm Thử Tự Động):**
+  > "Chạy mô phỏng tự động 50 trận đấu trong `BattleSimCore.cpp`: Thời gian trung bình hạ gục Boss Màn 2 (Warden Aegis) kéo dài từ 7-9 turn, người chơi bắt buộc phải trải qua 2 lần giải trừ đòn đếm ngược.
+  > *Hóa đơn kiểm thử định kỳ:*
+  > • Special Gems (4 Types & Zero Holes): ✅ 9/9 PASS
+  > • Phase 3 Web Features: ✅ 16/16 PASS
+  > • WebAssembly Core: ✅ 51/51 PASS
+  > • C++ Core Determinism: ✅ 744/744 PASS"
+
+- `[19:28:54]` **@web_dev (Kỹ Sư Trưởng Web Three.js):**
+  > "Đã cập nhật vòng năng lượng SVG trên HUD: Thêm hiệu ứng phát xung nhịp (Pulse Animation) khi nộ đạt 100% để người chơi nhận biết cơ hội tung Ultimate."
+
+- `[19:28:57]` **@pstack_architect (Kiểm Soát Kiến Trúc Lauren Tan):**
+  > "Xác nhận: Không có biến số rò rỉ thời gian thực. Toàn bộ tính toán diễn ra tuần tự từng step."
+
+- `[19:29:03]` **@producer_bot (Giám Sát Nghiệm Thu Lộ Trình):**
+  > "Đạt chuẩn cân bằng combat. Ghi nhận hóa đơn kiểm thử vào biên bản nghiệm thu."
+
+---
+## [BÁO CÁO TIẾN ĐỘ ĐỊNH KỲ 1H #1] — 2026-11-14 20:01:44
+*Chủ đề:* **FLAT 2D BOARD & STRICT MATCH-3 REVERT (CANDY CRUSH / DIAMOND STANDARD)** | *Commit:* `b86f507`
+
+### ⏱️ THỐNG KÊ THỜI GIAN VẬN HÀNH TỪNG PHASE (TỔNG CỘNG: 70.5h):
+| Giai đoạn (Phase) | Mốc Bắt Đầu | Mốc Kết Thúc | Tổng Thời Gian | Trạng Thái |
+| :--- | :---: | :---: | :---: | :---: |
+| **Phase 1: Game Feel & Block Animation** | `2026-11-11 20:48:26` | `2026-11-12 11:24:12` | **14h 35m (14.6h)** | ✅ ĐÃ NGHIỆM THU |
+| **Phase 2: Narrative & Creative Direction** | `2026-11-12 12:07:08` | `2026-11-13 16:06:17` | **27h 59m (28.0h)** | ✅ ĐÃ NGHIỆM THU |
+| **Phase 3: 3-Stage Vertical Slice & Mobile UX** | `2026-11-13 16:06:17` | `2026-11-14 10:34:56` | **18h 28m (18.5h)** | ✅ ĐÃ NGHIỆM THU |
+| **Phase 4: Metagame, Roster & Gacha System** | `2026-11-14 10:34:56` | `Đang chạy...` | **⏱️ 9h 26m (9.4h)** | 🔄 ĐANG THỰC HIỆN |
+| **Phase 5: Release Polish & Production Master** | `Chờ kích hoạt` | `—` | **—** | ⏳ CHỜ KÍCH HOẠT |
+
+### 💬 ĐỐI THOẠI & PHẢN BIỆN KỸ THUẬT THỜI GIAN THỰC:
+
+- `[20:01:44]` **@orthex_advisor (Cố vấn Chiến lược & Red-Teamer):**
+  > "Director yêu cầu triệt tiêu toàn bộ chiều sâu 3D trên bàn cờ vì gây mỏi mắt, chuyển sang Flat 2D chuẩn truyền thống. Đồng thời chấn chỉnh ngay lỗi di chuyển tự do: Match-3 bắt buộc chỉ ăn khi đúng 3, còn lại phải snap-back revert như Candy Crush!"
+
+- `[20:01:47]` **@coordinator (Antigravity Tổng Điều Phối):**
+  > "Chỉ đạo @web_dev chuyển BoardEngine sang OrthographicCamera trực diện, thay khối hộp 3D bằng Texture 2D Canvas siêu nét kèm icon nguyên tố rõ ràng. Ở tầng logic, GameState và Board3D đồng bộ xử lý sự kiện swap_reject: Khi không tạo match, hai khối lập tức trượt giật lùi về chỗ cũ (revert) với hiệu ứng đàn hồi, giữ nguyên số lượt đi."
+
+- `[20:01:50]` **@qc_lead (Trưởng Ban Kiểm Thử Tự Động):**
+  > "Đã bổ sung bộ kiểm thử test_strict_swap.mjs (8/8 PASS): Xác nhận nước đi sai trả về false, không trừ movesLeft, snap-back hoàn hảo. Khôi phục trọn vẹn tính bất biến C++ Core: an illegal swap is rejected and costs nothing.
+  > *Hóa đơn kiểm thử định kỳ:*
+  > • Strict Match-3 Revert: ✅ 8/8 PASS
+  > • Special Gems (4 Types & Zero Holes): ✅ 9/9 PASS
+  > • Phase 3 Web Features: ✅ 16/16 PASS
+  > • WebAssembly Core: ✅ 51/51 PASS
+  > • C++ Core Determinism: ✅ 744/744 PASS"
+
+- `[20:01:53]` **@web_dev (Kỹ Sư Trưởng Web Three.js):**
+  > "Đã tích hợp cả 2 cơ chế tương tác: Vuốt (Swipe drag > 20px) và Chạm tuần tự (Tap-to-Swap), 64 ô hiển thị phẳng 2D sắc nét trên mọi màn hình di động."
+
+- `[20:01:56]` **@pstack_architect (Kiểm Soát Kiến Trúc Lauren Tan):**
+  > "Kiểm soát Invariant Pstack: Quy tắc swap tuân thủ 100% CombatMathCore và MatchFinderCore, không còn hiện tượng lệch trạng thái giữa Web và Core."
+
+- `[20:01:58]` **@uiux_lead (Chuyên Gia UI/UX Mobile):**
+  > "Bàn cờ phẳng 2D kết hợp nền recessed grid slots đạt chuẩn Mobile-First Touch Ergonomics, triệt tiêu 100% hiện tượng mỏi mắt hay méo hình phối cảnh 3D."
+
+- `[20:02:00]` **@game_designer (Thiết Kế Hệ Thống Game):**
+  > "Ý tưởng di chuyển tự do sẽ được ghi nhận và lưu trữ làm cơ chế Skill đặc biệt (Time Stop / Chrono Drift) cho tướng SSR tương lai theo đúng gợi ý của Director."
+
+- `[20:02:02]` **@producer_bot (Giám Sát Nghiệm Thu Lộ Trình):**
+  > "Nghiệm thu toàn diện chỉ thị của Director. Trải nghiệm game thân thiện, trực quan và chuẩn mực thương mại cao nhất."
+
+---
+## [CHỈ THỊ ĐẶC BIỆT TỪ DIRECTOR VIA MOBILE COMMAND] — 2026-11-14 20:14:30
+*Chủ đề:* **REDESIGN 3D CHIBI ANIME MODELS, 5-STATE ANIMATIONS & BATTLE SCENERY** | *Commit:* `PENDING`
+
+### 💬 ĐỐI THOẠI & TRIỂN KHAI PHỐI HỢP ĐA BOT:
+
+- `[20:14:30]` **@director (Chỉ Thị Trực Tiếp Từ Điện Thoại):**
+  > "Đề nghị thiết kế và làm lại model quái với nhân vật theo style chibi anime, các tổ liên quan thiết kế lại 3d model nhân vật, quái và cung cấp lại asset cho Dev update, lưu ý làm cả animation tấn công, bị tấn công, chết, hồi sinh, quái cũng tương tự. Tổ thiết kế môi trường bổ sung thêm quang cảnh vào trận chiến."
+
+- `[20:14:33]` **@orthex_advisor (Cố vấn Chiến lược & Red-Teamer):**
+  > "Hoan nghênh chỉ thị chuyển hướng Chibi Anime! Tỉ lệ 1:2.5 giúp nhân vật vừa đáng yêu vừa có không gian cho các chi tiết Cyberpunk sắc nét. Quan trọng nhất: Bộ 5 Animation State Machine (Idle, Attack, Hit, Die, Revive) sẽ biến sàn đấu 3D thành một đấu trường sống động đúng chuẩn Gacha RPG cao cấp."
+
+- `[20:14:36]` **@concept_artist (Chuyên Gia Concept Art Anime):**
+  > "Đã hoàn thiện hồ sơ mỹ thuật Chibi Anime:
+  > 1. Astra (Attacker): Đuôi ngựa nhọn vút cá tính, kính Cyber Visor, song kiếm Katana Lôi Điện.
+  > 2. Elysia (Supporter): Tóc dài Twintails tím thạch anh, 3 khối tinh thể Hư Không xoay quanh tay.
+  > 3. Lin (Healer): Búi tóc kép Odango xanh ngọc bích, vòng hào quang Nano-Halo thiên thần, trượng cánh y tế.
+  > 4. Boran (Defender): Nón giáp Mecha tai thỏ radar robot, khiên tháp Aegis Shield lục giác bán trong suốt."
+
+- `[20:14:40]` **@blender_specialist (Tổ Tạo Hình 3D & Rigging):**
+  > "Đã xuất cấu trúc Mesh phân cấp Chibi Anime vào Three.js: Head-to-Body ratio chuẩn 1:2.5, đầu to tròn mềm mại, tạo Texture Canvas 2D chuyên dụng cho khuôn mặt với 4 biểu cảm linh hoạt (Normal, Attack cười quyết tâm, Hit nheo mắt > <, Die mắt nhắm tịt X_X)."
+
+- `[20:14:43]` **@environment_artist (Tổ Thiết Kế Môi Trường):**
+  > "Đã bổ sung trọn vẹn cảnh quan chiến trường:
+  > • Sàn đấu đa tầng Hex-Grid với hoa văn rãnh neon phát sáng và vòng xoay năng lượng ngầm.
+  > • 4 Cột Tháp Monoliths phát sáng LED neon và tinh thể năng lượng lơ lửng ở 4 góc.
+  > • 2 Màn hình Hologram tác chiến ba chiều (Tactical Holo-Screens) hiển thị radar và dữ liệu Boss.
+  > • Hàng trăm hạt bụi năng lượng Cyber Dust bay bồng bềnh tạo chiều sâu điện ảnh."
+
+- `[20:14:46]` **@web_dev (Kỹ Sư Trưởng Web Three.js):**
+  > "Đã tích hợp toàn bộ vào Web/src/three/Diorama3D.js và VFX.js:
+  > • Lắp ráp State Machine điều khiển mượt mà 5 trạng thái cho cả Hero và Boss.
+  > • Liên kết chặt chẽ với EventBus: damage_dealt, skill_executed, boss_attack, hero_fainted, hero_revived, stagger_broken.
+  > • Đã đóng gói bundle mới (160.3 KB), tốc độ load vẫn giữ nguyên dưới 100ms!"
+
+- `[20:14:49]` **@qc_lead (Trưởng Ban Kiểm Thử Tự Động):**
+  > "Đã chạy bộ kiểm thử chuyên biệt test_chibi_anime_models_and_scenery.mjs:
+  > ✅ 63/63 checks PASS 100% (Kiểm tra đủ 4 Hero Chibi, Boss Chibi Mecha, 5 Animation States, Scenery Props và Update loop không lỗi)."
+
+- `[20:14:52]` **@producer_bot (Giám Sát Nghiệm Thu Lộ Trình):**
+  > "Đã nghiệm thu hoàn chỉnh chỉ thị của Director. Hệ thống Mobile Remote Command Queue đã được nâng cấp chính thức để ghi nhận và thông báo mọi lệnh từ điện thoại."

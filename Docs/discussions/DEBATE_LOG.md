@@ -177,3 +177,47 @@ Thao luan va dinh huong game match-3 RPG can them tinh nang gi hay gameplay can 
 ✅ **Kiểm thử C++ Lõi:** 744/744 assertions PASSED (`Tools/host_tests/build_and_run.bat`).
 ✅ **Kiểm thử WebAssembly:** 51/51 checks PASSED (`node Web/smoke_test.mjs`).
 
+
+
+## HIỆP 1 (DEBATE CLI) - 2026-11-14 20:01:40
+### Đề xuất từ Orthex / Director:
+Đề nghị thiết kế và làm lại model quái với nhân vật theo style chibi anime, các tổ liên quan thiết kế lại 3d model nhân vật, quái và cung cấp lại asset cho Dev update, lưu ý làm cả animation tấn công, bị tấn công, chết, hồi sinh, quái cũng tương tự. Tổ thiết kế môi trường bổ sung thêm quang cảnh vào trận chiến
+
+### Phản biện từ Antigravity Arena:
+# [ANTIGRAVITY ARENA] PHẢN BIỆN ĐỐI THOẠI — HIỆP 1
+*Thời gian:* `2026-11-14 20:01:40` | *Dự án:* `match-3-rpg` | *Tiêu chuẩn:* **Pstack Michelin Rigor (Lauren Tan)**
+
+---
+
+### 1. ĐỒNG THUẬN & ĐIỂM SÁNG (VALIDATION)
+* Tiếp nhận đề xuất từ Orthex. Ghi nhận góc nhìn sáng tạo về thiết kế và phân bổ tài nguyên.
+* Hướng tiếp cận giúp mở rộng chiều sâu trải nghiệm cho người chơi.
+
+---
+
+### 2. MỔ XẺ RỦI RO & PHẢN BIỆN KỸ THUẬT (RED-TEAMING ANALYSIS)
+
+#### A. Ranh Giới Lõi C++ Deterministic:
+* * Đạt chuẩn ranh giới Lõi C++ độc lập (bảo toàn 744 test assertions trong `Tools/host_tests/`).
+
+#### B. Ngân Sách Hiệu Năng WebGL Three.js:
+* * Đạt ngân sách hiệu năng hiển thị (60 FPS trên WebGL, tối ưu drawcall).
+
+#### C. Quy Trình 3D Blender & Triệt Tiêu Chi Phí Trả Phí:
+* * YÊU CẦU FILE BLENDER NGUỒN: Xuất file `.blend` có tổ chức Armature rõ ràng để Director tự kiểm tra và học tập kỹ thuật Rigging cơ bản.
+
+#### D. Tính Tương Thích Kịch Bản & Gameplay:
+* * Đề xuất cần đối chiếu chặt chẽ với hệ thống 4 Role chuẩn: Attacker, Supporter, Healer, Defender.
+
+---
+
+### 3. ĐỀ XUẤT ĐIỀU CHỈNH TỐI ƯU (SYNTHESIS & COUNTER-PROPOSAL)
+1. **Kiến trúc:** Giữ vững nguyên tắc Decoupled Core của `pstack`. Tách bạch Lõi mô phỏng và Tầng diễn hoạ.
+2. **Thực thi 3D:** Sử dụng Blender Python Scripting để tạo xương (Armature) tự động, giúp Director vừa có model sạch vừa học được cách phân chia Weight Paint trong Blender.
+3. **Phân phối:** Đảm bảo test C++ assertions và WASM checks luôn đạt 100% trước khi commit.
+
+---
+
+### 4. CÂU HỎI ĐỐI THOẠI DÀNH CHO ORTHEX (HIỆP TIẾP THEO)
+> *"Dựa trên các ranh giới kỹ thuật về Lõi C++ và quy trình Blender 3D miễn phí ở trên, bạn hãy điều chỉnh lại chi tiết triển khai cụ thể cho bước tiếp theo. Bạn có đề xuất giải pháp nào tinh gọn hơn để giảm thiểu số lượng xương (bone count) mà vẫn giữ được visual ấn tượng không?"*
+
