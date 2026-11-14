@@ -2486,43 +2486,45 @@ class Diorama3D {
         });
 
         // C. MÀN HÌNH HOLOGRAM TÁC CHIẾN BA CHIỀU (FLOATING TACTICAL HOLO-SCREENS)
-        const holoCoords = [
-            { x: -2.8, y: 3.2, z: -4.0, rotY: 0.35 },
-            { x: 2.8, y: 3.2, z: -4.0, rotY: -0.35 }
-        ];
+        if (typeof document !== 'undefined') {
+            const holoCoords = [
+                { x: -2.8, y: 3.2, z: -4.0, rotY: 0.35 },
+                { x: 2.8, y: 3.2, z: -4.0, rotY: -0.35 }
+            ];
 
-        holoCoords.forEach(pos => {
-            const holoCanvas = document.createElement('canvas');
-            holoCanvas.width = 256; holoCanvas.height = 128;
-            const hCtx = holoCanvas.getContext('2d');
-            hCtx.fillStyle = 'rgba(10, 25, 47, 0.7)';
-            hCtx.fillRect(0, 0, 256, 128);
-            hCtx.strokeStyle = '#00f0ff';
-            hCtx.lineWidth = 3;
-            hCtx.strokeRect(6, 6, 244, 116);
-            hCtx.fillStyle = '#00f0ff';
-            hCtx.font = 'bold 16px monospace';
-            hCtx.fillText('TACTICAL ARENA', 18, 32);
-            hCtx.font = '12px monospace';
-            hCtx.fillStyle = '#38bdf8';
-            hCtx.fillText('SENTINEL TARGET LOCK: 100%', 18, 60);
-            hCtx.fillText('COMBO PROTOCOL: ONLINE', 18, 82);
-            hCtx.fillStyle = '#ef4444';
-            hCtx.fillText('STAGGER BREAK: ARMED', 18, 104);
+            holoCoords.forEach(pos => {
+                const holoCanvas = document.createElement('canvas');
+                holoCanvas.width = 256; holoCanvas.height = 128;
+                const hCtx = holoCanvas.getContext('2d');
+                hCtx.fillStyle = 'rgba(10, 25, 47, 0.7)';
+                hCtx.fillRect(0, 0, 256, 128);
+                hCtx.strokeStyle = '#00f0ff';
+                hCtx.lineWidth = 3;
+                hCtx.strokeRect(6, 6, 244, 116);
+                hCtx.fillStyle = '#00f0ff';
+                hCtx.font = 'bold 16px monospace';
+                hCtx.fillText('TACTICAL ARENA', 18, 32);
+                hCtx.font = '12px monospace';
+                hCtx.fillStyle = '#38bdf8';
+                hCtx.fillText('SENTINEL TARGET LOCK: 100%', 18, 60);
+                hCtx.fillText('COMBO PROTOCOL: ONLINE', 18, 82);
+                hCtx.fillStyle = '#ef4444';
+                hCtx.fillText('STAGGER BREAK: ARMED', 18, 104);
 
-            const holoTex = new THREE.CanvasTexture(holoCanvas);
-            const holoGeo = new THREE.PlaneGeometry(1.9, 0.95);
-            const holoMat = new THREE.MeshBasicMaterial({
-                map: holoTex,
-                transparent: true,
-                opacity: 0.75,
-                side: THREE.DoubleSide
+                const holoTex = new THREE.CanvasTexture(holoCanvas);
+                const holoGeo = new THREE.PlaneGeometry(1.9, 0.95);
+                const holoMat = new THREE.MeshBasicMaterial({
+                    map: holoTex,
+                    transparent: true,
+                    opacity: 0.75,
+                    side: THREE.DoubleSide
+                });
+                const holoMesh = new THREE.Mesh(holoGeo, holoMat);
+                holoMesh.position.set(pos.x, pos.y, pos.z);
+                holoMesh.rotation.y = pos.rotY;
+                this.stageGroup.add(holoMesh);
             });
-            const holoMesh = new THREE.Mesh(holoGeo, holoMat);
-            holoMesh.position.set(pos.x, pos.y, pos.z);
-            holoMesh.rotation.y = pos.rotY;
-            this.stageGroup.add(holoMesh);
-        });
+        }
 
         // D. HẠT BỤI NĂNG LƯỢNG LƠ LỬNG TRONG KHÔNG GIAN (AMBIENT CYBER PARTICLES)
         const pCount = 75;
@@ -2799,6 +2801,7 @@ class Diorama3D {
                 offset: idx * 0.9,
                 state: 'idle',       // 'idle' | 'attack' | 'hit' | 'die' | 'revive'
                 animTimer: 0,
+                shakeTimer: 0,
                 isDefeated: false
             });
         });
@@ -3050,6 +3053,7 @@ class Diorama3D {
     playHeroHit(heroCtrl) {
         if (heroCtrl.isDefeated) return;
         heroCtrl.state = 'hit';
+        heroCtrl.shakeTimer = 0.35;
         heroCtrl.face.material.map = heroCtrl.faceTex.hit;
 
         // Giật lùi về sau và nghiêng người
@@ -3150,8 +3154,15 @@ class Diorama3D {
 
     /** 5. VÒNG LẶP CẬP NHẬT DIỄN HOẠ MỖI FRAME (UPDATE LOOP) */
     update(delta, elapsed) {
-        // A. DIỄN HOẠT IDLE CỦA TỪNG HERO (CHIBI BOBBING & BREATHING)
+        // A. DIỄN HOẠT IDLE & RUNG CHẤN CỦA TỪNG HERO (CHIBI BOBBING & TRAUMA SHAKE)
         this.heroes.forEach(h => {
+            if (h.shakeTimer > 0) {
+                h.shakeTimer -= delta;
+                h.root.position.x = h.baseX + (Math.random() - 0.5) * 0.14;
+            } else {
+                h.root.position.x = h.baseX;
+            }
+
             if (h.state === 'idle' && !h.isDefeated) {
                 // Nhịp thở bập bồng Chibi mềm mại
                 h.body.position.y = Math.sin(elapsed * 3.5 + h.offset) * 0.06;

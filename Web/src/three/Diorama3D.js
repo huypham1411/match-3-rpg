@@ -725,6 +725,7 @@ export class Diorama3D {
                 offset: idx * 0.9,
                 state: 'idle',       // 'idle' | 'attack' | 'hit' | 'die' | 'revive'
                 animTimer: 0,
+                shakeTimer: 0,
                 isDefeated: false
             });
         });
@@ -976,6 +977,7 @@ export class Diorama3D {
     playHeroHit(heroCtrl) {
         if (heroCtrl.isDefeated) return;
         heroCtrl.state = 'hit';
+        heroCtrl.shakeTimer = 0.35;
         heroCtrl.face.material.map = heroCtrl.faceTex.hit;
 
         // Giật lùi về sau và nghiêng người
@@ -1076,8 +1078,15 @@ export class Diorama3D {
 
     /** 5. VÒNG LẶP CẬP NHẬT DIỄN HOẠ MỖI FRAME (UPDATE LOOP) */
     update(delta, elapsed) {
-        // A. DIỄN HOẠT IDLE CỦA TỪNG HERO (CHIBI BOBBING & BREATHING)
+        // A. DIỄN HOẠT IDLE & RUNG CHẤN CỦA TỪNG HERO (CHIBI BOBBING & TRAUMA SHAKE)
         this.heroes.forEach(h => {
+            if (h.shakeTimer > 0) {
+                h.shakeTimer -= delta;
+                h.root.position.x = h.baseX + (Math.random() - 0.5) * 0.14;
+            } else {
+                h.root.position.x = h.baseX;
+            }
+
             if (h.state === 'idle' && !h.isDefeated) {
                 // Nhịp thở bập bồng Chibi mềm mại
                 h.body.position.y = Math.sin(elapsed * 3.5 + h.offset) * 0.06;
