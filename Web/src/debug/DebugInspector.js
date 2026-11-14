@@ -14,8 +14,10 @@
 import { events } from '../core/EventBus.js';
 
 export class DebugInspector {
-    constructor(engine, board3D, diorama3D, gameState) {
-        this.engine = engine;
+    constructor(arenaEngine, boardEngine, board3D, diorama3D, gameState) {
+        this.arenaEngine = arenaEngine;
+        this.boardEngine = boardEngine || arenaEngine;
+        this.engine = this.boardEngine;
         this.board = board3D;
         this.diorama = diorama3D;
         this.state = gameState;

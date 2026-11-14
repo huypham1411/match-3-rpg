@@ -42,10 +42,21 @@
         </div>
     </div>
 
-    <!-- Container 3D Fullscreen -->
-    <div id="canvasContainer"></div>
+    <!-- Layout 2 Tầng Tách Biệt: Arena Chiến Đấu (Xoay 360°) & Board Match-3 (Cố Định) -->
+    <div id="gameLayout">
+        <!-- TẦNG TRÊN: SÂN KHẤU CHIẾN ĐẤU 3D (XOAY ĐƯỢC 360 ĐỘ) -->
+        <div id="arenaSection">
+            <div id="arenaCanvasContainer"></div>
+            <div class="arena-rotate-hint">🔄 Vuốt để xoay sàn đấu 360°</div>
+        </div>
 
-    <!-- Màn hình bắt lỗi on-screen (Đảm bảo không bao giờ bị trắng màn hình không rõ lý do) -->
+        <!-- TẦNG DƯỚI: BÀN MATCH-3 3D (CỐ ĐỊNH HOÀN TOÀN, CHUẨN THUMB ZONE) -->
+        <div id="boardSection">
+            <div id="boardCanvasContainer"></div>
+        </div>
+    </div>
+
+    <!-- Màn hình bắt lỗi on-screen -->
     <div id="errorOverlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:#0f172a; color:#ef4444; padding:24px; z-index:99999; font-family:monospace; font-size:13px; overflow:auto;">
         <h3 style="color:#ff0055; margin-bottom:12px; font-size:16px;">⚠️ CẢNH BÁO LỖI THIẾT BỊ</h3>
         <pre id="errorText" style="white-space:pre-wrap; background:#1e293b; padding:12px; border-radius:6px; color:#cbd5e1;"></pre>

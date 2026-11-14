@@ -27,8 +27,8 @@ export class Diorama3D {
         this.stageGroup = new THREE.Group();
         this.scene.add(this.stageGroup);
 
-        // Đặt sân khấu chiến đấu ở phía trên phía sau bàn cờ (Z = -8.5 đảm bảo không bao giờ che lấp bàn match-3)
-        this.stageGroup.position.set(0, 3.8, -8.5);
+        // Đặt sân khấu chiến đấu tại tâm điểm (0, 0, 0) của ArenaEngine riêng biệt
+        this.stageGroup.position.set(0, 0, 0);
 
         this.heroes = [];
         this.boss = null;
@@ -42,8 +42,7 @@ export class Diorama3D {
 
     /** 1. Dựng sàn đấu tròn phong cách Cyberpunk Arena */
     initStageFloor() {
-        // Bán kính sàn 4.8 đơn vị nằm lọt hoàn toàn trong vùng Z âm, tuyệt đối không lấn sang bàn cờ
-        const floorGeo = new THREE.CylinderGeometry(4.5, 4.8, 0.3, 32);
+        const floorGeo = new THREE.CylinderGeometry(4.8, 5.2, 0.35, 32);
         const floorMat = new THREE.MeshStandardMaterial({
             color: 0x131828,
             metalness: 0.85,
@@ -66,10 +65,10 @@ export class Diorama3D {
     /** 2. Dựng 4 Nhân vật Chuyên Trách (Attacker, Supporter, Healer, Defender) */
     buildHeroes() {
         const heroConfigs = [
-            { name: 'Lôi Kiếm Sĩ (Attacker)', color: 0xef4444, x: -2.8, z: 0.8, weapon: 'blade' },
-            { name: 'Tinh Linh (Supporter)', color: 0x8b5cf6, x: -1.2, z: 1.2, weapon: 'ring' },
-            { name: 'Thánh Nữ (Healer)', color: 0x10b981, x: 0.2, z: 1.5, weapon: 'staff' },
-            { name: 'Thiết Giáp (Defender)', color: 0x2563eb, x: 1.6, z: 1.8, weapon: 'shield' }
+            { name: 'Lôi Kiếm Sĩ (Attacker)', color: 0xef4444, x: -2.4, z: 1.0, weapon: 'blade' },
+            { name: 'Tinh Linh (Supporter)', color: 0x8b5cf6, x: -0.8, z: 1.4, weapon: 'ring' },
+            { name: 'Thánh Nữ (Healer)', color: 0x10b981, x: 0.8, z: 1.4, weapon: 'staff' },
+            { name: 'Thiết Giáp (Defender)', color: 0x2563eb, x: 2.4, z: 1.0, weapon: 'shield' }
         ];
 
         heroConfigs.forEach((cfg, idx) => {
@@ -135,7 +134,7 @@ export class Diorama3D {
     /** 3. Dựng Boss Sentinel Unit 07 (Mecha Titan với 2 Drone trôi nổi) */
     buildBoss() {
         this.bossGroup = new THREE.Group();
-        this.bossGroup.position.set(1.4, 1.8, -0.6);
+        this.bossGroup.position.set(0, 1.8, -1.8);
 
         // Khối thân chính (Octahedron / Khối đa diện Mecha)
         const coreGeo = new THREE.OctahedronGeometry(1.6, 1);

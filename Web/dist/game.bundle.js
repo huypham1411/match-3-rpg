@@ -429,8 +429,10 @@ class GameState {
 
     /** Tìm tất cả các cụm Match trên bàn và nhận diện Ngọc Đặc Biệt */
     findMatches() {
-        const matched = new Map(); // key: "r,c" -> { r, c, color, willSpawnSpecial: null }
+        const matched = new Map(); // key: "r,c" -> { r, c, color }
         const specialsToSpawn = []; // { r, c, specialType, color }
+        const hMatchMap = new Map(); // key: "r,c" -> matchLen
+        const vMatchMap = new Map(); // key: "r,c" -> matchLen
 
         // 1. Quét hàng ngang
         for (let r = 0; r < this.height; r++) {
@@ -442,11 +444,12 @@ class GameState {
                     if (matchLen >= 3) {
                         const midC = c - Math.floor(matchLen / 2) - 1;
                         let special = SPECIAL_TYPES.NONE;
-                        if (matchLen === 4) special = SPECIAL_TYPES.LINE_ROW;
-                        else if (matchLen >= 5) special = SPECIAL_TYPES.SWAP_ALL;
+                        if (matchLen >= 5) special = SPECIAL_TYPES.SWAP_ALL;
+                        else if (matchLen === 4) special = SPECIAL_TYPES.LINE_ROW;
 
                         for (let k = c - matchLen; k < c; k++) {
                             matched.set(`${r},${k}`, { r, c: k, color: this.grid[r][k] });
+                            hMatchMap.set(`${r},${k}`, matchLen);
                         }
                         if (special !== SPECIAL_TYPES.NONE) {
                             specialsToSpawn.push({ r, c: midC, specialType: special, color: this.grid[r][midC] });
@@ -467,11 +470,12 @@ class GameState {
                     if (matchLen >= 3) {
                         const midR = r - Math.floor(matchLen / 2) - 1;
                         let special = SPECIAL_TYPES.NONE;
-                        if (matchLen === 4) special = SPECIAL_TYPES.LINE_COL;
-                        else if (matchLen >= 5) special = SPECIAL_TYPES.SWAP_ALL;
+                        if (matchLen >= 5) special = SPECIAL_TYPES.SWAP_ALL;
+                        else if (matchLen === 4) special = SPECIAL_TYPES.LINE_COL;
 
                         for (let k = r - matchLen; k < r; k++) {
                             matched.set(`${k},${c}`, { r: k, c, color: this.grid[k][c] });
+                            vMatchMap.set(`${k},${c}`, matchLen);
                         }
                         if (special !== SPECIAL_TYPES.NONE) {
                             specialsToSpawn.push({ r: midR, c, specialType: special, color: this.grid[midR][c] });
@@ -482,22 +486,45 @@ class GameState {
             }
         }
 
-        // 3. Kích hoạt hiệu ứng lan của các Ngọc Đặc Biệt bị dính trong vụ nổ
+        // 3. Quét hình chữ L và chữ T (giao thoa giữa hàng ngang >=3 và hàng dọc >=3) -> Bom 3x3
+        for (const [key] of hMatchMap) {
+            if (vMatchMap.has(key)) {
+                const [r, c] = key.split(',').map(Number);
+                // Ô giao thoa tạo Bom Nổ 3x3
+                specialsToSpawn.push({ r, c, specialType: SPECIAL_TYPES.BOMB_3X3, color: this.grid[r][c] });
+            }
+        }
+
+        // 4. Quét ô vuông 2x2 (Square Breaker -> Bom 3x3)
+        for (let r = 0; r < this.height - 1; r++) {
+            for (let c = 0; c < this.width - 1; c++) {
+                const col = this.grid[r][c];
+                if (col > 0 && col === this.grid[r + 1][c] && col === this.grid[r][c + 1] && col === this.grid[r + 1][c + 1]) {
+                    matched.set(`${r},${c}`, { r, c, color: col });
+                    matched.set(`${r + 1},${c}`, { r: r + 1, c, color: col });
+                    matched.set(`${r},${c + 1}`, { r, c: c + 1, color: col });
+                    matched.set(`${r + 1},${c + 1}`, { r: r + 1, c: c + 1, color: col });
+                    specialsToSpawn.push({ r, c, specialType: SPECIAL_TYPES.BOMB_3X3, color: col });
+                }
+            }
+        }
+
+        // 5. Kích hoạt hiệu ứng nổ lan của các Ngọc Đặc Biệt bị dính trong vụ nổ
         const finalSet = new Map(matched);
         matched.forEach((val) => {
             const spec = this.specialGrid[val.r][val.c];
             if (spec === SPECIAL_TYPES.LINE_ROW) {
-                // Quét cả hàng
+                // Quét cả hàng ngang
                 for (let c = 0; c < this.width; c++) {
                     finalSet.set(`${val.r},${c}`, { r: val.r, c, color: this.grid[val.r][c] });
                 }
             } else if (spec === SPECIAL_TYPES.LINE_COL) {
-                // Quét cả cột
+                // Quét cả hàng dọc
                 for (let r = 0; r < this.height; r++) {
                     finalSet.set(`${r},${val.c}`, { r, c: val.c, color: this.grid[r][val.c] });
                 }
             } else if (spec === SPECIAL_TYPES.BOMB_3X3) {
-                // Nổ 3x3
+                // Nổ diện rộng 3x3
                 for (let dr = -1; dr <= 1; dr++) {
                     for (let dc = -1; dc <= 1; dc++) {
                         const nr = val.r + dr;
@@ -522,7 +549,15 @@ class GameState {
             this.comboChain++;
             const specialsToSpawn = matches.specialsToSpawn || [];
 
-            events.emit('match_shatter', { matches, combo: this.comboChain });
+            // Lập bản đồ các ô được nâng cấp thành ngọc đặc biệt (KHÔNG BỊ PHÁ HUỶ)
+            const specialSpawnMap = new Map();
+            specialsToSpawn.forEach(sp => {
+                specialSpawnMap.set(`${sp.r},${sp.c}`, sp);
+            });
+
+            // Chỉ nổ và xóa khỏi màn hình các khối KHÔNG PHẢI là ngọc đặc biệt mới sinh
+            const shatters = matches.filter(m => !specialSpawnMap.has(`${m.r},${m.c}`));
+            events.emit('match_shatter', { matches: shatters, combo: this.comboChain });
 
             // Tính toán sát thương & nạp nộ từng role
             this.processCombatMath(matches, this.comboChain);
@@ -530,13 +565,13 @@ class GameState {
             // Sát thương lên các vật cản kề bên (Đá, Băng, Hộp, Xích)
             this.damageAdjacentObstacles(matches);
 
-            // Xóa khối bị match khỏi grid
-            matches.forEach(m => {
+            // Xóa các khối bị nổ khỏi dữ liệu grid
+            shatters.forEach(m => {
                 this.grid[m.r][m.c] = 0;
                 this.specialGrid[m.r][m.c] = SPECIAL_TYPES.NONE;
             });
 
-            // Nếu có ngọc đặc biệt được tạo ra (Match 4, 5)
+            // Nâng cấp ô giữ nguyên thành Ngọc Đặc Biệt (Match 4, 5, 2x2, L/T)
             specialsToSpawn.forEach(sp => {
                 this.grid[sp.r][sp.c] = sp.color;
                 this.specialGrid[sp.r][sp.c] = sp.specialType;
@@ -725,27 +760,21 @@ class GameState {
 /**
  * Web/src/three/Engine.js
  * ============================================================================
- * [THREE.JS FUNDAMENTAL 1]: LÕI ĐỒ HOẠ 3D (3D GRAPHICS ENGINE)
- * 
- * Tài liệu học tập Three.js:
- *  1. Scene: Không gian 3D chứa tất cả vật thể (Mesh, Lights, Camera).
- *  2. PerspectiveCamera: Giả lập mắt người với góc nhìn phối cảnh (FOV, Aspect, Near, Far).
- *  3. WebGLRenderer: Vẽ toàn bộ Scene qua GPU (hỗ trợ Antialiasing, Tone Mapping).
- *  4. Lighting (Ánh sáng PBR):
- *     - AmbientLight: Ánh sáng môi trường toả đều, giúp mặt khuất không bị đen kịt.
- *     - DirectionalLight: Ánh sáng mặt trời tạo bóng đổ (Cast Shadows).
- *     - PointLight: Đèn điểm neon tạo viền hào quang (Rim light).
- *  5. OrbitControls: Xoay, lướt và phóng to thu nhỏ góc nhìn tự do bằng chuột.
- *  6. Render Loop (Vòng lặp vẽ 60FPS): Sử dụng requestAnimationFrame và delta time.
+ * [DUAL 3D ENGINE ARCHITECTURE - PSTACK RIGOR]
+ * Tách biệt hoàn toàn hai miền không gian:
+ *  1. ArenaEngine: Sân khấu chiến đấu 3D (Boss, Heroes, Stage) -> XOAY 360 ĐỘ TỰ DO
+ *  2. BoardEngine: Bàn Match-3 8x8 (64 khối nguyên tố PBR) -> CỐ ĐỊNH HOÀN TOÀN
  * ============================================================================
  */
-class Engine3D {
+
+/** 1. LÕI 3D SÂN KHẤU CHIẾN ĐẤU (BÀN ĐẤU XOAY ĐƯỢC 360 ĐỘ) */
+class ArenaEngine {
     constructor(canvasContainer) {
         this.container = canvasContainer;
         this.width = canvasContainer.clientWidth || window.innerWidth;
-        this.height = canvasContainer.clientHeight || window.innerHeight;
+        this.height = canvasContainer.clientHeight || 240;
 
-        this.updatables = []; // Danh sách các module cần cập nhật frame (Board, Diorama, VFX)
+        this.updatables = [];
         this.clock = new THREE.Clock();
 
         this.initScene();
@@ -758,48 +787,26 @@ class Engine3D {
         this.startLoop();
     }
 
-    /** 1. Khởi tạo Không gian 3D (Scene) & Sương mù (Fog) */
     initScene() {
         this.scene = new THREE.Scene();
-        // Sương mù cyberpunk: màu tím đen đậm tạo chiều sâu điện ảnh
         this.scene.background = new THREE.Color(0x0a0c14);
         this.scene.fog = new THREE.FogExp2(0x0a0c14, 0.025);
     }
 
-    /** 2. Khởi tạo Camera Phối Cảnh (Perspective Camera) */
     initCamera() {
         const aspect = this.width / this.height;
-        // FOV & Vị trí tối ưu hóa cho màn hình dọc (Mobile Portrait) và ngang (Desktop)
-        this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 100);
-        this.updateCameraForDevice(aspect);
+        this.camera = new THREE.PerspectiveCamera(40, aspect, 0.1, 100);
+        this.camera.position.set(0, 5.2, 9.5);
+        this.camera.lookAt(0, 1.2, 0);
     }
 
-    /** Tự động cân chỉnh góc nhìn Camera theo kích thước thiết bị */
-    updateCameraForDevice(aspect) {
-        if (aspect < 1.0) {
-            // Mobile Portrait: Mở rộng góc FOV 54 độ để bàn 8x8 hiển thị trọn vẹn, không bị tràn viền
-            this.camera.fov = 54;
-            this.camera.position.set(0, 16.5, 18.0);
-            this.camera.lookAt(0, -0.5, 0);
-        } else {
-            // Desktop / Landscape: Góc nhìn điện ảnh chuẩn 45 độ
-            this.camera.fov = 45;
-            this.camera.position.set(0, 14, 20);
-            this.camera.lookAt(0, 0, 0);
-        }
-        this.camera.updateProjectionMatrix();
-    }
-
-    /** 3. Khởi tạo Trình Render WebGL */
     initRenderer() {
         this.renderer = new THREE.WebGLRenderer({
-            antialias: true,              // Khử răng cưa
+            antialias: true,
             powerPreference: 'high-performance'
         });
         this.renderer.setSize(this.width, this.height);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        
-        // Cấu hình bóng đổ & Tone Mapping chuẩn công nghiệp
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -808,87 +815,65 @@ class Engine3D {
         this.container.appendChild(this.renderer.domElement);
     }
 
-    /** 4. Thiết lập Ánh sáng Môi trường & Đèn Chiếu Chi Tiết */
     initLights() {
-        // Ánh sáng tỏa nhẹ toàn cảnh
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
         this.scene.add(ambientLight);
 
-        // Ánh sáng chính (Key Light) tạo bóng đổ thực tế
-        const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
-        keyLight.position.set(10, 20, 15);
+        const keyLight = new THREE.DirectionalLight(0xffffff, 1.3);
+        keyLight.position.set(8, 15, 10);
         keyLight.castShadow = true;
-        keyLight.shadow.mapSize.width = 1024;
-        keyLight.shadow.mapSize.height = 1024;
-        keyLight.shadow.camera.near = 0.5;
-        keyLight.shadow.camera.far = 50;
         this.scene.add(keyLight);
 
-        // Đèn viền Neon Xanh Cyan phía sau (Rim Light cho Hero)
-        const cyanRimLight = new THREE.PointLight(0x00f0ff, 2.5, 25);
-        cyanRimLight.position.set(-8, 5, -5);
-        this.scene.add(cyanRimLight);
+        const cyanRim = new THREE.PointLight(0x00f0ff, 2.5, 20);
+        cyanRim.position.set(-6, 4, -4);
+        this.scene.add(cyanRim);
 
-        // Đèn viền Neon Đỏ Đô phía Boss (Rim Light cho Boss)
-        const crimsonRimLight = new THREE.PointLight(0xff0055, 3.0, 30);
-        crimsonRimLight.position.set(8, 7, -6);
-        this.scene.add(crimsonRimLight);
+        const crimsonRim = new THREE.PointLight(0xff0055, 3.0, 25);
+        crimsonRim.position.set(6, 6, -5);
+        this.scene.add(crimsonRim);
     }
 
-    /** 5. Bộ điều khiển xoay chuột (OrbitControls) - Khóa xoay để bàn cờ match-3 luôn ổn định tuyệt đối */
     initControls() {
         if (typeof THREE.OrbitControls !== 'undefined') {
             this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
             this.controls.enableDamping = true;
-            this.controls.dampingFactor = 0.05;
-            this.controls.target.set(0, -0.5, 0);
-            
-            // [TIÊU CHUẨN MOBILE GAME UX]: KHÓA XOAY CAMERA
-            // Người chơi vuốt chạm màn hình là để hoán đổi ngọc, không được để camera bị lắc lư hoặc xoay đảo
-            this.controls.enableRotate = false;
-            this.controls.enablePan = false;
-            this.controls.enableZoom = false;
-            if (THREE.TOUCH) {
-                this.controls.touches = { ONE: THREE.TOUCH.NONE, TWO: THREE.TOUCH.DOLLY_PAN };
-            }
+            this.controls.dampingFactor = 0.08;
+            this.controls.target.set(0, 1.2, 0);
 
-            this.controls.maxPolarAngle = Math.PI / 2 + 0.1;
-            this.controls.minDistance = 6;
-            this.controls.maxDistance = 45;
+            // BÀN ĐẤU CHIẾN ĐẤU XOAY ĐƯỢC 360 ĐỘ TỰ DO
+            this.controls.enableRotate = true;
+            this.controls.enableZoom = true;
+            this.controls.enablePan = false;
+
+            this.controls.minDistance = 5.0;
+            this.controls.maxDistance = 16.0;
+            this.controls.minPolarAngle = Math.PI * 0.15; // Giới hạn góc ngẩng
+            this.controls.maxPolarAngle = Math.PI * 0.48; // Không nhìn xuyên dưới sàn
         }
     }
 
-    /** 6. Tự động co giãn khi kích thước trình duyệt thay đổi (Window Resize) */
     initResizeHandler() {
         window.addEventListener('resize', () => {
             this.width = this.container.clientWidth || window.innerWidth;
-            this.height = this.container.clientHeight || window.innerHeight;
-
-            const aspect = this.width / this.height;
-            this.camera.aspect = aspect;
-            this.updateCameraForDevice(aspect);
-
+            this.height = this.container.clientHeight || 240;
+            this.camera.aspect = this.width / this.height;
+            this.camera.updateProjectionMatrix();
             this.renderer.setSize(this.width, this.height);
-            this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         });
     }
 
-    /** Đăng ký module cần cập nhật frame (Board, Diorama, VFX) */
     addUpdatable(module) {
         this.updatables.push(module);
     }
 
-    /** 7. Vòng lặp Render 60 FPS (Tick Loop) */
     startLoop() {
         const loop = () => {
             requestAnimationFrame(loop);
-
             const delta = this.clock.getDelta();
             const elapsed = this.clock.getElapsedTime();
 
             if (this.controls) this.controls.update();
 
-            // Cập nhật từng module
             for (const item of this.updatables) {
                 if (typeof item.update === 'function') {
                     item.update(delta, elapsed);
@@ -900,6 +885,117 @@ class Engine3D {
         loop();
     }
 }
+
+/** 2. LÕI 3D BÀN MATCH-3 (CỐ ĐỊNH HOÀN TOÀN, KHÔNG XOAY, KHÔNG LẮC) */
+class BoardEngine {
+    constructor(canvasContainer) {
+        this.container = canvasContainer;
+        this.width = canvasContainer.clientWidth || window.innerWidth;
+        this.height = canvasContainer.clientHeight || 450;
+
+        this.updatables = [];
+        this.clock = new THREE.Clock();
+
+        this.initScene();
+        this.initCamera();
+        this.initRenderer();
+        this.initLights();
+        // KHÔNG CÓ OrbitControls -> BÀN CỜ MATCH-3 CỐ ĐỊNH TUYỆT ĐỐI
+        this.initResizeHandler();
+
+        this.startLoop();
+    }
+
+    initScene() {
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x0a0c14);
+    }
+
+    initCamera() {
+        const aspect = this.width / this.height;
+        this.camera = new THREE.PerspectiveCamera(44, aspect, 0.1, 100);
+        this.updateCameraForDevice(aspect);
+    }
+
+    updateCameraForDevice(aspect) {
+        if (aspect < 1.0) {
+            // Mobile Portrait: Góc nhìn phẳng tối ưu chạm ngón cái
+            this.camera.fov = 44;
+            this.camera.position.set(0, 14.5, 8.5);
+            this.camera.lookAt(0, -0.2, 0);
+        } else {
+            // Desktop: Cân bằng góc nhìn
+            this.camera.fov = 38;
+            this.camera.position.set(0, 16.0, 9.0);
+            this.camera.lookAt(0, 0, 0);
+        }
+        this.camera.updateProjectionMatrix();
+    }
+
+    initRenderer() {
+        this.renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            powerPreference: 'high-performance'
+        });
+        this.renderer.setSize(this.width, this.height);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 1.25;
+
+        this.container.appendChild(this.renderer.domElement);
+    }
+
+    initLights() {
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+        this.scene.add(ambientLight);
+
+        const keyLight = new THREE.DirectionalLight(0xffffff, 1.4);
+        keyLight.position.set(5, 18, 12);
+        keyLight.castShadow = true;
+        this.scene.add(keyLight);
+
+        const topCyan = new THREE.PointLight(0x00f0ff, 1.5, 15);
+        topCyan.position.set(0, 8, 4);
+        this.scene.add(topCyan);
+    }
+
+    initResizeHandler() {
+        window.addEventListener('resize', () => {
+            this.width = this.container.clientWidth || window.innerWidth;
+            this.height = this.container.clientHeight || 450;
+            const aspect = this.width / this.height;
+            this.camera.aspect = aspect;
+            this.updateCameraForDevice(aspect);
+            this.renderer.setSize(this.width, this.height);
+        });
+    }
+
+    addUpdatable(module) {
+        this.updatables.push(module);
+    }
+
+    startLoop() {
+        const loop = () => {
+            requestAnimationFrame(loop);
+            const delta = this.clock.getDelta();
+            const elapsed = this.clock.getElapsedTime();
+
+            for (const item of this.updatables) {
+                if (typeof item.update === 'function') {
+                    item.update(delta, elapsed);
+                }
+            }
+
+            this.renderer.render(this.scene, this.camera);
+        };
+        loop();
+    }
+}
+
+/** Lớp bọc tương thích ngược */
+class Engine3D extends BoardEngine {}
 
 
 // --- MODULE: Web\src\three\Board3D.js ---
@@ -943,8 +1039,8 @@ class Board3D {
         this.boardGroup = new THREE.Group();
         this.scene.add(this.boardGroup);
 
-        // Vị trí đặt bàn cờ trong không gian 3D: Căn giữa hoàn hảo, không bị che bởi sân khấu phía trên hay thẻ nhân vật phía dưới
-        this.boardGroup.position.set(0, -0.5, 1.5);
+        // Vị trí đặt bàn cờ trong BoardEngine riêng biệt: Căn giữa hoàn hảo tại (0, 0, 0)
+        this.boardGroup.position.set(0, 0, 0);
         this.boardGroup.rotation.x = -Math.PI / 10; // Góc nghiêng 18 độ tối ưu cho góc nhìn từ trên xuống
 
         this.tileMeshes = [];      // Mảng 2 chiều 8x8 chứa THREE.Mesh
@@ -1121,16 +1217,28 @@ class Board3D {
             this.animateDrops(drops);
         });
 
-        // 4. Sinh ngọc đặc biệt (Match 4, Match 5)
-        events.on('special_created', ({ r, c, specialType }) => {
-            this.attachSpecialMarker(r, c, specialType);
+        // 4. Sinh ngọc đặc biệt (Match 4, Match 5, 2x2, L/T)
+        events.on('special_created', ({ r, c, specialType, color }) => {
+            this.attachSpecialMarker(r, c, specialType, color);
         });
     }
 
     /** Gắn ký hiệu thị giác phẳng (Embossed Tactical Marker) cho Ngọc Đặc Biệt - Không xoay rối mắt */
-    attachSpecialMarker(r, c, specialType) {
-        const mesh = this.tileMeshes[r][c];
-        if (!mesh) return;
+    attachSpecialMarker(r, c, specialType, color) {
+        let mesh = this.tileMeshes[r][c];
+        if (!mesh) {
+            // Khắc phục triệt để lỗi ô trống: Tự động hồi sinh khối nếu bị thiếu
+            const col = color || (this.state && this.state.getTile(r, c)) || 1;
+            const geo = new THREE.BoxGeometry(this.tileSize, this.tileSize, 0.45);
+            mesh = new THREE.Mesh(geo, this.materials[col]);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.userData = { r, c, color: col };
+            const pos = this.gridToLocalPos(r, c);
+            mesh.position.set(pos.x, pos.y, pos.z);
+            this.boardGroup.add(mesh);
+            this.tileMeshes[r][c] = mesh;
+        }
 
         // Xóa marker cũ nếu có
         const oldMarker = mesh.getObjectByName('special_marker');
@@ -1141,38 +1249,38 @@ class Board3D {
 
         if (specialType === 1) {
             // LineRow: Vạch Laser ngang sắc nét phẳng
-            markerGeo = new THREE.BoxGeometry(this.tileSize * 0.78, 0.14, 0.08);
+            markerGeo = new THREE.BoxGeometry(this.tileSize * 0.85, 0.16, 0.12);
             markerMat = new THREE.MeshStandardMaterial({
                 color: 0xffffff,
                 emissive: 0x00f0ff,
-                emissiveIntensity: 1.0,
-                metalness: 0.8,
-                roughness: 0.2
+                emissiveIntensity: 1.5,
+                metalness: 0.9,
+                roughness: 0.1
             });
         } else if (specialType === 2) {
             // LineCol: Vạch Laser dọc sắc nét phẳng
-            markerGeo = new THREE.BoxGeometry(0.14, this.tileSize * 0.78, 0.08);
+            markerGeo = new THREE.BoxGeometry(0.16, this.tileSize * 0.85, 0.12);
             markerMat = new THREE.MeshStandardMaterial({
                 color: 0xffffff,
                 emissive: 0x00f0ff,
-                emissiveIntensity: 1.0,
-                metalness: 0.8,
-                roughness: 0.2
+                emissiveIntensity: 1.5,
+                metalness: 0.9,
+                roughness: 0.1
             });
         } else if (specialType === 3) {
-            // Bom 3x3: Vòng tâm ngắm đa hướng phẳng (Tactical Reticle Ring)
-            markerGeo = new THREE.RingGeometry(0.12, 0.28, 24);
+            // Bom 3x3: Vòng tâm ngắm đa hướng phẳng + Lõi năng lượng phát sáng
+            markerGeo = new THREE.RingGeometry(0.15, 0.35, 24);
             markerMat = new THREE.MeshBasicMaterial({
-                color: 0xff3366,
+                color: 0xff0055,
                 side: THREE.DoubleSide
             });
         } else if (specialType === 4) {
             // SwapAll / Lỗ đen vũ trụ: Biểu tượng Kim Cương đa giác cố định (Prismatic Core)
-            markerGeo = new THREE.OctahedronGeometry(0.3, 0);
+            markerGeo = new THREE.OctahedronGeometry(0.35, 0);
             markerMat = new THREE.MeshStandardMaterial({
-                color: 0x00f0ff,
-                emissive: 0xffffff,
-                emissiveIntensity: 0.9,
+                color: 0xffffff,
+                emissive: 0x00f0ff,
+                emissiveIntensity: 1.8,
                 metalness: 0.95,
                 roughness: 0.1
             });
@@ -1181,12 +1289,18 @@ class Board3D {
         if (markerGeo) {
             const marker = new THREE.Mesh(markerGeo, markerMat);
             marker.name = 'special_marker';
-            marker.position.z = 0.26; // Nổi vừa vặn trên mặt phẳng khối
+            marker.position.z = 0.28; // Nổi vừa vặn trên mặt phẳng khối
             if (specialType === 4) {
                 marker.rotation.z = Math.PI / 4; // Cố định góc kim cương, không quay
             }
             marker.userData = { isSpecialMarker: true, specialType };
             mesh.add(marker);
+
+            // Hiệu ứng bộc phát khi vừa biến hình thành ngọc đặc biệt
+            mesh.scale.set(1.3, 1.3, 1.3);
+            setTimeout(() => {
+                if (mesh) mesh.scale.set(1.0, 1.0, 1.0);
+            }, 180);
         }
     }
 
@@ -1237,6 +1351,16 @@ class Board3D {
                 this.boardGroup.add(mesh);
             } else {
                 mesh = this.tileMeshes[d.from.r][d.from.c];
+                if (!mesh) {
+                    // Tự động bù đắp khối nếu bị thiếu, triệt tiêu hoàn toàn lỗi ô đen
+                    mesh = new THREE.Mesh(geo, this.materials[d.color]);
+                    mesh.castShadow = true;
+                    const startPos = this.gridToLocalPos(d.from.r, d.from.c);
+                    mesh.position.set(startPos.x, startPos.y, startPos.z);
+                    this.boardGroup.add(mesh);
+                }
+                // Xoá tham chiếu ở ô cũ để tránh trùng lặp
+                this.tileMeshes[d.from.r][d.from.c] = null;
             }
 
             if (mesh) {
@@ -1248,7 +1372,7 @@ class Board3D {
                 this.animatingTiles.push({
                     mesh,
                     targetY: targetPos.y,
-                    speed: 14.0 + Math.random() * 4.0,
+                    speed: 16.0 + Math.random() * 4.0,
                     squashTimer: 0
                 });
             }
@@ -1323,8 +1447,8 @@ class Diorama3D {
         this.stageGroup = new THREE.Group();
         this.scene.add(this.stageGroup);
 
-        // Đặt sân khấu chiến đấu ở phía trên phía sau bàn cờ (Z = -8.5 đảm bảo không bao giờ che lấp bàn match-3)
-        this.stageGroup.position.set(0, 3.8, -8.5);
+        // Đặt sân khấu chiến đấu tại tâm điểm (0, 0, 0) của ArenaEngine riêng biệt
+        this.stageGroup.position.set(0, 0, 0);
 
         this.heroes = [];
         this.boss = null;
@@ -1338,8 +1462,7 @@ class Diorama3D {
 
     /** 1. Dựng sàn đấu tròn phong cách Cyberpunk Arena */
     initStageFloor() {
-        // Bán kính sàn 4.8 đơn vị nằm lọt hoàn toàn trong vùng Z âm, tuyệt đối không lấn sang bàn cờ
-        const floorGeo = new THREE.CylinderGeometry(4.5, 4.8, 0.3, 32);
+        const floorGeo = new THREE.CylinderGeometry(4.8, 5.2, 0.35, 32);
         const floorMat = new THREE.MeshStandardMaterial({
             color: 0x131828,
             metalness: 0.85,
@@ -1362,10 +1485,10 @@ class Diorama3D {
     /** 2. Dựng 4 Nhân vật Chuyên Trách (Attacker, Supporter, Healer, Defender) */
     buildHeroes() {
         const heroConfigs = [
-            { name: 'Lôi Kiếm Sĩ (Attacker)', color: 0xef4444, x: -2.8, z: 0.8, weapon: 'blade' },
-            { name: 'Tinh Linh (Supporter)', color: 0x8b5cf6, x: -1.2, z: 1.2, weapon: 'ring' },
-            { name: 'Thánh Nữ (Healer)', color: 0x10b981, x: 0.2, z: 1.5, weapon: 'staff' },
-            { name: 'Thiết Giáp (Defender)', color: 0x2563eb, x: 1.6, z: 1.8, weapon: 'shield' }
+            { name: 'Lôi Kiếm Sĩ (Attacker)', color: 0xef4444, x: -2.4, z: 1.0, weapon: 'blade' },
+            { name: 'Tinh Linh (Supporter)', color: 0x8b5cf6, x: -0.8, z: 1.4, weapon: 'ring' },
+            { name: 'Thánh Nữ (Healer)', color: 0x10b981, x: 0.8, z: 1.4, weapon: 'staff' },
+            { name: 'Thiết Giáp (Defender)', color: 0x2563eb, x: 2.4, z: 1.0, weapon: 'shield' }
         ];
 
         heroConfigs.forEach((cfg, idx) => {
@@ -1431,7 +1554,7 @@ class Diorama3D {
     /** 3. Dựng Boss Sentinel Unit 07 (Mecha Titan với 2 Drone trôi nổi) */
     buildBoss() {
         this.bossGroup = new THREE.Group();
-        this.bossGroup.position.set(1.4, 1.8, -0.6);
+        this.bossGroup.position.set(0, 1.8, -1.8);
 
         // Khối thân chính (Octahedron / Khối đa diện Mecha)
         const coreGeo = new THREE.OctahedronGeometry(1.6, 1);
@@ -1541,37 +1664,31 @@ class Diorama3D {
  * Web/src/three/VFX.js
  * ============================================================================
  * [THREE.JS FUNDAMENTAL 4]: HỆ THỐNG HẠT NỔ VFX (PARTICLE SYSTEMS)
- * 
- * Tài liệu học tập Three.js:
- *  1. THREE.Points & BufferGeometry:
- *     - Tạo hàng trăm hạt bụi ánh sáng chỉ bằng một lần gọi Draw Call (siêu nhẹ).
- *     - Mỗi hạt lưu vị trí (x, y, z) và vận tốc (vx, vy, vz).
- *  2. Vòng Đời Của Hạt (Particle Lifetime):
- *     - Mỗi frame: Cập nhật toạ độ dựa trên vận tốc + trọng lực.
- *     - Giảm kích thước hoặc độ mờ (opacity) cho đến khi biến mất.
- *     - Tự động huỷ (Dispose geometry/material) để tránh rò rỉ bộ nhớ GPU (Memory Leak).
+ * Phục vụ cả 2 miền không gian: ArenaScene và BoardScene
  * ============================================================================
  */
 class VFXManager {
-    constructor(engine) {
-        this.engine = engine;
-        this.scene = engine.scene;
+    constructor(arenaEngine, boardEngine) {
+        this.arenaEngine = arenaEngine;
+        this.boardEngine = boardEngine || arenaEngine;
+        this.arenaScene = this.arenaEngine ? this.arenaEngine.scene : null;
+        this.boardScene = this.boardEngine ? this.boardEngine.scene : null;
         this.emitters = [];
 
         this.initEventListeners();
     }
 
     initEventListeners() {
-        // Khi nổ khối match-3 -> Bắn pháo hoa hạt
+        // Khi nổ khối match-3 -> Bắn pháo hoa hạt trong bàn cờ
         events.on('match_shatter', ({ matches }) => {
             matches.forEach(m => {
                 this.spawnShatterParticles(m.color);
             });
         });
 
-        // Khi Boss dính đòn -> Bắn tia lửa điện
+        // Khi Boss dính đòn -> Bắn tia lửa điện tại tâm Boss trên sàn đấu
         events.on('damage_dealt', () => {
-            this.spawnHitSparks(2.8, 1.8, -1.5, 0xff0055);
+            this.spawnHitSparks(0, 1.8, -1.8, 0xff0055);
         });
     }
 
@@ -1605,10 +1722,11 @@ class VFXManager {
         });
 
         const points = new THREE.Points(geo, mat);
-        points.position.set(0, 0, 4.0);
-        this.scene.add(points);
+        points.position.set(0, 0, 0);
+        if (this.boardScene) this.boardScene.add(points);
 
         this.emitters.push({
+            scene: this.boardScene,
             points,
             geo,
             mat,
@@ -1648,9 +1766,10 @@ class VFXManager {
 
         const points = new THREE.Points(geo, mat);
         points.position.set(x, y, z);
-        this.scene.add(points);
+        if (this.arenaScene) this.arenaScene.add(points);
 
         this.emitters.push({
+            scene: this.arenaScene,
             points,
             geo,
             mat,
@@ -1666,28 +1785,24 @@ class VFXManager {
             em.life -= delta;
 
             if (em.life <= 0) {
-                // Hết vòng đời -> Thu hồi bộ nhớ
-                this.scene.remove(em.points);
+                if (em.scene) em.scene.remove(em.points);
                 em.geo.dispose();
                 em.mat.dispose();
                 this.emitters.splice(i, 1);
                 continue;
             }
 
-            em.mat.opacity = em.life / 0.45;
-            const posAttr = em.geo.attributes.position;
-            const arr = posAttr.array;
-
+            const positions = em.geo.attributes.position.array;
             for (let j = 0; j < em.velocities.length; j++) {
-                const vel = em.velocities[j];
-                arr[j * 3] += vel.x * delta;
-                arr[j * 3 + 1] += vel.y * delta;
-                arr[j * 3 + 2] += vel.z * delta;
+                positions[j * 3] += em.velocities[j].x * delta;
+                positions[j * 3 + 1] += em.velocities[j].y * delta;
+                positions[j * 3 + 2] += em.velocities[j].z * delta;
 
-                vel.y -= 9.8 * delta; // Trọng lực rơi
+                // Trọng lực kéo xuống
+                em.velocities[j].y -= 9.8 * delta;
             }
-
-            posAttr.needsUpdate = true;
+            em.geo.attributes.position.needsUpdate = true;
+            em.mat.opacity = em.life / 0.45;
         }
     }
 }
@@ -1996,8 +2111,10 @@ class TacticalHUD {
  * ============================================================================
  */
 class DebugInspector {
-    constructor(engine, board3D, diorama3D, gameState) {
-        this.engine = engine;
+    constructor(arenaEngine, boardEngine, board3D, diorama3D, gameState) {
+        this.arenaEngine = arenaEngine;
+        this.boardEngine = boardEngine || arenaEngine;
+        this.engine = this.boardEngine;
         this.board = board3D;
         this.diorama = diorama3D;
         this.state = gameState;
@@ -2186,14 +2303,10 @@ class DebugInspector {
  * ============================================================================
  * [ENTRY POINT]: ĐIỂM KHỞI CHẠY HỆ THỐNG MATCHRPG THREE.JS
  * 
- * Lắp ghép tất cả các khối module độc lập:
- *  - Core State (Lõi mô phỏng trạng thái)
- *  - Three.js Engine (Scene, Camera, Renderer)
- *  - Board3D (Bàn match-3 tương tác raycaster)
- *  - Diorama3D (Dàn nhân vật & Boss)
- *  - VFXManager (Hiệu ứng hạt)
- *  - TacticalHUD (Giao diện chiến đấu)
- *  - DebugInspector (Bảng công cụ học 3D & kiểm lỗi)
+ * Lắp ghép kiến trúc 2 tầng độc lập (PSTACK RIGOR):
+ *  - ArenaEngine: Sân khấu chiến đấu 3D (Xoay được 360 độ, inspect nhân vật & boss)
+ *  - BoardEngine: Bàn Match-3 3D (Cố định hoàn toàn, tối ưu cho ngón cái)
+ *  - Core State: Luật chơi xác định (Multi-Stage, Obstacles, Special Blocks)
  * ============================================================================
  */
 
@@ -2224,45 +2337,48 @@ window.addEventListener('unhandledrejection', (event) => {
 
 function initMatchRPG() {
     try {
-        console.log('%c[MATCHRPG THREE.JS] Initializing modular 3D architecture...', 'color: #00f0ff; font-weight: bold; font-size: 14px;');
+        console.log('%c[MATCHRPG THREE.JS] Initializing Dual-Engine 3D Architecture...', 'color: #00f0ff; font-weight: bold; font-size: 14px;');
 
-        const container = document.getElementById('canvasContainer');
-        if (!container) {
-            throw new Error('Không tìm thấy phần tử #canvasContainer trên trang!');
+        const arenaContainer = document.getElementById('arenaCanvasContainer');
+        const boardContainer = document.getElementById('boardCanvasContainer');
+
+        if (!arenaContainer || !boardContainer) {
+            throw new Error('Không tìm thấy container #arenaCanvasContainer hoặc #boardCanvasContainer!');
         }
 
         if (typeof THREE === 'undefined') {
             throw new Error('Thư viện Three.js chưa sẵn sàng! Vui lòng kiểm tra file /vendor/three.min.js.');
         }
 
-        // 1. Khởi tạo Lõi Trạng Thái (Phase 3 Multi-Stage & Obstacles)
+        // 1. Khởi tạo Lõi Trạng Thái
         const gameState = new GameState(8, 8);
 
-        // 2. Khởi tạo Engine Đồ Hoạ 3D
-        const engine = new Engine3D(container);
+        // 2. Khởi tạo Sân Khấu Chiến Đấu 3D (Xoay được 360 độ)
+        const arenaEngine = new ArenaEngine(arenaContainer);
+        const diorama3D = new Diorama3D(arenaEngine, gameState);
+        arenaEngine.addUpdatable(diorama3D);
 
-        // 3. Khởi tạo Bàn Match-3 3D
-        const board3D = new Board3D(engine, gameState);
-        engine.addUpdatable(board3D);
+        // 3. Khởi tạo Bàn Match-3 3D (Cố định hoàn toàn, tối ưu cảm ứng)
+        const boardEngine = new BoardEngine(boardContainer);
+        const board3D = new Board3D(boardEngine, gameState);
+        boardEngine.addUpdatable(board3D);
 
-        // 4. Khởi tạo Sân Khấu Nhân Vật & Boss
-        const diorama3D = new Diorama3D(engine, gameState);
-        engine.addUpdatable(diorama3D);
+        // 4. Khởi tạo Quản lý Hiệu ứng VFX
+        const vfx = new VFXManager(arenaEngine, boardEngine);
+        arenaEngine.addUpdatable(vfx);
+        boardEngine.addUpdatable(vfx);
 
-        // 5. Khởi tạo Hiệu Ứng Hạt VFX
-        const vfx = new VFXManager(engine);
-        engine.addUpdatable(vfx);
-
-        // 6. Khởi tạo Giao Diện Tactical HUD
+        // 5. Khởi tạo Giao Diện Tactical HUD
         const hud = new TacticalHUD(gameState);
 
-        // 7. Khởi tạo Bảng Công Cụ Học & Debug 3D
-        const debug = new DebugInspector(engine, board3D, diorama3D, gameState);
+        // 6. Khởi tạo Bảng Công Cụ Học & Debug 3D
+        const debug = new DebugInspector(arenaEngine, boardEngine, board3D, diorama3D, gameState);
 
-        // Lưu vào window để phục vụ kiểm tra trên DevTools
+        // Lưu vào window để phục vụ kiểm tra
         window.MatchGame = {
             gameState,
-            engine,
+            arenaEngine,
+            boardEngine,
             board3D,
             diorama3D,
             vfx,
@@ -2270,7 +2386,7 @@ function initMatchRPG() {
             debug
         };
 
-        console.log('%c[MATCHRPG THREE.JS] Hệ thống đã sẵn sàng 100%! Truy cập window.MatchGame để debug trực tiếp.', 'color: #10b981; font-weight: bold;');
+        console.log('%c[MATCHRPG THREE.JS] Hệ thống đã sẵn sàng 100%! Bàn đấu xoay 360° | Bàn cờ cố định.', 'color: #10b981; font-weight: bold;');
 
         // Ẩn màn hình loading tức thì khi mọi thứ đã sẵn sàng
         const loader = document.getElementById('loadingOverlay');

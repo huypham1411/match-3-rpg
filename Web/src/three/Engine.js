@@ -1,28 +1,21 @@
 /**
  * Web/src/three/Engine.js
  * ============================================================================
- * [THREE.JS FUNDAMENTAL 1]: LÕI ĐỒ HOẠ 3D (3D GRAPHICS ENGINE)
- * 
- * Tài liệu học tập Three.js:
- *  1. Scene: Không gian 3D chứa tất cả vật thể (Mesh, Lights, Camera).
- *  2. PerspectiveCamera: Giả lập mắt người với góc nhìn phối cảnh (FOV, Aspect, Near, Far).
- *  3. WebGLRenderer: Vẽ toàn bộ Scene qua GPU (hỗ trợ Antialiasing, Tone Mapping).
- *  4. Lighting (Ánh sáng PBR):
- *     - AmbientLight: Ánh sáng môi trường toả đều, giúp mặt khuất không bị đen kịt.
- *     - DirectionalLight: Ánh sáng mặt trời tạo bóng đổ (Cast Shadows).
- *     - PointLight: Đèn điểm neon tạo viền hào quang (Rim light).
- *  5. OrbitControls: Xoay, lướt và phóng to thu nhỏ góc nhìn tự do bằng chuột.
- *  6. Render Loop (Vòng lặp vẽ 60FPS): Sử dụng requestAnimationFrame và delta time.
+ * [DUAL 3D ENGINE ARCHITECTURE - PSTACK RIGOR]
+ * Tách biệt hoàn toàn hai miền không gian:
+ *  1. ArenaEngine: Sân khấu chiến đấu 3D (Boss, Heroes, Stage) -> XOAY 360 ĐỘ TỰ DO
+ *  2. BoardEngine: Bàn Match-3 8x8 (64 khối nguyên tố PBR) -> CỐ ĐỊNH HOÀN TOÀN
  * ============================================================================
  */
 
-export class Engine3D {
+/** 1. LÕI 3D SÂN KHẤU CHIẾN ĐẤU (BÀN ĐẤU XOAY ĐƯỢC 360 ĐỘ) */
+export class ArenaEngine {
     constructor(canvasContainer) {
         this.container = canvasContainer;
         this.width = canvasContainer.clientWidth || window.innerWidth;
-        this.height = canvasContainer.clientHeight || window.innerHeight;
+        this.height = canvasContainer.clientHeight || 240;
 
-        this.updatables = []; // Danh sách các module cần cập nhật frame (Board, Diorama, VFX)
+        this.updatables = [];
         this.clock = new THREE.Clock();
 
         this.initScene();
@@ -35,48 +28,26 @@ export class Engine3D {
         this.startLoop();
     }
 
-    /** 1. Khởi tạo Không gian 3D (Scene) & Sương mù (Fog) */
     initScene() {
         this.scene = new THREE.Scene();
-        // Sương mù cyberpunk: màu tím đen đậm tạo chiều sâu điện ảnh
         this.scene.background = new THREE.Color(0x0a0c14);
         this.scene.fog = new THREE.FogExp2(0x0a0c14, 0.025);
     }
 
-    /** 2. Khởi tạo Camera Phối Cảnh (Perspective Camera) */
     initCamera() {
         const aspect = this.width / this.height;
-        // FOV & Vị trí tối ưu hóa cho màn hình dọc (Mobile Portrait) và ngang (Desktop)
-        this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 100);
-        this.updateCameraForDevice(aspect);
+        this.camera = new THREE.PerspectiveCamera(40, aspect, 0.1, 100);
+        this.camera.position.set(0, 5.2, 9.5);
+        this.camera.lookAt(0, 1.2, 0);
     }
 
-    /** Tự động cân chỉnh góc nhìn Camera theo kích thước thiết bị */
-    updateCameraForDevice(aspect) {
-        if (aspect < 1.0) {
-            // Mobile Portrait: Mở rộng góc FOV 54 độ để bàn 8x8 hiển thị trọn vẹn, không bị tràn viền
-            this.camera.fov = 54;
-            this.camera.position.set(0, 16.5, 18.0);
-            this.camera.lookAt(0, -0.5, 0);
-        } else {
-            // Desktop / Landscape: Góc nhìn điện ảnh chuẩn 45 độ
-            this.camera.fov = 45;
-            this.camera.position.set(0, 14, 20);
-            this.camera.lookAt(0, 0, 0);
-        }
-        this.camera.updateProjectionMatrix();
-    }
-
-    /** 3. Khởi tạo Trình Render WebGL */
     initRenderer() {
         this.renderer = new THREE.WebGLRenderer({
-            antialias: true,              // Khử răng cưa
+            antialias: true,
             powerPreference: 'high-performance'
         });
         this.renderer.setSize(this.width, this.height);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        
-        // Cấu hình bóng đổ & Tone Mapping chuẩn công nghiệp
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -85,87 +56,65 @@ export class Engine3D {
         this.container.appendChild(this.renderer.domElement);
     }
 
-    /** 4. Thiết lập Ánh sáng Môi trường & Đèn Chiếu Chi Tiết */
     initLights() {
-        // Ánh sáng tỏa nhẹ toàn cảnh
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
         this.scene.add(ambientLight);
 
-        // Ánh sáng chính (Key Light) tạo bóng đổ thực tế
-        const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
-        keyLight.position.set(10, 20, 15);
+        const keyLight = new THREE.DirectionalLight(0xffffff, 1.3);
+        keyLight.position.set(8, 15, 10);
         keyLight.castShadow = true;
-        keyLight.shadow.mapSize.width = 1024;
-        keyLight.shadow.mapSize.height = 1024;
-        keyLight.shadow.camera.near = 0.5;
-        keyLight.shadow.camera.far = 50;
         this.scene.add(keyLight);
 
-        // Đèn viền Neon Xanh Cyan phía sau (Rim Light cho Hero)
-        const cyanRimLight = new THREE.PointLight(0x00f0ff, 2.5, 25);
-        cyanRimLight.position.set(-8, 5, -5);
-        this.scene.add(cyanRimLight);
+        const cyanRim = new THREE.PointLight(0x00f0ff, 2.5, 20);
+        cyanRim.position.set(-6, 4, -4);
+        this.scene.add(cyanRim);
 
-        // Đèn viền Neon Đỏ Đô phía Boss (Rim Light cho Boss)
-        const crimsonRimLight = new THREE.PointLight(0xff0055, 3.0, 30);
-        crimsonRimLight.position.set(8, 7, -6);
-        this.scene.add(crimsonRimLight);
+        const crimsonRim = new THREE.PointLight(0xff0055, 3.0, 25);
+        crimsonRim.position.set(6, 6, -5);
+        this.scene.add(crimsonRim);
     }
 
-    /** 5. Bộ điều khiển xoay chuột (OrbitControls) - Khóa xoay để bàn cờ match-3 luôn ổn định tuyệt đối */
     initControls() {
         if (typeof THREE.OrbitControls !== 'undefined') {
             this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
             this.controls.enableDamping = true;
-            this.controls.dampingFactor = 0.05;
-            this.controls.target.set(0, -0.5, 0);
-            
-            // [TIÊU CHUẨN MOBILE GAME UX]: KHÓA XOAY CAMERA
-            // Người chơi vuốt chạm màn hình là để hoán đổi ngọc, không được để camera bị lắc lư hoặc xoay đảo
-            this.controls.enableRotate = false;
-            this.controls.enablePan = false;
-            this.controls.enableZoom = false;
-            if (THREE.TOUCH) {
-                this.controls.touches = { ONE: THREE.TOUCH.NONE, TWO: THREE.TOUCH.DOLLY_PAN };
-            }
+            this.controls.dampingFactor = 0.08;
+            this.controls.target.set(0, 1.2, 0);
 
-            this.controls.maxPolarAngle = Math.PI / 2 + 0.1;
-            this.controls.minDistance = 6;
-            this.controls.maxDistance = 45;
+            // BÀN ĐẤU CHIẾN ĐẤU XOAY ĐƯỢC 360 ĐỘ TỰ DO
+            this.controls.enableRotate = true;
+            this.controls.enableZoom = true;
+            this.controls.enablePan = false;
+
+            this.controls.minDistance = 5.0;
+            this.controls.maxDistance = 16.0;
+            this.controls.minPolarAngle = Math.PI * 0.15; // Giới hạn góc ngẩng
+            this.controls.maxPolarAngle = Math.PI * 0.48; // Không nhìn xuyên dưới sàn
         }
     }
 
-    /** 6. Tự động co giãn khi kích thước trình duyệt thay đổi (Window Resize) */
     initResizeHandler() {
         window.addEventListener('resize', () => {
             this.width = this.container.clientWidth || window.innerWidth;
-            this.height = this.container.clientHeight || window.innerHeight;
-
-            const aspect = this.width / this.height;
-            this.camera.aspect = aspect;
-            this.updateCameraForDevice(aspect);
-
+            this.height = this.container.clientHeight || 240;
+            this.camera.aspect = this.width / this.height;
+            this.camera.updateProjectionMatrix();
             this.renderer.setSize(this.width, this.height);
-            this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         });
     }
 
-    /** Đăng ký module cần cập nhật frame (Board, Diorama, VFX) */
     addUpdatable(module) {
         this.updatables.push(module);
     }
 
-    /** 7. Vòng lặp Render 60 FPS (Tick Loop) */
     startLoop() {
         const loop = () => {
             requestAnimationFrame(loop);
-
             const delta = this.clock.getDelta();
             const elapsed = this.clock.getElapsedTime();
 
             if (this.controls) this.controls.update();
 
-            // Cập nhật từng module
             for (const item of this.updatables) {
                 if (typeof item.update === 'function') {
                     item.update(delta, elapsed);
@@ -177,3 +126,114 @@ export class Engine3D {
         loop();
     }
 }
+
+/** 2. LÕI 3D BÀN MATCH-3 (CỐ ĐỊNH HOÀN TOÀN, KHÔNG XOAY, KHÔNG LẮC) */
+export class BoardEngine {
+    constructor(canvasContainer) {
+        this.container = canvasContainer;
+        this.width = canvasContainer.clientWidth || window.innerWidth;
+        this.height = canvasContainer.clientHeight || 450;
+
+        this.updatables = [];
+        this.clock = new THREE.Clock();
+
+        this.initScene();
+        this.initCamera();
+        this.initRenderer();
+        this.initLights();
+        // KHÔNG CÓ OrbitControls -> BÀN CỜ MATCH-3 CỐ ĐỊNH TUYỆT ĐỐI
+        this.initResizeHandler();
+
+        this.startLoop();
+    }
+
+    initScene() {
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x0a0c14);
+    }
+
+    initCamera() {
+        const aspect = this.width / this.height;
+        this.camera = new THREE.PerspectiveCamera(44, aspect, 0.1, 100);
+        this.updateCameraForDevice(aspect);
+    }
+
+    updateCameraForDevice(aspect) {
+        if (aspect < 1.0) {
+            // Mobile Portrait: Góc nhìn phẳng tối ưu chạm ngón cái
+            this.camera.fov = 44;
+            this.camera.position.set(0, 14.5, 8.5);
+            this.camera.lookAt(0, -0.2, 0);
+        } else {
+            // Desktop: Cân bằng góc nhìn
+            this.camera.fov = 38;
+            this.camera.position.set(0, 16.0, 9.0);
+            this.camera.lookAt(0, 0, 0);
+        }
+        this.camera.updateProjectionMatrix();
+    }
+
+    initRenderer() {
+        this.renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            powerPreference: 'high-performance'
+        });
+        this.renderer.setSize(this.width, this.height);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 1.25;
+
+        this.container.appendChild(this.renderer.domElement);
+    }
+
+    initLights() {
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+        this.scene.add(ambientLight);
+
+        const keyLight = new THREE.DirectionalLight(0xffffff, 1.4);
+        keyLight.position.set(5, 18, 12);
+        keyLight.castShadow = true;
+        this.scene.add(keyLight);
+
+        const topCyan = new THREE.PointLight(0x00f0ff, 1.5, 15);
+        topCyan.position.set(0, 8, 4);
+        this.scene.add(topCyan);
+    }
+
+    initResizeHandler() {
+        window.addEventListener('resize', () => {
+            this.width = this.container.clientWidth || window.innerWidth;
+            this.height = this.container.clientHeight || 450;
+            const aspect = this.width / this.height;
+            this.camera.aspect = aspect;
+            this.updateCameraForDevice(aspect);
+            this.renderer.setSize(this.width, this.height);
+        });
+    }
+
+    addUpdatable(module) {
+        this.updatables.push(module);
+    }
+
+    startLoop() {
+        const loop = () => {
+            requestAnimationFrame(loop);
+            const delta = this.clock.getDelta();
+            const elapsed = this.clock.getElapsedTime();
+
+            for (const item of this.updatables) {
+                if (typeof item.update === 'function') {
+                    item.update(delta, elapsed);
+                }
+            }
+
+            this.renderer.render(this.scene, this.camera);
+        };
+        loop();
+    }
+}
+
+/** Lớp bọc tương thích ngược */
+export class Engine3D extends BoardEngine {}

@@ -41,8 +41,8 @@ export class Board3D {
         this.boardGroup = new THREE.Group();
         this.scene.add(this.boardGroup);
 
-        // Vị trí đặt bàn cờ trong không gian 3D: Căn giữa hoàn hảo, không bị che bởi sân khấu phía trên hay thẻ nhân vật phía dưới
-        this.boardGroup.position.set(0, -0.5, 1.5);
+        // Vị trí đặt bàn cờ trong BoardEngine riêng biệt: Căn giữa hoàn hảo tại (0, 0, 0)
+        this.boardGroup.position.set(0, 0, 0);
         this.boardGroup.rotation.x = -Math.PI / 10; // Góc nghiêng 18 độ tối ưu cho góc nhìn từ trên xuống
 
         this.tileMeshes = [];      // Mảng 2 chiều 8x8 chứa THREE.Mesh
@@ -219,16 +219,28 @@ export class Board3D {
             this.animateDrops(drops);
         });
 
-        // 4. Sinh ngọc đặc biệt (Match 4, Match 5)
-        events.on('special_created', ({ r, c, specialType }) => {
-            this.attachSpecialMarker(r, c, specialType);
+        // 4. Sinh ngọc đặc biệt (Match 4, Match 5, 2x2, L/T)
+        events.on('special_created', ({ r, c, specialType, color }) => {
+            this.attachSpecialMarker(r, c, specialType, color);
         });
     }
 
     /** Gắn ký hiệu thị giác phẳng (Embossed Tactical Marker) cho Ngọc Đặc Biệt - Không xoay rối mắt */
-    attachSpecialMarker(r, c, specialType) {
-        const mesh = this.tileMeshes[r][c];
-        if (!mesh) return;
+    attachSpecialMarker(r, c, specialType, color) {
+        let mesh = this.tileMeshes[r][c];
+        if (!mesh) {
+            // Khắc phục triệt để lỗi ô trống: Tự động hồi sinh khối nếu bị thiếu
+            const col = color || (this.state && this.state.getTile(r, c)) || 1;
+            const geo = new THREE.BoxGeometry(this.tileSize, this.tileSize, 0.45);
+            mesh = new THREE.Mesh(geo, this.materials[col]);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.userData = { r, c, color: col };
+            const pos = this.gridToLocalPos(r, c);
+            mesh.position.set(pos.x, pos.y, pos.z);
+            this.boardGroup.add(mesh);
+            this.tileMeshes[r][c] = mesh;
+        }
 
         // Xóa marker cũ nếu có
         const oldMarker = mesh.getObjectByName('special_marker');
@@ -239,38 +251,38 @@ export class Board3D {
 
         if (specialType === 1) {
             // LineRow: Vạch Laser ngang sắc nét phẳng
-            markerGeo = new THREE.BoxGeometry(this.tileSize * 0.78, 0.14, 0.08);
+            markerGeo = new THREE.BoxGeometry(this.tileSize * 0.85, 0.16, 0.12);
             markerMat = new THREE.MeshStandardMaterial({
                 color: 0xffffff,
                 emissive: 0x00f0ff,
-                emissiveIntensity: 1.0,
-                metalness: 0.8,
-                roughness: 0.2
+                emissiveIntensity: 1.5,
+                metalness: 0.9,
+                roughness: 0.1
             });
         } else if (specialType === 2) {
             // LineCol: Vạch Laser dọc sắc nét phẳng
-            markerGeo = new THREE.BoxGeometry(0.14, this.tileSize * 0.78, 0.08);
+            markerGeo = new THREE.BoxGeometry(0.16, this.tileSize * 0.85, 0.12);
             markerMat = new THREE.MeshStandardMaterial({
                 color: 0xffffff,
                 emissive: 0x00f0ff,
-                emissiveIntensity: 1.0,
-                metalness: 0.8,
-                roughness: 0.2
+                emissiveIntensity: 1.5,
+                metalness: 0.9,
+                roughness: 0.1
             });
         } else if (specialType === 3) {
-            // Bom 3x3: Vòng tâm ngắm đa hướng phẳng (Tactical Reticle Ring)
-            markerGeo = new THREE.RingGeometry(0.12, 0.28, 24);
+            // Bom 3x3: Vòng tâm ngắm đa hướng phẳng + Lõi năng lượng phát sáng
+            markerGeo = new THREE.RingGeometry(0.15, 0.35, 24);
             markerMat = new THREE.MeshBasicMaterial({
-                color: 0xff3366,
+                color: 0xff0055,
                 side: THREE.DoubleSide
             });
         } else if (specialType === 4) {
             // SwapAll / Lỗ đen vũ trụ: Biểu tượng Kim Cương đa giác cố định (Prismatic Core)
-            markerGeo = new THREE.OctahedronGeometry(0.3, 0);
+            markerGeo = new THREE.OctahedronGeometry(0.35, 0);
             markerMat = new THREE.MeshStandardMaterial({
-                color: 0x00f0ff,
-                emissive: 0xffffff,
-                emissiveIntensity: 0.9,
+                color: 0xffffff,
+                emissive: 0x00f0ff,
+                emissiveIntensity: 1.8,
                 metalness: 0.95,
                 roughness: 0.1
             });
@@ -279,12 +291,18 @@ export class Board3D {
         if (markerGeo) {
             const marker = new THREE.Mesh(markerGeo, markerMat);
             marker.name = 'special_marker';
-            marker.position.z = 0.26; // Nổi vừa vặn trên mặt phẳng khối
+            marker.position.z = 0.28; // Nổi vừa vặn trên mặt phẳng khối
             if (specialType === 4) {
                 marker.rotation.z = Math.PI / 4; // Cố định góc kim cương, không quay
             }
             marker.userData = { isSpecialMarker: true, specialType };
             mesh.add(marker);
+
+            // Hiệu ứng bộc phát khi vừa biến hình thành ngọc đặc biệt
+            mesh.scale.set(1.3, 1.3, 1.3);
+            setTimeout(() => {
+                if (mesh) mesh.scale.set(1.0, 1.0, 1.0);
+            }, 180);
         }
     }
 
@@ -335,6 +353,16 @@ export class Board3D {
                 this.boardGroup.add(mesh);
             } else {
                 mesh = this.tileMeshes[d.from.r][d.from.c];
+                if (!mesh) {
+                    // Tự động bù đắp khối nếu bị thiếu, triệt tiêu hoàn toàn lỗi ô đen
+                    mesh = new THREE.Mesh(geo, this.materials[d.color]);
+                    mesh.castShadow = true;
+                    const startPos = this.gridToLocalPos(d.from.r, d.from.c);
+                    mesh.position.set(startPos.x, startPos.y, startPos.z);
+                    this.boardGroup.add(mesh);
+                }
+                // Xoá tham chiếu ở ô cũ để tránh trùng lặp
+                this.tileMeshes[d.from.r][d.from.c] = null;
             }
 
             if (mesh) {
@@ -346,7 +374,7 @@ export class Board3D {
                 this.animatingTiles.push({
                     mesh,
                     targetY: targetPos.y,
-                    speed: 14.0 + Math.random() * 4.0,
+                    speed: 16.0 + Math.random() * 4.0,
                     squashTimer: 0
                 });
             }

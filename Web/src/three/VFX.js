@@ -2,40 +2,34 @@
  * Web/src/three/VFX.js
  * ============================================================================
  * [THREE.JS FUNDAMENTAL 4]: HỆ THỐNG HẠT NỔ VFX (PARTICLE SYSTEMS)
- * 
- * Tài liệu học tập Three.js:
- *  1. THREE.Points & BufferGeometry:
- *     - Tạo hàng trăm hạt bụi ánh sáng chỉ bằng một lần gọi Draw Call (siêu nhẹ).
- *     - Mỗi hạt lưu vị trí (x, y, z) và vận tốc (vx, vy, vz).
- *  2. Vòng Đời Của Hạt (Particle Lifetime):
- *     - Mỗi frame: Cập nhật toạ độ dựa trên vận tốc + trọng lực.
- *     - Giảm kích thước hoặc độ mờ (opacity) cho đến khi biến mất.
- *     - Tự động huỷ (Dispose geometry/material) để tránh rò rỉ bộ nhớ GPU (Memory Leak).
+ * Phục vụ cả 2 miền không gian: ArenaScene và BoardScene
  * ============================================================================
  */
 
 import { events } from '../core/EventBus.js';
 
 export class VFXManager {
-    constructor(engine) {
-        this.engine = engine;
-        this.scene = engine.scene;
+    constructor(arenaEngine, boardEngine) {
+        this.arenaEngine = arenaEngine;
+        this.boardEngine = boardEngine || arenaEngine;
+        this.arenaScene = this.arenaEngine ? this.arenaEngine.scene : null;
+        this.boardScene = this.boardEngine ? this.boardEngine.scene : null;
         this.emitters = [];
 
         this.initEventListeners();
     }
 
     initEventListeners() {
-        // Khi nổ khối match-3 -> Bắn pháo hoa hạt
+        // Khi nổ khối match-3 -> Bắn pháo hoa hạt trong bàn cờ
         events.on('match_shatter', ({ matches }) => {
             matches.forEach(m => {
                 this.spawnShatterParticles(m.color);
             });
         });
 
-        // Khi Boss dính đòn -> Bắn tia lửa điện
+        // Khi Boss dính đòn -> Bắn tia lửa điện tại tâm Boss trên sàn đấu
         events.on('damage_dealt', () => {
-            this.spawnHitSparks(2.8, 1.8, -1.5, 0xff0055);
+            this.spawnHitSparks(0, 1.8, -1.8, 0xff0055);
         });
     }
 
@@ -69,10 +63,11 @@ export class VFXManager {
         });
 
         const points = new THREE.Points(geo, mat);
-        points.position.set(0, 0, 4.0);
-        this.scene.add(points);
+        points.position.set(0, 0, 0);
+        if (this.boardScene) this.boardScene.add(points);
 
         this.emitters.push({
+            scene: this.boardScene,
             points,
             geo,
             mat,
@@ -112,9 +107,10 @@ export class VFXManager {
 
         const points = new THREE.Points(geo, mat);
         points.position.set(x, y, z);
-        this.scene.add(points);
+        if (this.arenaScene) this.arenaScene.add(points);
 
         this.emitters.push({
+            scene: this.arenaScene,
             points,
             geo,
             mat,
@@ -130,28 +126,24 @@ export class VFXManager {
             em.life -= delta;
 
             if (em.life <= 0) {
-                // Hết vòng đời -> Thu hồi bộ nhớ
-                this.scene.remove(em.points);
+                if (em.scene) em.scene.remove(em.points);
                 em.geo.dispose();
                 em.mat.dispose();
                 this.emitters.splice(i, 1);
                 continue;
             }
 
-            em.mat.opacity = em.life / 0.45;
-            const posAttr = em.geo.attributes.position;
-            const arr = posAttr.array;
-
+            const positions = em.geo.attributes.position.array;
             for (let j = 0; j < em.velocities.length; j++) {
-                const vel = em.velocities[j];
-                arr[j * 3] += vel.x * delta;
-                arr[j * 3 + 1] += vel.y * delta;
-                arr[j * 3 + 2] += vel.z * delta;
+                positions[j * 3] += em.velocities[j].x * delta;
+                positions[j * 3 + 1] += em.velocities[j].y * delta;
+                positions[j * 3 + 2] += em.velocities[j].z * delta;
 
-                vel.y -= 9.8 * delta; // Trọng lực rơi
+                // Trọng lực kéo xuống
+                em.velocities[j].y -= 9.8 * delta;
             }
-
-            posAttr.needsUpdate = true;
+            em.geo.attributes.position.needsUpdate = true;
+            em.mat.opacity = em.life / 0.45;
         }
     }
 }

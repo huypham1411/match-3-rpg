@@ -385,8 +385,10 @@ export class GameState {
 
     /** Tìm tất cả các cụm Match trên bàn và nhận diện Ngọc Đặc Biệt */
     findMatches() {
-        const matched = new Map(); // key: "r,c" -> { r, c, color, willSpawnSpecial: null }
+        const matched = new Map(); // key: "r,c" -> { r, c, color }
         const specialsToSpawn = []; // { r, c, specialType, color }
+        const hMatchMap = new Map(); // key: "r,c" -> matchLen
+        const vMatchMap = new Map(); // key: "r,c" -> matchLen
 
         // 1. Quét hàng ngang
         for (let r = 0; r < this.height; r++) {
@@ -398,11 +400,12 @@ export class GameState {
                     if (matchLen >= 3) {
                         const midC = c - Math.floor(matchLen / 2) - 1;
                         let special = SPECIAL_TYPES.NONE;
-                        if (matchLen === 4) special = SPECIAL_TYPES.LINE_ROW;
-                        else if (matchLen >= 5) special = SPECIAL_TYPES.SWAP_ALL;
+                        if (matchLen >= 5) special = SPECIAL_TYPES.SWAP_ALL;
+                        else if (matchLen === 4) special = SPECIAL_TYPES.LINE_ROW;
 
                         for (let k = c - matchLen; k < c; k++) {
                             matched.set(`${r},${k}`, { r, c: k, color: this.grid[r][k] });
+                            hMatchMap.set(`${r},${k}`, matchLen);
                         }
                         if (special !== SPECIAL_TYPES.NONE) {
                             specialsToSpawn.push({ r, c: midC, specialType: special, color: this.grid[r][midC] });
@@ -423,11 +426,12 @@ export class GameState {
                     if (matchLen >= 3) {
                         const midR = r - Math.floor(matchLen / 2) - 1;
                         let special = SPECIAL_TYPES.NONE;
-                        if (matchLen === 4) special = SPECIAL_TYPES.LINE_COL;
-                        else if (matchLen >= 5) special = SPECIAL_TYPES.SWAP_ALL;
+                        if (matchLen >= 5) special = SPECIAL_TYPES.SWAP_ALL;
+                        else if (matchLen === 4) special = SPECIAL_TYPES.LINE_COL;
 
                         for (let k = r - matchLen; k < r; k++) {
                             matched.set(`${k},${c}`, { r: k, c, color: this.grid[k][c] });
+                            vMatchMap.set(`${k},${c}`, matchLen);
                         }
                         if (special !== SPECIAL_TYPES.NONE) {
                             specialsToSpawn.push({ r: midR, c, specialType: special, color: this.grid[midR][c] });
@@ -438,22 +442,45 @@ export class GameState {
             }
         }
 
-        // 3. Kích hoạt hiệu ứng lan của các Ngọc Đặc Biệt bị dính trong vụ nổ
+        // 3. Quét hình chữ L và chữ T (giao thoa giữa hàng ngang >=3 và hàng dọc >=3) -> Bom 3x3
+        for (const [key] of hMatchMap) {
+            if (vMatchMap.has(key)) {
+                const [r, c] = key.split(',').map(Number);
+                // Ô giao thoa tạo Bom Nổ 3x3
+                specialsToSpawn.push({ r, c, specialType: SPECIAL_TYPES.BOMB_3X3, color: this.grid[r][c] });
+            }
+        }
+
+        // 4. Quét ô vuông 2x2 (Square Breaker -> Bom 3x3)
+        for (let r = 0; r < this.height - 1; r++) {
+            for (let c = 0; c < this.width - 1; c++) {
+                const col = this.grid[r][c];
+                if (col > 0 && col === this.grid[r + 1][c] && col === this.grid[r][c + 1] && col === this.grid[r + 1][c + 1]) {
+                    matched.set(`${r},${c}`, { r, c, color: col });
+                    matched.set(`${r + 1},${c}`, { r: r + 1, c, color: col });
+                    matched.set(`${r},${c + 1}`, { r, c: c + 1, color: col });
+                    matched.set(`${r + 1},${c + 1}`, { r: r + 1, c: c + 1, color: col });
+                    specialsToSpawn.push({ r, c, specialType: SPECIAL_TYPES.BOMB_3X3, color: col });
+                }
+            }
+        }
+
+        // 5. Kích hoạt hiệu ứng nổ lan của các Ngọc Đặc Biệt bị dính trong vụ nổ
         const finalSet = new Map(matched);
         matched.forEach((val) => {
             const spec = this.specialGrid[val.r][val.c];
             if (spec === SPECIAL_TYPES.LINE_ROW) {
-                // Quét cả hàng
+                // Quét cả hàng ngang
                 for (let c = 0; c < this.width; c++) {
                     finalSet.set(`${val.r},${c}`, { r: val.r, c, color: this.grid[val.r][c] });
                 }
             } else if (spec === SPECIAL_TYPES.LINE_COL) {
-                // Quét cả cột
+                // Quét cả hàng dọc
                 for (let r = 0; r < this.height; r++) {
                     finalSet.set(`${r},${val.c}`, { r, c: val.c, color: this.grid[r][val.c] });
                 }
             } else if (spec === SPECIAL_TYPES.BOMB_3X3) {
-                // Nổ 3x3
+                // Nổ diện rộng 3x3
                 for (let dr = -1; dr <= 1; dr++) {
                     for (let dc = -1; dc <= 1; dc++) {
                         const nr = val.r + dr;
@@ -478,7 +505,15 @@ export class GameState {
             this.comboChain++;
             const specialsToSpawn = matches.specialsToSpawn || [];
 
-            events.emit('match_shatter', { matches, combo: this.comboChain });
+            // Lập bản đồ các ô được nâng cấp thành ngọc đặc biệt (KHÔNG BỊ PHÁ HUỶ)
+            const specialSpawnMap = new Map();
+            specialsToSpawn.forEach(sp => {
+                specialSpawnMap.set(`${sp.r},${sp.c}`, sp);
+            });
+
+            // Chỉ nổ và xóa khỏi màn hình các khối KHÔNG PHẢI là ngọc đặc biệt mới sinh
+            const shatters = matches.filter(m => !specialSpawnMap.has(`${m.r},${m.c}`));
+            events.emit('match_shatter', { matches: shatters, combo: this.comboChain });
 
             // Tính toán sát thương & nạp nộ từng role
             this.processCombatMath(matches, this.comboChain);
@@ -486,13 +521,13 @@ export class GameState {
             // Sát thương lên các vật cản kề bên (Đá, Băng, Hộp, Xích)
             this.damageAdjacentObstacles(matches);
 
-            // Xóa khối bị match khỏi grid
-            matches.forEach(m => {
+            // Xóa các khối bị nổ khỏi dữ liệu grid
+            shatters.forEach(m => {
                 this.grid[m.r][m.c] = 0;
                 this.specialGrid[m.r][m.c] = SPECIAL_TYPES.NONE;
             });
 
-            // Nếu có ngọc đặc biệt được tạo ra (Match 4, 5)
+            // Nâng cấp ô giữ nguyên thành Ngọc Đặc Biệt (Match 4, 5, 2x2, L/T)
             specialsToSpawn.forEach(sp => {
                 this.grid[sp.r][sp.c] = sp.color;
                 this.specialGrid[sp.r][sp.c] = sp.specialType;
