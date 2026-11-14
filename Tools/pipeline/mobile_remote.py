@@ -748,10 +748,20 @@ class RemoteHandler(BaseHTTPRequestHandler):
             res_c = subprocess.run([test_bat], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
             res_strict = subprocess.run(["node", "Web/test_strict_swap.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
             res_specials = subprocess.run(["node", "Web/test_specials.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
+            res_skills = subprocess.run(["node", "Web/test_hero_skills_and_defense.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
+            res_chibi = subprocess.run(["node", "Web/test_chibi_anime_models_and_scenery.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
             res_wasm = subprocess.run(["node", "Web/smoke_test.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
             res_p3 = subprocess.run(["node", "Web/test_phase3.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
 
-            output = f"=== TEST STRICT SWAP & REVERT (8 CHECKS) ===\n{res_strict.stdout}\n\n=== TEST SPECIAL GEMS (9 CHECKS) ===\n{res_specials.stdout}\n\n=== TEST PHASE 3 WEB (16 CHECKS) ===\n{res_p3.stdout}\n\n=== TEST C++ CORE (744 ASSERTIONS) ===\n{res_c.stdout}\n\n=== TEST WASM (51 CHECKS) ===\n{res_wasm.stdout}"
+            output = (
+                f"=== 1. CHIBI ANIME & SCENERY (139 CHECKS) ===\n{res_chibi.stdout}\n\n"
+                f"=== 2. HERO SKILLS & DEFENSE (38 CHECKS) ===\n{res_skills.stdout}\n\n"
+                f"=== 3. STRICT SWAP & REVERT (8 CHECKS) ===\n{res_strict.stdout}\n\n"
+                f"=== 4. SPECIAL GEMS (9 CHECKS) ===\n{res_specials.stdout}\n\n"
+                f"=== 5. PHASE 3 WEB (16 CHECKS) ===\n{res_p3.stdout}\n\n"
+                f"=== 6. C++ CORE STANDALONE (744 ASSERTIONS) ===\n{res_c.stdout}\n\n"
+                f"=== 7. WASM SMOKE TEST (51 CHECKS) ===\n{res_wasm.stdout}"
+            )
 
             self.send_compressed_response(json.dumps({"output": output}).encode("utf-8"), "application/json; charset=utf-8")
 
