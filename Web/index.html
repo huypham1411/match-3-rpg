@@ -2,39 +2,45 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RE:FRAY — Three.js Modular Match-3 RPG Prototype</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>RE:FRAY — Three.js Match-3 RPG</title>
     
-    <!-- Three.js Local Vendor (Đảm bảo 100% không phụ thuộc CDN mạng ngoài) -->
-    <script src="/vendor/three.min.js"></script>
-    <script src="/vendor/OrbitControls.js"></script>
-    
+    <!-- Critical CSS Rendered Instantly (Không giật hình, không trắng màn hình) -->
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background-color: #0a0c14; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        #loadingOverlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #0a0c14; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 9999;
+            color: #00f0ff;
+        }
+        @keyframes loadPulse {
+            0% { width: 15%; transform: translateX(0); }
+            100% { width: 85%; transform: translateX(35px); }
+        }
+    </style>
+
     <link rel="stylesheet" href="/css/game.css">
 
-    <!-- Preload song song toàn bộ module để tải siêu tốc trên thiết bị di động -->
-    <link rel="modulepreload" href="/src/app.js">
-    <link rel="modulepreload" href="/src/core/GameState.js">
-    <link rel="modulepreload" href="/src/core/EventBus.js">
-    <link rel="modulepreload" href="/src/three/Engine.js">
-    <link rel="modulepreload" href="/src/three/Board3D.js">
-    <link rel="modulepreload" href="/src/three/Diorama3D.js">
-    <link rel="modulepreload" href="/src/three/VFX.js">
-    <link rel="modulepreload" href="/src/ui/HUD.js">
-    <link rel="modulepreload" href="/src/debug/DebugInspector.js">
+    <!-- Three.js: Cloudflare CDN siêu tốc + fallback tức thì sang vendor nội bộ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>window.THREE || document.write('<script src="/vendor/three.min.js"><\/script>')</script>
+    <script src="/vendor/OrbitControls.js"></script>
+    
+    <!-- Game Bundle duy nhất (Tải 1 lần, siêu tốc dưới 100ms) -->
+    <script defer src="/dist/game.bundle.js"></script>
 </head>
 <body>
     <!-- Màn hình tải tức thì (Instant Fast Loader) -->
-    <div id="loadingOverlay" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:#0a0c14; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:9999; font-family:-apple-system, sans-serif; color:#00f0ff;">
-        <div style="font-size:32px; margin-bottom:12px;">⚡</div>
-        <div style="font-size:15px; font-weight:800; letter-spacing:1px; margin-bottom:6px; color:#f8fafc;">RE:FRAY — ĐẤU TRƯỜNG 3D</div>
+    <div id="loadingOverlay">
+        <div style="font-size:36px; margin-bottom:12px; filter: drop-shadow(0 0 10px #00f0ff);">⚡</div>
+        <div style="font-size:16px; font-weight:800; letter-spacing:1.5px; margin-bottom:6px; color:#f8fafc;">RE:FRAY — ĐẤU TRƯỜNG 3D</div>
         <div style="font-size:12px; color:#94a3b8;" id="loadingStatusText">Đang khởi tạo WebGL Three.js...</div>
-        <div style="width:160px; height:4px; background:#1e293b; border-radius:2px; margin-top:14px; overflow:hidden;">
-            <div id="loadingBar" style="width:50%; height:100%; background:#00f0ff; animation:loadPulse 0.8s infinite alternate;"></div>
+        <div style="width:180px; height:4px; background:#1e293b; border-radius:2px; margin-top:16px; overflow:hidden;">
+            <div id="loadingBar" style="width:40%; height:100%; background:linear-gradient(90deg, #00f0ff, #38bdf8); animation:loadPulse 0.7s infinite alternate;"></div>
         </div>
     </div>
-    <style>
-        @keyframes loadPulse { 0% { width: 25%; transform: translateX(0); } 100% { width: 85%; transform: translateX(25px); } }
-    </style>
 
     <!-- Container 3D Fullscreen -->
     <div id="canvasContainer"></div>
@@ -45,8 +51,5 @@
         <pre id="errorText" style="white-space:pre-wrap; background:#1e293b; padding:12px; border-radius:6px; color:#cbd5e1;"></pre>
         <button onclick="location.reload()" style="margin-top:16px; padding:10px 20px; background:#00f0ff; color:#000; border:none; border-radius:6px; font-weight:800; cursor:pointer;">TẢI LẠI TRANG</button>
     </div>
-
-    <!-- Script khởi chạy toàn bộ kiến trúc Three.js Modular -->
-    <script type="module" src="/src/app.js"></script>
 </body>
 </html>

@@ -523,6 +523,8 @@ HTML_PAGE = r"""<!DOCTYPE html>
 </html>
 """
 
+_FILE_CACHE = {}
+
 class RemoteHandler(BaseHTTPRequestHandler):
     def send_compressed_response(self, content_bytes, content_type, cache_control="no-cache"):
         accept_encoding = self.headers.get("Accept-Encoding", "")
@@ -576,7 +578,7 @@ class RemoteHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 return
 
-        # Phục vụ các file tĩnh trong Web/ (css, src, vendor, etc.)
+        # Phục vụ các file tĩnh trong Web/ (css, dist, src, vendor, etc.)
         rel_path = req_path
         if rel_path.startswith("/game/"):
             rel_path = rel_path[len("/game/"):]
@@ -587,6 +589,9 @@ class RemoteHandler(BaseHTTPRequestHandler):
         web_root = os.path.normpath(os.path.join(WORKSPACE_ROOT, "Web"))
 
         if full_path.startswith(web_root) and os.path.isfile(full_path):
+            mtime = os.path.getmtime(full_path)
+            cache_entry = _FILE_CACHE.get(full_path)
+
             mime, _ = mimetypes.guess_type(full_path)
             if full_path.endswith((".js", ".mjs")):
                 mime = "application/javascript; charset=utf-8"
@@ -597,20 +602,45 @@ class RemoteHandler(BaseHTTPRequestHandler):
             elif not mime:
                 mime = "application/octet-stream"
 
-            # Bộ nhớ đệm thông minh:
-            # - Vendor libraries (/vendor/three.min.js) cache 7 ngày (tải 1 lần dùng mãi mãi)
-            # - JS & CSS cache 2 phút
             norm_rel = rel_path.replace("\\", "/")
             if "vendor/" in norm_rel:
                 cache_ctrl = "public, max-age=604800, immutable"
+            elif "dist/" in norm_rel:
+                cache_ctrl = "public, max-age=300"
             elif full_path.endswith((".js", ".mjs", ".css")):
                 cache_ctrl = "public, max-age=120"
             else:
                 cache_ctrl = "public, max-age=3600"
 
-            with open(full_path, "rb") as f:
-                file_bytes = f.read()
-            self.send_compressed_response(file_bytes, mime, cache_ctrl)
+            if cache_entry and cache_entry["mtime"] == mtime:
+                file_bytes = cache_entry["bytes"]
+                gzip_bytes = cache_entry["gzip"]
+            else:
+                with open(full_path, "rb") as f:
+                    file_bytes = f.read()
+                gzip_bytes = gzip.compress(file_bytes, compresslevel=6) if len(file_bytes) > 200 else None
+                _FILE_CACHE[full_path] = {
+                    "mtime": mtime,
+                    "bytes": file_bytes,
+                    "gzip": gzip_bytes
+                }
+
+            accept_encoding = self.headers.get("Accept-Encoding", "")
+            if gzip_bytes and "gzip" in accept_encoding:
+                self.send_response(200)
+                self.send_header("Content-Type", mime)
+                self.send_header("Content-Encoding", "gzip")
+                self.send_header("Content-Length", str(len(gzip_bytes)))
+                self.send_header("Cache-Control", cache_ctrl)
+                self.end_headers()
+                self.wfile.write(gzip_bytes)
+            else:
+                self.send_response(200)
+                self.send_header("Content-Type", mime)
+                self.send_header("Content-Length", str(len(file_bytes)))
+                self.send_header("Cache-Control", cache_ctrl)
+                self.end_headers()
+                self.wfile.write(file_bytes)
         else:
             self.send_response(404)
             self.end_headers()

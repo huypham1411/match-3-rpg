@@ -108,15 +108,22 @@ export class DebugInspector {
 
         // 2. Camera Presets
         document.getElementById('camTactical').addEventListener('click', () => {
-            this.engine.camera.position.set(0, 14, 20);
-            this.engine.camera.lookAt(0, 0, 0);
-            if (this.engine.controls) this.engine.controls.target.set(0, 0, 0);
+            const isMobile = window.innerWidth < 768 || (window.innerWidth / window.innerHeight) < 1.0;
+            if (isMobile) {
+                this.engine.camera.position.set(0, 16.5, 18.0);
+                this.engine.camera.lookAt(0, -0.5, 0);
+                if (this.engine.controls) this.engine.controls.target.set(0, -0.5, 0);
+            } else {
+                this.engine.camera.position.set(0, 14, 20);
+                this.engine.camera.lookAt(0, 0, 0);
+                if (this.engine.controls) this.engine.controls.target.set(0, 0, 0);
+            }
         });
 
         document.getElementById('camTopDown').addEventListener('click', () => {
-            this.engine.camera.position.set(0, 15, 6);
-            this.engine.camera.lookAt(0, 0, 4.5);
-            if (this.engine.controls) this.engine.controls.target.set(0, 0, 4.5);
+            this.engine.camera.position.set(0, 18, 1.5);
+            this.engine.camera.lookAt(0, -0.5, 1.5);
+            if (this.engine.controls) this.engine.controls.target.set(0, -0.5, 1.5);
         });
 
         document.getElementById('camCinematic').addEventListener('click', () => {
@@ -126,8 +133,9 @@ export class DebugInspector {
         });
 
         document.getElementById('btnResetCam').addEventListener('click', () => {
-            this.engine.camera.position.set(0, 14, 20);
-            this.engine.camera.lookAt(0, 0, 0);
+            const aspect = this.engine.width / this.engine.height;
+            this.engine.updateCameraForDevice(aspect);
+            if (this.engine.controls) this.engine.controls.target.set(0, -0.5, 0);
         });
 
         // 3. Sandbox Triggers

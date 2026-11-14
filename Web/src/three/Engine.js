@@ -118,12 +118,16 @@ export class Engine3D {
             this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
             this.controls.enableDamping = true;
             this.controls.dampingFactor = 0.05;
+            this.controls.target.set(0, -0.5, 0);
             
             // [TIÊU CHUẨN MOBILE GAME UX]: KHÓA XOAY CAMERA
             // Người chơi vuốt chạm màn hình là để hoán đổi ngọc, không được để camera bị lắc lư hoặc xoay đảo
             this.controls.enableRotate = false;
             this.controls.enablePan = false;
             this.controls.enableZoom = false;
+            if (THREE.TOUCH) {
+                this.controls.touches = { ONE: THREE.TOUCH.NONE, TWO: THREE.TOUCH.DOLLY_PAN };
+            }
 
             this.controls.maxPolarAngle = Math.PI / 2 + 0.1;
             this.controls.minDistance = 6;

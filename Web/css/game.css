@@ -525,10 +525,27 @@ canvas {
 
     /* DEBUG INSPECTOR: THU GỌN VÀO GÓC TRÁNH CHE KHUẤT */
     #debugInspectorPanel {
-        top: 8px;
-        right: 8px;
+        top: 6px;
+        right: 6px;
         width: auto;
-        max-width: calc(100vw - 16px);
-        font-size: 11px;
+        max-width: 140px;
+        font-size: 10px;
+        opacity: 0.85;
+    }
+
+    #debugInspectorPanel .debug-header {
+        padding: 4px 8px;
+    }
+
+    #debugInspectorPanel .debug-title {
+        font-size: 9px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #debugInspectorPanel .debug-btn-min {
+        font-size: 9px;
+        padding: 1px 4px;
     }
 }

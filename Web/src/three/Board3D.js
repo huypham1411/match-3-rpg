@@ -41,16 +41,9 @@ export class Board3D {
         this.boardGroup = new THREE.Group();
         this.scene.add(this.boardGroup);
 
-        // Vị trí đặt bàn cờ trong không gian 3D: Cố định góc nhìn phẳng gần như Isometric Top-Down
-        // Giúp người chơi trên điện thoại nhìn rõ ô, dễ thao tác chạm mà không bị nghiêng lệch
-        const isMobile = window.innerWidth < 768 || (window.innerWidth / window.innerHeight) < 1.0;
-        if (isMobile) {
-            this.boardGroup.position.set(0, -1.2, 3.2);
-            this.boardGroup.rotation.x = -Math.PI / 14; // Nghiêng phẳng nhẹ 12.8 độ, tối ưu chạm ngón cái trên mobile
-        } else {
-            this.boardGroup.position.set(0, -0.6, 4.0);
-            this.boardGroup.rotation.x = -Math.PI / 10; // Nghiêng 18 độ trên desktop
-        }
+        // Vị trí đặt bàn cờ trong không gian 3D: Căn giữa hoàn hảo, không bị che bởi sân khấu phía trên hay thẻ nhân vật phía dưới
+        this.boardGroup.position.set(0, -0.5, 1.5);
+        this.boardGroup.rotation.x = -Math.PI / 10; // Góc nghiêng 18 độ tối ưu cho góc nhìn từ trên xuống
 
         this.tileMeshes = [];      // Mảng 2 chiều 8x8 chứa THREE.Mesh
         this.raycaster = new THREE.Raycaster();
