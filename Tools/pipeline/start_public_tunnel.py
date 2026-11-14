@@ -49,7 +49,7 @@ def main():
     print("=" * 70)
 
     p = subprocess.Popen(
-        [CLOUDFLARED_BIN, "tunnel", "--url", "http://localhost:5050"],
+        [CLOUDFLARED_BIN, "tunnel", "--url", "http://127.0.0.1:5050"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,

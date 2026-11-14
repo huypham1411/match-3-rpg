@@ -10,8 +10,32 @@
     <script src="/vendor/OrbitControls.js"></script>
     
     <link rel="stylesheet" href="/css/game.css">
+
+    <!-- Preload song song toàn bộ module để tải siêu tốc trên thiết bị di động -->
+    <link rel="modulepreload" href="/src/app.js">
+    <link rel="modulepreload" href="/src/core/GameState.js">
+    <link rel="modulepreload" href="/src/core/EventBus.js">
+    <link rel="modulepreload" href="/src/three/Engine.js">
+    <link rel="modulepreload" href="/src/three/Board3D.js">
+    <link rel="modulepreload" href="/src/three/Diorama3D.js">
+    <link rel="modulepreload" href="/src/three/VFX.js">
+    <link rel="modulepreload" href="/src/ui/HUD.js">
+    <link rel="modulepreload" href="/src/debug/DebugInspector.js">
 </head>
 <body>
+    <!-- Màn hình tải tức thì (Instant Fast Loader) -->
+    <div id="loadingOverlay" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:#0a0c14; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:9999; font-family:-apple-system, sans-serif; color:#00f0ff;">
+        <div style="font-size:32px; margin-bottom:12px;">⚡</div>
+        <div style="font-size:15px; font-weight:800; letter-spacing:1px; margin-bottom:6px; color:#f8fafc;">RE:FRAY — ĐẤU TRƯỜNG 3D</div>
+        <div style="font-size:12px; color:#94a3b8;" id="loadingStatusText">Đang khởi tạo WebGL Three.js...</div>
+        <div style="width:160px; height:4px; background:#1e293b; border-radius:2px; margin-top:14px; overflow:hidden;">
+            <div id="loadingBar" style="width:50%; height:100%; background:#00f0ff; animation:loadPulse 0.8s infinite alternate;"></div>
+        </div>
+    </div>
+    <style>
+        @keyframes loadPulse { 0% { width: 25%; transform: translateX(0); } 100% { width: 85%; transform: translateX(25px); } }
+    </style>
+
     <!-- Container 3D Fullscreen -->
     <div id="canvasContainer"></div>
 

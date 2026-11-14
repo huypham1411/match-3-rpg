@@ -19,13 +19,14 @@ import os
 import sys
 import json
 import time
+import gzip
 import socket
 import ctypes
 import mimetypes
 import subprocess
 import urllib.parse
 from datetime import datetime
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
 # [WINDOWS KEEP-AWAKE]: Giữ kết nối mạng và CPU chạy xuyên đêm để nhận lệnh từ điện thoại
 ES_CONTINUOUS = 0x80000000
@@ -137,6 +138,23 @@ def get_phase_timelines(now=None):
         }
     ]
     return phases, total_hours_str
+
+def get_recent_swarm_log(max_cycles=8):
+    if not os.path.exists(SWARM_LOG_FILE):
+        return "Chưa có log."
+    try:
+        with open(SWARM_LOG_FILE, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        parts = content.split("\n## [CHU KỲ")
+        if len(parts) <= max_cycles + 1:
+            return content
+
+        header = parts[0]
+        recent = parts[-max_cycles:]
+        return header + "\n" + "\n## [CHU KỲ".join(recent)
+    except Exception as e:
+        return f"Lỗi đọc log: {e}"
 
 HTML_PAGE = r"""<!DOCTYPE html>
 <html lang="vi">
@@ -391,11 +409,15 @@ HTML_PAGE = r"""<!DOCTYPE html>
             container.innerHTML = html;
         }
 
+        let lastLogRaw = '';
         async function fetchLog() {
             try {
                 const res = await fetch('/api/log');
                 const data = await res.json();
-                renderLogStream(data.log);
+                if (data.log !== lastLogRaw) {
+                    lastLogRaw = data.log;
+                    renderLogStream(data.log);
+                }
             } catch (e) {
                 document.getElementById('logStream').innerHTML = '<div style="color:#ef4444; padding:20px;">Lỗi kết nối máy tính: ' + e + '</div>';
             }
@@ -491,9 +513,9 @@ HTML_PAGE = r"""<!DOCTYPE html>
             }
         }
 
-        // Tự động làm mới log & tiến độ phase mỗi 5 giây
-        setInterval(fetchLog, 5000);
-        setInterval(fetchPhaseStats, 5000);
+        // Tự động làm mới log & tiến độ phase mỗi 8 giây (tiết kiệm băng thông & pin)
+        setInterval(fetchLog, 8000);
+        setInterval(fetchPhaseStats, 8000);
         fetchLog();
         fetchPhaseStats();
     </script>
@@ -502,47 +524,52 @@ HTML_PAGE = r"""<!DOCTYPE html>
 """
 
 class RemoteHandler(BaseHTTPRequestHandler):
+    def send_compressed_response(self, content_bytes, content_type, cache_control="no-cache"):
+        accept_encoding = self.headers.get("Accept-Encoding", "")
+        if "gzip" in accept_encoding and len(content_bytes) > 200:
+            compressed = gzip.compress(content_bytes, compresslevel=6)
+            self.send_response(200)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Encoding", "gzip")
+            self.send_header("Content-Length", str(len(compressed)))
+            self.send_header("Cache-Control", cache_control)
+            self.end_headers()
+            self.wfile.write(compressed)
+        else:
+            self.send_response(200)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(content_bytes)))
+            self.send_header("Cache-Control", cache_control)
+            self.end_headers()
+            self.wfile.write(content_bytes)
+
     def do_GET(self):
         parsed_url = urllib.parse.urlparse(self.path)
         req_path = parsed_url.path
 
         if req_path in ["/", "/index.html"]:
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.end_headers()
-            self.wfile.write(HTML_PAGE.encode("utf-8"))
+            self.send_compressed_response(HTML_PAGE.encode("utf-8"), "text/html; charset=utf-8", "no-cache")
             return
 
         elif req_path == "/api/phase-stats":
             phases, total_hours = get_phase_timelines()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Cache-Control", "no-cache")
-            self.end_headers()
-            self.wfile.write(json.dumps({"phases": phases, "total_hours": total_hours}).encode("utf-8"))
+            body = json.dumps({"phases": phases, "total_hours": total_hours}).encode("utf-8")
+            self.send_compressed_response(body, "application/json; charset=utf-8", "no-cache")
             return
 
         elif req_path == "/api/log":
-            content = "Chưa có log."
-            if os.path.exists(SWARM_LOG_FILE):
-                with open(SWARM_LOG_FILE, "r", encoding="utf-8") as f:
-                    content = f.read()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Cache-Control", "no-cache")
-            self.end_headers()
-            self.wfile.write(json.dumps({"log": content}).encode("utf-8"))
+            # Chỉ gửi 8 chu kỳ gần nhất để tải siêu tốc dưới 50ms trên điện thoại
+            content = get_recent_swarm_log(max_cycles=8)
+            body = json.dumps({"log": content}).encode("utf-8")
+            self.send_compressed_response(body, "application/json; charset=utf-8", "no-cache")
             return
 
         elif req_path in ["/game", "/game/", "/game/index.html"]:
             web_path = os.path.join(WORKSPACE_ROOT, "Web", "index.html")
             if os.path.exists(web_path):
-                self.send_response(200)
-                self.send_header("Content-Type", "text/html; charset=utf-8")
-                self.send_header("Cache-Control", "no-cache")
-                self.end_headers()
                 with open(web_path, "rb") as f:
-                    self.wfile.write(f.read())
+                    web_bytes = f.read()
+                self.send_compressed_response(web_bytes, "text/html; charset=utf-8", "no-cache")
                 return
             else:
                 self.send_response(404)
@@ -560,9 +587,8 @@ class RemoteHandler(BaseHTTPRequestHandler):
         web_root = os.path.normpath(os.path.join(WORKSPACE_ROOT, "Web"))
 
         if full_path.startswith(web_root) and os.path.isfile(full_path):
-            self.send_response(200)
             mime, _ = mimetypes.guess_type(full_path)
-            if full_path.endswith(".js") or full_path.endswith(".mjs"):
+            if full_path.endswith((".js", ".mjs")):
                 mime = "application/javascript; charset=utf-8"
             elif full_path.endswith(".css"):
                 mime = "text/css; charset=utf-8"
@@ -571,11 +597,20 @@ class RemoteHandler(BaseHTTPRequestHandler):
             elif not mime:
                 mime = "application/octet-stream"
 
-            self.send_header("Content-Type", mime)
-            self.send_header("Cache-Control", "no-cache")
-            self.end_headers()
+            # Bộ nhớ đệm thông minh:
+            # - Vendor libraries (/vendor/three.min.js) cache 7 ngày (tải 1 lần dùng mãi mãi)
+            # - JS & CSS cache 2 phút
+            norm_rel = rel_path.replace("\\", "/")
+            if "vendor/" in norm_rel:
+                cache_ctrl = "public, max-age=604800, immutable"
+            elif full_path.endswith((".js", ".mjs", ".css")):
+                cache_ctrl = "public, max-age=120"
+            else:
+                cache_ctrl = "public, max-age=3600"
+
             with open(full_path, "rb") as f:
-                self.wfile.write(f.read())
+                file_bytes = f.read()
+            self.send_compressed_response(file_bytes, mime, cache_ctrl)
         else:
             self.send_response(404)
             self.end_headers()
@@ -597,19 +632,13 @@ class RemoteHandler(BaseHTTPRequestHandler):
             swarm_script = os.path.join(WORKSPACE_ROOT, "Tools", "pipeline", "real_swarm_engine.py")
             subprocess.run(["py", "-3", swarm_script, "--once"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
 
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.end_headers()
-            self.wfile.write(json.dumps({"response": res.stdout}).encode("utf-8"))
+            self.send_compressed_response(json.dumps({"response": res.stdout}).encode("utf-8"), "application/json; charset=utf-8")
 
         elif self.path == "/api/trigger-cycle":
             daemon_script = os.path.join(WORKSPACE_ROOT, "Tools", "pipeline", "real_swarm_engine.py")
             res = subprocess.run(["py", "-3", daemon_script, "--once"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
 
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.end_headers()
-            self.wfile.write(json.dumps({"message": res.stdout}).encode("utf-8"))
+            self.send_compressed_response(json.dumps({"message": res.stdout}).encode("utf-8"), "application/json; charset=utf-8")
 
         elif self.path == "/api/run-tests":
             test_bat = os.path.join(WORKSPACE_ROOT, "Tools", "host_tests", "build_and_run.bat")
@@ -619,15 +648,12 @@ class RemoteHandler(BaseHTTPRequestHandler):
 
             output = f"=== TEST PHASE 3 WEB (16 CHECKS) ===\n{res_p3.stdout}\n\n=== TEST C++ CORE (744 ASSERTIONS) ===\n{res_c.stdout}\n\n=== TEST WASM (51 CHECKS) ===\n{res_wasm.stdout}"
 
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.end_headers()
-            self.wfile.write(json.dumps({"output": output}).encode("utf-8"))
+            self.send_compressed_response(json.dumps({"output": output}).encode("utf-8"), "application/json; charset=utf-8")
 
 def main():
-    server = HTTPServer(("0.0.0.0", PORT), RemoteHandler)
+    server = ThreadingHTTPServer(("0.0.0.0", PORT), RemoteHandler)
     print("=" * 70)
-    print("📱 RE:FRAY MOBILE REMOTE COMMAND CENTER (RUNNING)")
+    print("📱 RE:FRAY MOBILE REMOTE COMMAND CENTER (HIGH-PERFORMANCE RUNNING)")
     print("=" * 70)
     print(f"👉 TRÊN MÁY TÍNH : http://localhost:{PORT}")
     print(f"👉 TRÊN ĐIỆN THOẠI: http://{LOCAL_IP}:{PORT}")

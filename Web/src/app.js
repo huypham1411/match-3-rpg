@@ -90,6 +90,14 @@ function initMatchRPG() {
         };
 
         console.log('%c[MATCHRPG THREE.JS] Hệ thống đã sẵn sàng 100%! Truy cập window.MatchGame để debug trực tiếp.', 'color: #10b981; font-weight: bold;');
+
+        // Ẩn màn hình loading tức thì khi mọi thứ đã sẵn sàng
+        const loader = document.getElementById('loadingOverlay');
+        if (loader) {
+            loader.style.transition = 'opacity 0.25s ease-out';
+            loader.style.opacity = '0';
+            setTimeout(() => { if (loader.parentNode) loader.remove(); }, 250);
+        }
     } catch (err) {
         console.error('Lỗi khởi chạy MatchRPG:', err);
         const errOverlay = document.getElementById('errorOverlay');
