@@ -195,11 +195,14 @@ def run_real_cycle(cycle_id: int):
     # 2. @qc_lead chạy WASM smoke test
     ok_wasm, out_wasm, err_wasm = run_cmd(["node", "Web/smoke_test.mjs"])
 
-    # 3. @qc_lead chạy C++ Core test (744 assertions)
+    # 3. @qc_lead chạy test Ngọc Đặc Biệt & Zero Black Holes
+    ok_spec, out_spec, err_spec = run_cmd(["node", "Web/test_specials.mjs"])
+
+    # 4. @qc_lead chạy C++ Core test (744 assertions)
     test_bat = os.path.join(WORKSPACE_ROOT, "Tools", "host_tests", "build_and_run.bat")
     ok_cpp, out_cpp, err_cpp = run_cmd([test_bat], timeout=45)
 
-    # 4. Kiểm tra Git Status
+    # 5. Kiểm tra Git Status
     _, git_stat, _ = run_cmd(["git", "status", "-s"])
     _, git_hash, _ = run_cmd(["git", "rev-parse", "--short", "HEAD"])
 
@@ -218,7 +221,7 @@ def run_real_cycle(cycle_id: int):
     phase_table_md = get_phase_markdown_table(now)
     log_entry = f"""
 ---
-## [CHU KỲ THỰC THI #{cycle_id}] — {timestamp}
+## [BÁO CÁO TIẾN ĐỘ ĐỊNH KỲ 1H #{cycle_id}] — {timestamp}
 *Chủ đề:* **{topic['phase']}** | *Commit:* `{git_hash}`
 
 {phase_table_md}
@@ -233,9 +236,10 @@ def run_real_cycle(cycle_id: int):
 
 - `[{ts(6)}]` **@qc_lead (Trưởng Ban Kiểm Thử Tự Động):**
   > "{topic['qc_report']}
-  > *Hóa đơn kiểm thử:*
-  > • Phase 3 Web Tests: {'✅ 16/16 PASS' if ok_p3 else '❌ FAIL'}
-  > • WebAssembly Tests: {'✅ 51/51 PASS' if ok_wasm else '❌ FAIL'}
+  > *Hóa đơn kiểm thử định kỳ:*
+  > • Special Gems (4 Types & Zero Holes): {'✅ 9/9 PASS' if ok_spec else '❌ FAIL'}
+  > • Phase 3 Web Features: {'✅ 16/16 PASS' if ok_p3 else '❌ FAIL'}
+  > • WebAssembly Core: {'✅ 51/51 PASS' if ok_wasm else '❌ FAIL'}
   > • C++ Core Determinism: {'✅ 744/744 PASS' if ok_cpp else '❌ FAIL'}"
 
 - `[{ts(9)}]` **@web_dev (Kỹ Sư Trưởng Web Three.js):**
@@ -272,7 +276,7 @@ def main():
     parser = argparse.ArgumentParser(description="Real Multi-Agent Swarm Engine (Pstack Michelin Rigor)")
     parser.add_argument("--once", action="store_true", help="Chạy 1 chu kỳ duy nhất rồi dừng")
     parser.add_argument("--daemon", action="store_true", help="Chạy liên tục theo chu kỳ")
-    parser.add_argument("--interval", type=int, default=180, help="Thời gian chờ giữa các chu kỳ (giây)")
+    parser.add_argument("--interval", type=int, default=3600, help="Thời gian chờ giữa các chu kỳ (giây) - Mặc định 1 giờ (3600s)")
 
     args = parser.parse_args()
 

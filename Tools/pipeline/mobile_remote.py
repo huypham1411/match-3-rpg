@@ -250,6 +250,12 @@ HTML_PAGE = r"""<!DOCTYPE html>
         <div class="status-badge"><div class="pulse-dot"></div> 24/7 ONLINE</div>
     </div>
 
+    <!-- THANH THÔNG TIN BĂNG THÔNG & ĐẾM LÙI 1 GIỜ / LẦN -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; background:#111827; border:1px solid #1e293b; padding:8px 12px; border-radius:8px;">
+        <span style="font-size:11px; color:#38bdf8; font-weight:700;">⏱️ CẬP NHẬT: 1 GIỜ / LẦN (TIẾT KIỆM BĂNG THÔNG)</span>
+        <span style="font-size:11px; color:#cbd5e1; font-family:monospace; font-weight:700;" id="countdownBadge">⏳ Làm mới sau: 60p 00s</span>
+    </div>
+
     <!-- BẢNG THỐNG KÊ THỜI GIAN VẬN HÀNH TỪNG PHASE -->
     <div class="stats-card">
         <div class="stats-header">
@@ -263,9 +269,9 @@ HTML_PAGE = r"""<!DOCTYPE html>
 
     <!-- CÁC NÚT ĐIỀU KHIỂN NHANH -->
     <div class="action-grid">
-        <button class="btn-action btn-primary" onclick="triggerCycle()">▶ Chạy Chu Kỳ Swarm</button>
-        <button class="btn-action btn-warning" onclick="runTests()">🧪 Chạy Test C++ & Phase 3</button>
-        <button class="btn-action" onclick="fetchLog()">🔄 Cập Nhật Nhật Ký</button>
+        <button class="btn-action btn-primary" onclick="manualRefresh()">🔄 Làm Mới Ngay (On Demand)</button>
+        <button class="btn-action btn-warning" onclick="runTests()">🧪 Chạy Test C++ & Web</button>
+        <button class="btn-action" onclick="triggerCycle()">▶ Kích Hoạt Chu Kỳ Mới</button>
         <button class="btn-action" onclick="window.open('/game', '_blank')">🎲 Mở Bản Web Three.js</button>
     </div>
 
@@ -513,15 +519,76 @@ HTML_PAGE = r"""<!DOCTYPE html>
             }
         }
 
-        // Tự động làm mới log & tiến độ phase mỗi 8 giây (tiết kiệm băng thông & pin)
-        setInterval(fetchLog, 8000);
-        setInterval(fetchPhaseStats, 8000);
-        fetchLog();
-        fetchPhaseStats();
+        // CƠ CHẾ CẬP NHẬT 1 GIỜ / LẦN (TIẾT KIỆM BĂNG THÔNG & PIN)
+        const REFRESH_INTERVAL_SEC = 3600; // 3600 giây = 1 giờ
+        let remainingSeconds = REFRESH_INTERVAL_SEC;
+
+        function updateCountdownUI() {
+            const m = Math.floor(remainingSeconds / 60);
+            const s = remainingSeconds % 60;
+            const el = document.getElementById('countdownBadge');
+            if (el) {
+                el.textContent = `⏳ Làm mới sau: ${m}p ${s < 10 ? '0' : ''}${s}s`;
+            }
+        }
+
+        function manualRefresh() {
+            remainingSeconds = REFRESH_INTERVAL_SEC;
+            updateCountdownUI();
+            fetchLog();
+            fetchPhaseStats();
+        }
+
+        // Tự động đếm lùi và chỉ gửi request sau mỗi 1 giờ
+        setInterval(() => {
+            remainingSeconds--;
+            if (remainingSeconds <= 0) {
+                remainingSeconds = REFRESH_INTERVAL_SEC;
+                fetchLog();
+                fetchPhaseStats();
+            }
+            updateCountdownUI();
+        }, 1000);
+        updateCountdownUI();
+
+        /* SSR_INJECT_DATA */
+        if (typeof window.__INITIAL_DATA__ !== 'undefined' && window.__INITIAL_DATA__) {
+            lastLogRaw = window.__INITIAL_DATA__.log;
+            renderLogStream(window.__INITIAL_DATA__.log);
+        } else {
+            fetchLog();
+            fetchPhaseStats();
+        }
     </script>
 </body>
 </html>
 """
+
+def render_dashboard_ssr(phases, total_hours, recent_log):
+    phase_items_html = ""
+    for p in phases:
+        tag_class = "done" if "ĐÃ" in p["status"] else ("active" if p["is_active"] else "pending")
+        active_class = "active" if p["is_active"] else ""
+        phase_items_html += f"""
+            <div class="phase-item {active_class}">
+                <div class="phase-item-top">
+                    <span class="phase-name">{p['name']}</span>
+                    <span class="phase-duration">{p['duration']}</span>
+                </div>
+                <div class="phase-item-mid">
+                    <span class="phase-timestamps">📅 {p['start']} ➔ {p['end']}</span>
+                    <span class="phase-status-tag {tag_class}">{p['status']}</span>
+                </div>
+            </div>
+        """
+
+    initial_payload = json.dumps({"phases": phases, "total_hours": total_hours, "log": recent_log})
+    
+    html = HTML_PAGE
+    html = html.replace('id="totalHoursBadge">TỔNG: ĐANG TÍNH...', f'id="totalHoursBadge">TỔNG: {total_hours}')
+    html = html.replace('<div style="color:#64748b; font-size:11px; text-align:center; padding:8px;">Đang tải dữ liệu tiến độ...</div>', phase_items_html)
+    html = html.replace('/* SSR_INJECT_DATA */', f'window.__INITIAL_DATA__ = {initial_payload};')
+    return html
 
 _FILE_CACHE = {}
 
@@ -550,7 +617,10 @@ class RemoteHandler(BaseHTTPRequestHandler):
         req_path = parsed_url.path
 
         if req_path in ["/", "/index.html"]:
-            self.send_compressed_response(HTML_PAGE.encode("utf-8"), "text/html; charset=utf-8", "no-cache")
+            phases, total_hours = get_phase_timelines()
+            recent_log = get_recent_swarm_log(max_cycles=8)
+            rendered_html = render_dashboard_ssr(phases, total_hours, recent_log)
+            self.send_compressed_response(rendered_html.encode("utf-8"), "text/html; charset=utf-8", "no-cache")
             return
 
         elif req_path == "/api/phase-stats":
