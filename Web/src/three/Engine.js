@@ -166,20 +166,22 @@ export class BoardEngine {
         const boardDimension = 10.0;
         let viewW, viewH;
         if (aspect < 1.0) {
-            // Mobile Portrait: Vừa khít bề ngang màn hình
+            // Mobile Portrait: Vừa khít bề ngang màn hình, dịch nhẹ tâm góc nhìn lên để chừa không gian thoải mái cho dock Hero bên dưới
             viewW = boardDimension * 1.04;
             viewH = viewW / aspect;
+            this.camera.position.set(0, -0.65, 10);
+            this.camera.lookAt(0, -0.65, 0);
         } else {
             // Desktop: Vừa khít chiều cao container
             viewH = boardDimension * 1.06;
             viewW = viewH * aspect;
+            this.camera.position.set(0, 0, 10);
+            this.camera.lookAt(0, 0, 0);
         }
         this.camera.left = -viewW / 2;
         this.camera.right = viewW / 2;
         this.camera.top = viewH / 2;
         this.camera.bottom = -viewH / 2;
-        this.camera.position.set(0, 0, 10);
-        this.camera.lookAt(0, 0, 0);
         this.camera.updateProjectionMatrix();
     }
 

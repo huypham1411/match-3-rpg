@@ -182,13 +182,84 @@ class GameState {
         this.maxMoves = 4;
         this.score = 0;
         this.comboChain = 0;
+        this.counterStacks = 0;      // Tích lũy điểm Phản kích (Counter Stacks) theo combo
+        this.earlyEndMitigation = 0; // Tỷ lệ giảm sát thương khi kết thúc lượt sớm
 
-        // Đội hình 4 Role chuẩn (kèm cờ isDefeated)
+        // Đội hình 4 Role chuẩn (kèm chiêu thức Skill & Ultimate)
         this.heroes = [
-            { id: 1, name: 'Lôi Kiếm Sĩ (Astra)', role: 'Attacker', color: COLORS.FIRE, altColor: COLORS.LIGHTNING, hp: 1000, maxHp: 1000, energy: 40, maxEnergy: 100, skillCd: 0, maxCd: 3, isDefeated: false },
-            { id: 2, name: 'Tinh Linh (Elysia)', role: 'Supporter', color: COLORS.VOID, altColor: COLORS.WATER, hp: 850, maxHp: 850, energy: 20, maxEnergy: 100, skillCd: 0, maxCd: 4, isDefeated: false },
-            { id: 3, name: 'Thánh Nữ (Lin)', role: 'Healer', color: COLORS.NATURE, altColor: 0, hp: 900, maxHp: 900, energy: 30, maxEnergy: 100, skillCd: 0, maxCd: 3, isDefeated: false },
-            { id: 4, name: 'Thiết Giáp (Boran)', role: 'Defender', color: COLORS.ICE, altColor: COLORS.WATER, hp: 1400, maxHp: 1400, energy: 10, maxEnergy: 100, skillCd: 0, maxCd: 4, deflectorStacks: 0, isDefeated: false }
+            {
+                id: 1,
+                name: 'Lôi Kiếm Sĩ (Astra)',
+                role: 'Attacker',
+                color: COLORS.FIRE,
+                altColor: COLORS.LIGHTNING,
+                hp: 1000,
+                maxHp: 1000,
+                energy: 40,
+                maxEnergy: 100,
+                skillName: 'Lôi Trảm',
+                skillDesc: 'Gây 1800 DMG và bào mòn 25 Stagger',
+                ultName: 'Vũ Điệu Lôi Quang',
+                ultDesc: 'Bão kiếm laser 4500 DMG (x2 khi Broken)',
+                skillCd: 0,
+                maxCd: 3,
+                isDefeated: false
+            },
+            {
+                id: 2,
+                name: 'Thuật Sĩ (Elysia)',
+                role: 'Supporter',
+                color: COLORS.VOID,
+                altColor: COLORS.WATER,
+                hp: 850,
+                maxHp: 850,
+                energy: 30,
+                maxEnergy: 100,
+                skillName: 'Phá Giáp',
+                skillDesc: 'Bào mòn 40 điểm Stagger Boss & +20 Nộ',
+                ultName: 'Chrono Burst',
+                ultDesc: '+1 Lượt đi & nạp 40 Nộ toàn đội',
+                skillCd: 0,
+                maxCd: 4,
+                isDefeated: false
+            },
+            {
+                id: 3,
+                name: 'Thánh Nữ (Lin)',
+                role: 'Healer',
+                color: COLORS.NATURE,
+                altColor: 0,
+                hp: 900,
+                maxHp: 900,
+                energy: 30,
+                maxEnergy: 100,
+                skillName: 'Hồi Máu',
+                skillDesc: 'Hồi 450 HP cho tất cả đồng minh',
+                ultName: 'Thánh Vực Bất Diệt',
+                ultDesc: 'Hồi 100% HP & hồi sinh đồng minh',
+                skillCd: 0,
+                maxCd: 3,
+                isDefeated: false
+            },
+            {
+                id: 4,
+                name: 'Thiết Giáp (Boran)',
+                role: 'Defender',
+                color: COLORS.ICE,
+                altColor: COLORS.WATER,
+                hp: 1400,
+                maxHp: 1400,
+                energy: 20,
+                maxEnergy: 100,
+                skillName: 'Khiên Thủ',
+                skillDesc: 'Tích 4 Khiên Deflector giảm 60% sát thương',
+                ultName: 'Phản Kích Bộc Phá',
+                ultDesc: 'Tung đòn 3800 DMG & dựng khiên tối thượng',
+                skillCd: 0,
+                maxCd: 4,
+                deflectorStacks: 0,
+                isDefeated: false
+            }
         ];
 
         // Khởi tạo Boss từ Stage 1
@@ -644,10 +715,14 @@ class GameState {
 
         // Xanh Cobalt (2) & Băng (6) -> Defender tích khiên
         const defBlocks = (colorCounts[COLORS.WATER] || 0) + (colorCounts[COLORS.ICE] || 0);
-        if (defBlocks >= 4) {
-            this.heroes[3].deflectorStacks = Math.min(4, this.heroes[3].deflectorStacks + 1);
+        if (defBlocks >= 3) {
+            this.heroes[3].deflectorStacks = Math.min(4, (this.heroes[3].deflectorStacks || 0) + 1);
             events.emit('deflector_charge', { stacks: this.heroes[3].deflectorStacks });
         }
+
+        // Tích lũy Counter Stacks theo combo và số khối nổ
+        const comboMultiplier = Math.max(1, combo);
+        this.counterStacks = (this.counterStacks || 0) + matches.length * comboMultiplier;
 
         // Tím (5) -> Supporter nạp nộ
         const voidBlocks = colorCounts[COLORS.VOID] || 0;
@@ -692,24 +767,43 @@ class GameState {
         return drops;
     }
 
+    /** Chủ động kết thúc lượt sớm để phòng thủ đỡ đòn (Mitigation) */
+    async endTurnEarly() {
+        if (this.isProcessing) return false;
+        // Tỷ lệ phòng thủ tỷ lệ thuận với số lượt đi chưa dùng
+        // 4/4 nước -> Đỡ 100% sát thương boss, 3/4 -> 75%, 2/4 -> 50%, 1/4 -> 25%
+        this.earlyEndMitigation = Math.max(0, Math.min(1.0, this.movesLeft / this.maxMoves));
+        await this.endTurn();
+        return true;
+    }
+
     /** Kết thúc lượt người chơi -> Boss hành động */
     async endTurn() {
+        if (this.isProcessing) return;
+        this.isProcessing = true;
+
         events.emit('turn_ended', { turn: this.turn });
 
-        // Giảm hồi chiêu kỹ năng
+        // Tỷ lệ phòng thủ: Nếu người chơi kết thúc lượt sớm hoặc chưa dùng hết lượt
+        const earlyPct = this.earlyEndMitigation !== undefined && this.earlyEndMitigation > 0 
+            ? this.earlyEndMitigation 
+            : Math.max(0, this.movesLeft / this.maxMoves);
+        const deflectorStacks = this.heroes[3].deflectorStacks || 0;
+        const deflectorPct = deflectorStacks >= 4 ? 0.60 : (deflectorStacks * 0.12);
+
+        // Tổng tỷ lệ giảm sát thương (Tối đa 100%)
+        const totalMitigation = Math.min(1.0, Math.max(earlyPct, deflectorPct));
+        const mitigationDisplay = Math.round(totalMitigation * 100);
+
+        // Giảm hồi chiêu kỹ năng của các hero còn sống
         this.heroes.forEach(h => {
             if (h.skillCd > 0) h.skillCd--;
         });
 
-        // Xử lý trạng thái Break của Boss
-        if (this.boss.isBroken) {
-            this.boss.breakTurnsLeft--;
-            if (this.boss.breakTurnsLeft <= 0) {
-                this.boss.isBroken = false;
-                this.boss.stagger = this.boss.maxStagger; // Hồi phục Stagger
-                events.emit('stagger_recovered', { boss: this.boss });
-            }
-        } else {
+        const wasBossBroken = this.boss.isBroken;
+
+        // Xử lý hành động của Boss (Boss chỉ tấn công nếu không bị Break)
+        if (!wasBossBroken) {
             // Đếm ngược đòn chí mạng Telegraph
             this.boss.telegraphCountdown--;
             let isSuperAttack = false;
@@ -723,26 +817,137 @@ class GameState {
                 events.emit('telegraph_unleashed', { name: this.boss.telegraphName, damage: bossDmg });
             }
 
-            if (this.heroes[3].deflectorStacks > 0) {
-                // Defender kích hoạt khiên giảm 50% sát thương
-                const blocked = Math.round(bossDmg * 0.5);
-                bossDmg -= blocked;
-                this.heroes[3].deflectorStacks = 0;
-                events.emit('deflector_blocked', { reducedDamage: bossDmg, blockedAmount: blocked });
+            // Áp dụng cơ chế giảm sát thương theo tỷ lệ nước đi còn lại / phòng thủ sớm
+            const blockedAmount = Math.round(bossDmg * totalMitigation);
+            const actualDmg = Math.max(0, bossDmg - blockedAmount);
+
+            if (totalMitigation > 0) {
+                events.emit('deflector_blocked', {
+                    reducedDamage: actualDmg,
+                    blockedAmount,
+                    percent: mitigationDisplay,
+                    reason: earlyPct > 0 ? `PHÒNG THỦ SỚM (${Math.round(earlyPct * 100)}%)` : 'DEFLECTOR'
+                });
             }
 
-            this.heroes.forEach(h => {
-                h.hp = Math.max(0, h.hp - Math.round(bossDmg * (0.85 + Math.random() * 0.3)));
-            });
+            if (actualDmg > 0) {
+                this.heroes.forEach(h => {
+                    if (!h.isDefeated) {
+                        h.hp = Math.max(0, h.hp - Math.round(actualDmg * (0.85 + Math.random() * 0.3)));
+                    }
+                });
+            }
             this.checkHeroFaint();
-            events.emit('boss_attack', { damage: bossDmg, isSuperAttack });
+            events.emit('boss_attack', { damage: actualDmg, blocked: blockedAmount, isSuperAttack });
         }
 
-        // Bắt đầu turn mới
+        // [COUNTER ATTACK / PHẢN KÍCH TÍCH LŨY VỚI COMBO]:
+        // Đòn phản kích tự động kích hoạt sau đòn đánh của boss (hoặc khi boss choáng)
+        const totalCounterPoints = (this.counterStacks || 0) + (deflectorStacks * 2);
+        if (totalCounterPoints > 0 && !this.heroes[0].isDefeated) {
+            await new Promise(res => setTimeout(res, 250));
+            const isCriticalCounter = wasBossBroken || this.boss.isBroken;
+            const counterMultiplier = isCriticalCounter ? 2.5 : 1.0;
+            const counterDamage = Math.round(totalCounterPoints * 160 * counterMultiplier);
+            this.boss.hp = Math.max(0, this.boss.hp - counterDamage);
+
+            if (!this.boss.isBroken) {
+                this.boss.stagger = Math.max(0, this.boss.stagger - totalCounterPoints * 4);
+                if (this.boss.stagger <= 0) {
+                    this.boss.isBroken = true;
+                    this.boss.breakTurnsLeft = 1;
+                    events.emit('stagger_broken', { boss: this.boss });
+                }
+            }
+
+            events.emit('counter_attack', {
+                hero: this.heroes[0],
+                damage: counterDamage,
+                stacks: totalCounterPoints,
+                isCritical: isCriticalCounter
+            });
+        }
+
+        // Hồi phục trạng thái Break của Boss sau chu kỳ choáng
+        if (wasBossBroken) {
+            this.boss.breakTurnsLeft--;
+            if (this.boss.breakTurnsLeft <= 0) {
+                this.boss.isBroken = false;
+                this.boss.stagger = this.boss.maxStagger; // Hồi phục Stagger
+                events.emit('stagger_recovered', { boss: this.boss });
+            }
+        }
+
+        // Bắt đầu turn mới và reset chỉ số lượt
+        this.counterStacks = 0;
+        this.earlyEndMitigation = 0;
+        this.heroes[3].deflectorStacks = 0;
         this.turn++;
         this.movesLeft = this.maxMoves;
+
         events.emit('new_turn_started', { turn: this.turn, movesLeft: this.movesLeft });
         events.emit('state_updated', { heroes: this.heroes, boss: this.boss, movesLeft: this.movesLeft });
+        this.isProcessing = false;
+    }
+
+    /** Kích hoạt Kỹ Năng Chủ Động (Manual Skill) của Hero */
+    triggerSkill(heroIndex) {
+        const hero = this.heroes[heroIndex];
+        if (!hero || hero.isDefeated || hero.skillCd > 0) return false;
+
+        hero.skillCd = hero.maxCd;
+        let skillMsg = '';
+
+        if (hero.role === 'Attacker') {
+            // Astra: Lôi Trảm 1800 DMG + 25 Stagger
+            let dmg = 1800;
+            if (this.boss.isBroken) dmg *= 2.0;
+            this.boss.hp = Math.max(0, this.boss.hp - dmg);
+            if (!this.boss.isBroken) {
+                this.boss.stagger = Math.max(0, this.boss.stagger - 25);
+                if (this.boss.stagger <= 0) {
+                    this.boss.isBroken = true;
+                    this.boss.breakTurnsLeft = 1;
+                    events.emit('stagger_broken', { boss: this.boss });
+                }
+            }
+            skillMsg = `Lôi Trảm gây ${dmg} DMG & bào mòn 25 Stagger!`;
+            events.emit('damage_dealt', { damage: dmg, hero, isCritical: this.boss.isBroken });
+        } else if (hero.role === 'Supporter') {
+            // Elysia: Phá Giáp 40 Stagger & +20 Nộ
+            if (!this.boss.isBroken) {
+                this.boss.stagger = Math.max(0, this.boss.stagger - 40);
+                if (this.boss.stagger <= 0) {
+                    this.boss.isBroken = true;
+                    this.boss.breakTurnsLeft = 1;
+                    events.emit('stagger_broken', { boss: this.boss });
+                }
+            }
+            this.heroes.forEach((h, idx) => {
+                if (idx !== heroIndex && !h.isDefeated) {
+                    h.energy = Math.min(h.maxEnergy, h.energy + 20);
+                }
+            });
+            skillMsg = `Phá Giáp bào mòn 40 Stagger & nạp +20 Nộ cho toàn đội!`;
+        } else if (hero.role === 'Healer') {
+            // Lin: Hồi 450 HP cho toàn đội
+            this.heroes.forEach(h => {
+                if (!h.isDefeated) {
+                    h.hp = Math.min(h.maxHp, h.hp + 450);
+                }
+            });
+            skillMsg = `Nanite Sinh Học hồi phục 450 HP cho cả đội!`;
+            events.emit('heal_triggered', { heal: 450, hero });
+        } else if (hero.role === 'Defender') {
+            // Boran: Khiên Phản Chấn 4 Stacks
+            hero.deflectorStacks = 4;
+            skillMsg = `Dựng Khiên Phản Chấn (4 Stacks) sẵn sàng giảm 60% đòn đánh Boss!`;
+            events.emit('deflector_charge', { stacks: 4 });
+        }
+
+        events.emit('skill_executed', { hero, message: skillMsg });
+        events.emit('state_updated', { heroes: this.heroes, boss: this.boss });
+        return true;
     }
 
     /** Kích hoạt Ultimate của Hero */
@@ -751,12 +956,40 @@ class GameState {
         if (!hero || hero.isDefeated || hero.energy < hero.maxEnergy) return false;
 
         hero.energy = 0;
-        let ultDmg = 2500;
-        if (hero.role === 'Attacker') ultDmg = 4500;
-        if (this.boss.isBroken) ultDmg *= 2.0;
+        let ultResultMsg = '';
 
-        this.boss.hp = Math.max(0, this.boss.hp - ultDmg);
-        events.emit('ultimate_executed', { hero, damage: ultDmg });
+        if (hero.role === 'Attacker') {
+            let ultDmg = 4500;
+            if (this.boss.isBroken) ultDmg *= 2.0;
+            this.boss.hp = Math.max(0, this.boss.hp - ultDmg);
+            ultResultMsg = `Vũ Điệu Lôi Quang giáng ${ultDmg} sát thương cực đại lên Boss!`;
+            events.emit('ultimate_executed', { hero, damage: ultDmg, isCritical: this.boss.isBroken });
+            events.emit('damage_dealt', { damage: ultDmg, hero, isCritical: this.boss.isBroken });
+        } else if (hero.role === 'Supporter') {
+            this.movesLeft = Math.min(this.maxMoves, this.movesLeft + 1);
+            this.heroes.forEach(h => {
+                if (!h.isDefeated) h.energy = Math.min(h.maxEnergy, h.energy + 40);
+            });
+            ultResultMsg = `Chrono Burst: +1 Lượt đi & +40 Nộ cho toàn đội!`;
+            events.emit('ultimate_executed', { hero, message: ultResultMsg });
+        } else if (hero.role === 'Healer') {
+            this.heroes.forEach(h => {
+                h.hp = h.maxHp;
+                if (h.isDefeated) h.isDefeated = false;
+            });
+            ultResultMsg = `Thánh Vực Bất Diệt: Hồi 100% Máu & Hồi sinh đồng đội!`;
+            events.emit('ultimate_executed', { hero, message: ultResultMsg });
+            events.emit('heal_triggered', { heal: 1000, hero });
+        } else if (hero.role === 'Defender') {
+            let ultDmg = 3800;
+            if (this.boss.isBroken) ultDmg *= 2.0;
+            this.boss.hp = Math.max(0, this.boss.hp - ultDmg);
+            hero.deflectorStacks = 4;
+            ultResultMsg = `Phản Kích Bộc Phá: Giáng ${ultDmg} DMG & dựng khiên tối thượng!`;
+            events.emit('ultimate_executed', { hero, damage: ultDmg });
+            events.emit('deflector_charge', { stacks: 4 });
+        }
+
         events.emit('state_updated', { heroes: this.heroes, boss: this.boss });
         return true;
     }
@@ -932,20 +1165,22 @@ class BoardEngine {
         const boardDimension = 10.0;
         let viewW, viewH;
         if (aspect < 1.0) {
-            // Mobile Portrait: Vừa khít bề ngang màn hình
+            // Mobile Portrait: Vừa khít bề ngang màn hình, dịch nhẹ tâm góc nhìn lên để chừa không gian thoải mái cho dock Hero bên dưới
             viewW = boardDimension * 1.04;
             viewH = viewW / aspect;
+            this.camera.position.set(0, -0.65, 10);
+            this.camera.lookAt(0, -0.65, 0);
         } else {
             // Desktop: Vừa khít chiều cao container
             viewH = boardDimension * 1.06;
             viewW = viewH * aspect;
+            this.camera.position.set(0, 0, 10);
+            this.camera.lookAt(0, 0, 0);
         }
         this.camera.left = -viewW / 2;
         this.camera.right = viewW / 2;
         this.camera.top = viewH / 2;
         this.camera.bottom = -viewH / 2;
-        this.camera.position.set(0, 0, 10);
-        this.camera.lookAt(0, 0, 0);
         this.camera.updateProjectionMatrix();
     }
 
@@ -2236,9 +2471,10 @@ class VFXManager {
  * [PSTACK ARCHITECTURE]: TẦNG TRÌNH DIỄN GIAO DIỆN CHIẾN ĐẤU (TACTICAL HUD)
  * 
  * Thiết kế theo phong cách Honkai: Star Rail & Persona 5:
- *  - Không che khuất không gian 3D.
+ *  - Không che khuất không gian 3D và bàn Match-3.
  *  - Thanh Toughness màu trắng (Break Stagger 100% -> 0%).
- *  - 4 Thẻ Hero với vòng nộ tròn SVG và nút dùng Skill có phím tắt (1..4, NumPad 1..4).
+ *  - Cụm điều khiển Turn, Nước đi, Nút Phòng Thủ Sớm (Mitigation) & Điểm Phản Kích (Counter Stacks).
+ *  - 4 Thẻ Hero với vòng nộ tròn SVG và nút dùng Skill trực quan (có hiển thị cooldown và phím tắt).
  * ============================================================================
  */
 class TacticalHUD {
@@ -2272,10 +2508,20 @@ class TacticalHUD {
                     </div>
                 </div>
 
-                <!-- LƯỢT ĐI & NƯỚC ĐI CÒN LẠI -->
-                <div class="turn-counter-badge">
-                    <span class="turn-label">TURN <b id="hudTurnNum">1</b></span>
-                    <span class="moves-label">NƯỚC ĐI: <b id="hudMovesLeft" style="color:#00f0ff">4 / 4</b></span>
+                <!-- CỤM ĐIỀU KHIỂN CHIẾN THUẬT: LƯỢT ĐI, NƯỚC ĐI, PHẢN KÍCH & PHÒNG THỦ -->
+                <div class="tactical-command-box">
+                    <div class="turn-status-row">
+                        <div class="turn-pill">TURN <b id="hudTurnNum">${this.state.turn}</b></div>
+                        <div class="moves-pill">NƯỚC ĐI: <b id="hudMovesLeft" style="color:#00f0ff">${this.state.movesLeft} / ${this.state.maxMoves}</b></div>
+                        <div class="counter-badge" id="hudCounterBadge" title="Tích lũy từ Match & Combo trong lượt để phản kích sau khi Boss hành động">
+                            ⚔️ PHẢN KÍCH: 0
+                        </div>
+                    </div>
+                    <!-- Nút chủ động phòng thủ / kết thúc lượt sớm -->
+                    <button id="btnEndTurnEarly" class="defense-hud-btn" onclick="window.endTurnEarly()" title="Kết thúc lượt sớm để giảm sát thương Boss tương ứng với số nước đi chưa dùng">
+                        <span class="defense-icon">🛡️</span>
+                        <span class="defense-text" id="btnDefenseText">KẾT THÚC LƯỢT (THỦ 100%)</span>
+                    </button>
                 </div>
             </div>
 
@@ -2303,7 +2549,7 @@ class TacticalHUD {
         this.renderHeroes();
     }
 
-    /** Render 4 thẻ Hero với vòng nạp Ultimate SVG */
+    /** Render 4 thẻ Hero với vòng nạp Ultimate SVG & nút Skill nổi bật */
     renderHeroes() {
         const container = document.getElementById('squadContainer');
         if (!container) return;
@@ -2311,10 +2557,12 @@ class TacticalHUD {
         container.innerHTML = this.state.heroes.map((hero, idx) => {
             const roleIcons = { Attacker: '⚔️', Supporter: '✨', Healer: '💚', Defender: '🛡️' };
             const isUltReady = hero.energy >= hero.maxEnergy;
+            const isSkillOnCd = hero.skillCd > 0;
+            const skillBtnLabel = isSkillOnCd ? `⏳ ${hero.skillCd}T` : `⚡ ${hero.skillName || 'SKILL'}`;
 
             return `
-                <div class="hero-tactical-card ${isUltReady ? 'ult-ready' : ''}" id="heroCard_${idx}">
-                    <div class="hero-avatar-wrap" onclick="window.triggerHeroUlt(${idx})">
+                <div class="hero-tactical-card ${isUltReady ? 'ult-ready' : ''} ${hero.isDefeated ? 'hero-defeated' : ''}" id="heroCard_${idx}">
+                    <div class="hero-avatar-wrap" onclick="window.triggerHeroUlt(${idx})" title="Nhấn để tung Nộ (Ultimate) hoặc nhấn phím NumPad ${idx + 1}">
                         <div class="hero-role-icon">${roleIcons[hero.role] || '⭐'}</div>
                         <!-- Vòng tròn năng lượng SVG -->
                         <svg class="energy-ring-svg" viewBox="0 0 44 44">
@@ -2322,18 +2570,22 @@ class TacticalHUD {
                             <circle class="energy-ring-fill" id="energyFill_${idx}" cx="22" cy="22" r="18" 
                                 style="stroke-dashoffset: ${113 - (hero.energy / hero.maxEnergy) * 113}" />
                         </svg>
+                        <span class="ult-label-tag">ULT</span>
                         <span class="ult-kbd-tag">Num${idx + 1}</span>
                     </div>
                     <div class="hero-meta">
-                        <div class="hero-name">${hero.name}</div>
-                        <div class="hero-role-tag">${hero.role}</div>
+                        <div class="hero-header-line">
+                            <span class="hero-name">${hero.name.split(' ')[0]}</span>
+                            <span class="hero-role-badge role-${hero.role.toLowerCase()}">${hero.role}</span>
+                        </div>
                         <!-- Thanh máu Hero -->
                         <div class="hero-hp-bar">
                             <div class="hero-hp-fill" id="heroHpFill_${idx}" style="width: ${(hero.hp / hero.maxHp) * 100}%"></div>
                         </div>
+                        <div class="hero-hp-text" id="heroHpText_${idx}">${hero.hp}/${hero.maxHp}</div>
                     </div>
-                    <button class="hero-skill-btn" id="heroSkillBtn_${idx}" onclick="window.triggerHeroSkill(${idx})">
-                        <span>SKILL</span>
+                    <button class="hero-skill-btn ${isSkillOnCd ? 'on-cd' : ''}" id="heroSkillBtn_${idx}" onclick="window.triggerHeroSkill(${idx})" title="${hero.skillDesc || 'Kỹ năng'} (Phím ${idx + 1})">
+                        <span class="skill-name-label">${skillBtnLabel}</span>
                         <kbd>${idx + 1}</kbd>
                     </button>
                 </div>
@@ -2341,9 +2593,9 @@ class TacticalHUD {
         }).join('');
     }
 
-    /** Cập nhật số liệu trên giao diện */
+    /** Cập nhật toàn bộ số liệu thời gian thực trên giao diện */
     updateHUD() {
-        // Cập nhật Boss
+        // 1. Cập nhật Boss
         const hpPercent = (this.state.boss.hp / this.state.boss.maxHp) * 100;
         const staggerPercent = (this.state.boss.stagger / this.state.boss.maxStagger) * 100;
 
@@ -2376,19 +2628,51 @@ class TacticalHUD {
             }
         }
 
-        // Cập nhật Turn & Nước đi
+        // 2. Cập nhật Turn & Nước đi
         const turnEl = document.getElementById('hudTurnNum');
         const movesEl = document.getElementById('hudMovesLeft');
         if (turnEl) turnEl.textContent = this.state.turn;
         if (movesEl) movesEl.textContent = `${this.state.movesLeft} / ${this.state.maxMoves}`;
 
-        // Cập nhật từng Hero
+        // 3. Cập nhật Điểm Phản Kích (Counter Stacks)
+        const counterBadge = document.getElementById('hudCounterBadge');
+        if (counterBadge) {
+            const stacks = this.state.counterStacks || 0;
+            counterBadge.innerHTML = `⚔️ PHẢN KÍCH: <b>${stacks}</b>`;
+            if (stacks > 0) {
+                counterBadge.classList.add('has-stacks');
+            } else {
+                counterBadge.classList.remove('has-stacks');
+            }
+        }
+
+        // 4. Cập nhật Nút Phòng Thủ Sớm (Mitigation)
+        const btnDefense = document.getElementById('btnEndTurnEarly');
+        const btnDefenseText = document.getElementById('btnDefenseText');
+        if (btnDefense && btnDefenseText) {
+            const movesLeft = this.state.movesLeft;
+            const pct = Math.round((movesLeft / this.state.maxMoves) * 100);
+            if (movesLeft > 0) {
+                btnDefense.disabled = false;
+                btnDefense.classList.remove('disabled');
+                btnDefenseText.textContent = `KẾT THÚC LƯỢT (THỦ ${pct}%)`;
+            } else {
+                btnDefense.disabled = true;
+                btnDefense.classList.add('disabled');
+                btnDefenseText.textContent = `⏳ HẾT NƯỚC ĐI`;
+            }
+        }
+
+        // 5. Cập nhật từng Hero trong đội hình
         this.state.heroes.forEach((hero, idx) => {
             const hpBar = document.getElementById(`heroHpFill_${idx}`);
+            const hpText = document.getElementById(`heroHpText_${idx}`);
             const energyBar = document.getElementById(`energyFill_${idx}`);
             const card = document.getElementById(`heroCard_${idx}`);
+            const skillBtn = document.getElementById(`heroSkillBtn_${idx}`);
 
-            if (hpBar) hpBar.style.width = `${(hero.hp / hero.maxHp) * 100}%`;
+            if (hpBar) hpBar.style.width = `${Math.max(0, (hero.hp / hero.maxHp) * 100)}%`;
+            if (hpText) hpText.textContent = `${Math.max(0, hero.hp)}/${hero.maxHp}`;
             if (energyBar) {
                 const offset = 113 - (hero.energy / hero.maxEnergy) * 113;
                 energyBar.style.strokeDashoffset = offset;
@@ -2396,6 +2680,7 @@ class TacticalHUD {
             if (card) {
                 if (hero.isDefeated) {
                     card.classList.add('hero-defeated');
+                    card.classList.remove('ult-ready');
                     card.style.opacity = '0.4';
                     card.style.filter = 'grayscale(100%)';
                 } else {
@@ -2409,9 +2694,24 @@ class TacticalHUD {
                     }
                 }
             }
+            if (skillBtn) {
+                if (hero.isDefeated) {
+                    skillBtn.disabled = true;
+                    skillBtn.classList.add('disabled');
+                    skillBtn.innerHTML = `<span>HẠ GỤC</span>`;
+                } else if (hero.skillCd > 0) {
+                    skillBtn.disabled = true;
+                    skillBtn.classList.add('on-cd');
+                    skillBtn.innerHTML = `<span>⏳ ${hero.skillCd} TURN</span>`;
+                } else {
+                    skillBtn.disabled = false;
+                    skillBtn.classList.remove('on-cd', 'disabled');
+                    skillBtn.innerHTML = `<span>⚡ ${hero.skillName || 'SKILL'}</span><kbd>${idx + 1}</kbd>`;
+                }
+            }
         });
 
-        // Kiểm tra hạ gục Boss -> Mở Modal Chiến Thắng
+        // 6. Kiểm tra hạ gục Boss -> Mở Modal Chiến Thắng
         if (this.state.boss.hp <= 0) {
             const victoryModal = document.getElementById('stageVictoryModal');
             const titleEl = document.getElementById('victoryModalTitle');
@@ -2447,11 +2747,29 @@ class TacticalHUD {
             this.showToast(`🚨 BOSS TUNG CHIÊU: ${name} (-${damage} DMG)!`, '#ef4444');
         });
 
-        events.on('deflector_blocked', ({ blockedAmount }) => {
-            this.showToast(`🛡️ DEFENDER CHẶN THÀNH CÔNG (-${blockedAmount} DMG)!`, '#3b82f6');
+        events.on('deflector_blocked', ({ reducedDamage, blockedAmount, percent, reason }) => {
+            this.showToast(`🛡️ ${reason}: CHẶN ${blockedAmount} DMG (${percent}%)!`, '#38bdf8');
+            this.updateHUD();
         });
 
-        // Phím tắt bàn phím: 1..4 (Skill), NumPad 1..4 (Ultimate)
+        events.on('counter_attack', ({ hero, damage, stacks, isCritical }) => {
+            const critMsg = isCritical ? ' 💥 BỘC PHÁ BREAK x2.5!' : '';
+            this.showToast(`⚔️ PHẢN KÍCH COMBO: ${stacks} STACKS ➔ ${damage} DMG LÊN BOSS!${critMsg}`, '#fbbf24');
+            this.updateHUD();
+        });
+
+        events.on('skill_executed', ({ hero, message }) => {
+            this.showToast(`✨ ${hero.name}: ${message}`, '#00f0ff');
+            this.updateHUD();
+        });
+
+        events.on('ultimate_executed', ({ hero, damage, message, isCritical }) => {
+            const msg = message || `Tung chiêu nộ cực đại gây ${damage} DMG!`;
+            this.showToast(`🌌 ${hero.name}: ${msg}`, '#a855f7');
+            this.updateHUD();
+        });
+
+        // Phím tắt bàn phím: 1..4 (Skill), NumPad 1..4 (Ultimate), Space (Phòng thủ sớm)
         window.addEventListener('keydown', (e) => {
             if (['1', '2', '3', '4'].includes(e.key)) {
                 const idx = parseInt(e.key) - 1;
@@ -2459,6 +2777,9 @@ class TacticalHUD {
             } else if (['Numpad1', 'Numpad2', 'Numpad3', 'Numpad4'].includes(e.code)) {
                 const idx = parseInt(e.code.replace('Numpad', '')) - 1;
                 window.triggerHeroUlt(idx);
+            } else if (e.code === 'Space') {
+                e.preventDefault();
+                window.endTurnEarly();
             }
         });
 
@@ -2481,16 +2802,20 @@ class TacticalHUD {
 
         // Hàm toàn cục cho nút bấm HTML gọi
         window.triggerHeroUlt = (idx) => {
-            this.state.triggerUltimate(idx);
+            const ok = this.state.triggerUltimate(idx);
+            if (ok) this.updateHUD();
         };
 
         window.triggerHeroSkill = (idx) => {
-            const h = this.state.heroes[idx];
-            if (h && h.skillCd === 0) {
-                h.skillCd = h.maxCd;
-                events.emit('damage_dealt', { hero: h });
-                this.updateHUD();
-            }
+            const ok = this.state.triggerSkill(idx);
+            if (ok) this.updateHUD();
+        };
+
+        window.endTurnEarly = async () => {
+            if (this.state.isProcessing) return;
+            const pct = Math.round((this.state.movesLeft / this.state.maxMoves) * 100);
+            this.showToast(`🛡️ KÍCH HOẠT PHÒNG THỦ SỚM (GIẢM ${pct}% SÁT THƯƠNG BOSS)!`, '#38bdf8');
+            await this.state.endTurnEarly();
         };
     }
 

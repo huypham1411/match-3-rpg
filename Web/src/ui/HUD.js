@@ -4,9 +4,10 @@
  * [PSTACK ARCHITECTURE]: TẦNG TRÌNH DIỄN GIAO DIỆN CHIẾN ĐẤU (TACTICAL HUD)
  * 
  * Thiết kế theo phong cách Honkai: Star Rail & Persona 5:
- *  - Không che khuất không gian 3D.
+ *  - Không che khuất không gian 3D và bàn Match-3.
  *  - Thanh Toughness màu trắng (Break Stagger 100% -> 0%).
- *  - 4 Thẻ Hero với vòng nộ tròn SVG và nút dùng Skill có phím tắt (1..4, NumPad 1..4).
+ *  - Cụm điều khiển Turn, Nước đi, Nút Phòng Thủ Sớm (Mitigation) & Điểm Phản Kích (Counter Stacks).
+ *  - 4 Thẻ Hero với vòng nộ tròn SVG và nút dùng Skill trực quan (có hiển thị cooldown và phím tắt).
  * ============================================================================
  */
 
@@ -43,10 +44,20 @@ export class TacticalHUD {
                     </div>
                 </div>
 
-                <!-- LƯỢT ĐI & NƯỚC ĐI CÒN LẠI -->
-                <div class="turn-counter-badge">
-                    <span class="turn-label">TURN <b id="hudTurnNum">1</b></span>
-                    <span class="moves-label">NƯỚC ĐI: <b id="hudMovesLeft" style="color:#00f0ff">4 / 4</b></span>
+                <!-- CỤM ĐIỀU KHIỂN CHIẾN THUẬT: LƯỢT ĐI, NƯỚC ĐI, PHẢN KÍCH & PHÒNG THỦ -->
+                <div class="tactical-command-box">
+                    <div class="turn-status-row">
+                        <div class="turn-pill">TURN <b id="hudTurnNum">${this.state.turn}</b></div>
+                        <div class="moves-pill">NƯỚC ĐI: <b id="hudMovesLeft" style="color:#00f0ff">${this.state.movesLeft} / ${this.state.maxMoves}</b></div>
+                        <div class="counter-badge" id="hudCounterBadge" title="Tích lũy từ Match & Combo trong lượt để phản kích sau khi Boss hành động">
+                            ⚔️ PHẢN KÍCH: 0
+                        </div>
+                    </div>
+                    <!-- Nút chủ động phòng thủ / kết thúc lượt sớm -->
+                    <button id="btnEndTurnEarly" class="defense-hud-btn" onclick="window.endTurnEarly()" title="Kết thúc lượt sớm để giảm sát thương Boss tương ứng với số nước đi chưa dùng">
+                        <span class="defense-icon">🛡️</span>
+                        <span class="defense-text" id="btnDefenseText">KẾT THÚC LƯỢT (THỦ 100%)</span>
+                    </button>
                 </div>
             </div>
 
@@ -74,7 +85,7 @@ export class TacticalHUD {
         this.renderHeroes();
     }
 
-    /** Render 4 thẻ Hero với vòng nạp Ultimate SVG */
+    /** Render 4 thẻ Hero với vòng nạp Ultimate SVG & nút Skill nổi bật */
     renderHeroes() {
         const container = document.getElementById('squadContainer');
         if (!container) return;
@@ -82,10 +93,12 @@ export class TacticalHUD {
         container.innerHTML = this.state.heroes.map((hero, idx) => {
             const roleIcons = { Attacker: '⚔️', Supporter: '✨', Healer: '💚', Defender: '🛡️' };
             const isUltReady = hero.energy >= hero.maxEnergy;
+            const isSkillOnCd = hero.skillCd > 0;
+            const skillBtnLabel = isSkillOnCd ? `⏳ ${hero.skillCd}T` : `⚡ ${hero.skillName || 'SKILL'}`;
 
             return `
-                <div class="hero-tactical-card ${isUltReady ? 'ult-ready' : ''}" id="heroCard_${idx}">
-                    <div class="hero-avatar-wrap" onclick="window.triggerHeroUlt(${idx})">
+                <div class="hero-tactical-card ${isUltReady ? 'ult-ready' : ''} ${hero.isDefeated ? 'hero-defeated' : ''}" id="heroCard_${idx}">
+                    <div class="hero-avatar-wrap" onclick="window.triggerHeroUlt(${idx})" title="Nhấn để tung Nộ (Ultimate) hoặc nhấn phím NumPad ${idx + 1}">
                         <div class="hero-role-icon">${roleIcons[hero.role] || '⭐'}</div>
                         <!-- Vòng tròn năng lượng SVG -->
                         <svg class="energy-ring-svg" viewBox="0 0 44 44">
@@ -93,18 +106,22 @@ export class TacticalHUD {
                             <circle class="energy-ring-fill" id="energyFill_${idx}" cx="22" cy="22" r="18" 
                                 style="stroke-dashoffset: ${113 - (hero.energy / hero.maxEnergy) * 113}" />
                         </svg>
+                        <span class="ult-label-tag">ULT</span>
                         <span class="ult-kbd-tag">Num${idx + 1}</span>
                     </div>
                     <div class="hero-meta">
-                        <div class="hero-name">${hero.name}</div>
-                        <div class="hero-role-tag">${hero.role}</div>
+                        <div class="hero-header-line">
+                            <span class="hero-name">${hero.name.split(' ')[0]}</span>
+                            <span class="hero-role-badge role-${hero.role.toLowerCase()}">${hero.role}</span>
+                        </div>
                         <!-- Thanh máu Hero -->
                         <div class="hero-hp-bar">
                             <div class="hero-hp-fill" id="heroHpFill_${idx}" style="width: ${(hero.hp / hero.maxHp) * 100}%"></div>
                         </div>
+                        <div class="hero-hp-text" id="heroHpText_${idx}">${hero.hp}/${hero.maxHp}</div>
                     </div>
-                    <button class="hero-skill-btn" id="heroSkillBtn_${idx}" onclick="window.triggerHeroSkill(${idx})">
-                        <span>SKILL</span>
+                    <button class="hero-skill-btn ${isSkillOnCd ? 'on-cd' : ''}" id="heroSkillBtn_${idx}" onclick="window.triggerHeroSkill(${idx})" title="${hero.skillDesc || 'Kỹ năng'} (Phím ${idx + 1})">
+                        <span class="skill-name-label">${skillBtnLabel}</span>
                         <kbd>${idx + 1}</kbd>
                     </button>
                 </div>
@@ -112,9 +129,9 @@ export class TacticalHUD {
         }).join('');
     }
 
-    /** Cập nhật số liệu trên giao diện */
+    /** Cập nhật toàn bộ số liệu thời gian thực trên giao diện */
     updateHUD() {
-        // Cập nhật Boss
+        // 1. Cập nhật Boss
         const hpPercent = (this.state.boss.hp / this.state.boss.maxHp) * 100;
         const staggerPercent = (this.state.boss.stagger / this.state.boss.maxStagger) * 100;
 
@@ -147,19 +164,51 @@ export class TacticalHUD {
             }
         }
 
-        // Cập nhật Turn & Nước đi
+        // 2. Cập nhật Turn & Nước đi
         const turnEl = document.getElementById('hudTurnNum');
         const movesEl = document.getElementById('hudMovesLeft');
         if (turnEl) turnEl.textContent = this.state.turn;
         if (movesEl) movesEl.textContent = `${this.state.movesLeft} / ${this.state.maxMoves}`;
 
-        // Cập nhật từng Hero
+        // 3. Cập nhật Điểm Phản Kích (Counter Stacks)
+        const counterBadge = document.getElementById('hudCounterBadge');
+        if (counterBadge) {
+            const stacks = this.state.counterStacks || 0;
+            counterBadge.innerHTML = `⚔️ PHẢN KÍCH: <b>${stacks}</b>`;
+            if (stacks > 0) {
+                counterBadge.classList.add('has-stacks');
+            } else {
+                counterBadge.classList.remove('has-stacks');
+            }
+        }
+
+        // 4. Cập nhật Nút Phòng Thủ Sớm (Mitigation)
+        const btnDefense = document.getElementById('btnEndTurnEarly');
+        const btnDefenseText = document.getElementById('btnDefenseText');
+        if (btnDefense && btnDefenseText) {
+            const movesLeft = this.state.movesLeft;
+            const pct = Math.round((movesLeft / this.state.maxMoves) * 100);
+            if (movesLeft > 0) {
+                btnDefense.disabled = false;
+                btnDefense.classList.remove('disabled');
+                btnDefenseText.textContent = `KẾT THÚC LƯỢT (THỦ ${pct}%)`;
+            } else {
+                btnDefense.disabled = true;
+                btnDefense.classList.add('disabled');
+                btnDefenseText.textContent = `⏳ HẾT NƯỚC ĐI`;
+            }
+        }
+
+        // 5. Cập nhật từng Hero trong đội hình
         this.state.heroes.forEach((hero, idx) => {
             const hpBar = document.getElementById(`heroHpFill_${idx}`);
+            const hpText = document.getElementById(`heroHpText_${idx}`);
             const energyBar = document.getElementById(`energyFill_${idx}`);
             const card = document.getElementById(`heroCard_${idx}`);
+            const skillBtn = document.getElementById(`heroSkillBtn_${idx}`);
 
-            if (hpBar) hpBar.style.width = `${(hero.hp / hero.maxHp) * 100}%`;
+            if (hpBar) hpBar.style.width = `${Math.max(0, (hero.hp / hero.maxHp) * 100)}%`;
+            if (hpText) hpText.textContent = `${Math.max(0, hero.hp)}/${hero.maxHp}`;
             if (energyBar) {
                 const offset = 113 - (hero.energy / hero.maxEnergy) * 113;
                 energyBar.style.strokeDashoffset = offset;
@@ -167,6 +216,7 @@ export class TacticalHUD {
             if (card) {
                 if (hero.isDefeated) {
                     card.classList.add('hero-defeated');
+                    card.classList.remove('ult-ready');
                     card.style.opacity = '0.4';
                     card.style.filter = 'grayscale(100%)';
                 } else {
@@ -180,9 +230,24 @@ export class TacticalHUD {
                     }
                 }
             }
+            if (skillBtn) {
+                if (hero.isDefeated) {
+                    skillBtn.disabled = true;
+                    skillBtn.classList.add('disabled');
+                    skillBtn.innerHTML = `<span>HẠ GỤC</span>`;
+                } else if (hero.skillCd > 0) {
+                    skillBtn.disabled = true;
+                    skillBtn.classList.add('on-cd');
+                    skillBtn.innerHTML = `<span>⏳ ${hero.skillCd} TURN</span>`;
+                } else {
+                    skillBtn.disabled = false;
+                    skillBtn.classList.remove('on-cd', 'disabled');
+                    skillBtn.innerHTML = `<span>⚡ ${hero.skillName || 'SKILL'}</span><kbd>${idx + 1}</kbd>`;
+                }
+            }
         });
 
-        // Kiểm tra hạ gục Boss -> Mở Modal Chiến Thắng
+        // 6. Kiểm tra hạ gục Boss -> Mở Modal Chiến Thắng
         if (this.state.boss.hp <= 0) {
             const victoryModal = document.getElementById('stageVictoryModal');
             const titleEl = document.getElementById('victoryModalTitle');
@@ -218,11 +283,29 @@ export class TacticalHUD {
             this.showToast(`🚨 BOSS TUNG CHIÊU: ${name} (-${damage} DMG)!`, '#ef4444');
         });
 
-        events.on('deflector_blocked', ({ blockedAmount }) => {
-            this.showToast(`🛡️ DEFENDER CHẶN THÀNH CÔNG (-${blockedAmount} DMG)!`, '#3b82f6');
+        events.on('deflector_blocked', ({ reducedDamage, blockedAmount, percent, reason }) => {
+            this.showToast(`🛡️ ${reason}: CHẶN ${blockedAmount} DMG (${percent}%)!`, '#38bdf8');
+            this.updateHUD();
         });
 
-        // Phím tắt bàn phím: 1..4 (Skill), NumPad 1..4 (Ultimate)
+        events.on('counter_attack', ({ hero, damage, stacks, isCritical }) => {
+            const critMsg = isCritical ? ' 💥 BỘC PHÁ BREAK x2.5!' : '';
+            this.showToast(`⚔️ PHẢN KÍCH COMBO: ${stacks} STACKS ➔ ${damage} DMG LÊN BOSS!${critMsg}`, '#fbbf24');
+            this.updateHUD();
+        });
+
+        events.on('skill_executed', ({ hero, message }) => {
+            this.showToast(`✨ ${hero.name}: ${message}`, '#00f0ff');
+            this.updateHUD();
+        });
+
+        events.on('ultimate_executed', ({ hero, damage, message, isCritical }) => {
+            const msg = message || `Tung chiêu nộ cực đại gây ${damage} DMG!`;
+            this.showToast(`🌌 ${hero.name}: ${msg}`, '#a855f7');
+            this.updateHUD();
+        });
+
+        // Phím tắt bàn phím: 1..4 (Skill), NumPad 1..4 (Ultimate), Space (Phòng thủ sớm)
         window.addEventListener('keydown', (e) => {
             if (['1', '2', '3', '4'].includes(e.key)) {
                 const idx = parseInt(e.key) - 1;
@@ -230,6 +313,9 @@ export class TacticalHUD {
             } else if (['Numpad1', 'Numpad2', 'Numpad3', 'Numpad4'].includes(e.code)) {
                 const idx = parseInt(e.code.replace('Numpad', '')) - 1;
                 window.triggerHeroUlt(idx);
+            } else if (e.code === 'Space') {
+                e.preventDefault();
+                window.endTurnEarly();
             }
         });
 
@@ -252,16 +338,20 @@ export class TacticalHUD {
 
         // Hàm toàn cục cho nút bấm HTML gọi
         window.triggerHeroUlt = (idx) => {
-            this.state.triggerUltimate(idx);
+            const ok = this.state.triggerUltimate(idx);
+            if (ok) this.updateHUD();
         };
 
         window.triggerHeroSkill = (idx) => {
-            const h = this.state.heroes[idx];
-            if (h && h.skillCd === 0) {
-                h.skillCd = h.maxCd;
-                events.emit('damage_dealt', { hero: h });
-                this.updateHUD();
-            }
+            const ok = this.state.triggerSkill(idx);
+            if (ok) this.updateHUD();
+        };
+
+        window.endTurnEarly = async () => {
+            if (this.state.isProcessing) return;
+            const pct = Math.round((this.state.movesLeft / this.state.maxMoves) * 100);
+            this.showToast(`🛡️ KÍCH HOẠT PHÒNG THỦ SỚM (GIẢM ${pct}% SÁT THƯƠNG BOSS)!`, '#38bdf8');
+            await this.state.endTurnEarly();
         };
     }
 
