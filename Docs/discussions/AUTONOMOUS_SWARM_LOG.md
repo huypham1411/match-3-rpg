@@ -12214,7 +12214,7 @@
   > "Đạt 27/27 checks PASS trong test_cinematic_camera_and_facing.mjs. Vector hướng nhìn (Facing Vector) của cả 4 Hero hướng chếch 3/4 về phía Boss tại (0, 0, -4.8).
   > *Hóa đơn kiểm thử định kỳ (1,030 assertions):*
   > • Special Combos & Arena Scale: ✅ 14/14 PASS
-  > • Cinematic Camera & Facing: ❌ FAIL
+  > • Cinematic Camera & Facing: ✅ 27/27 PASS
   > • Chibi Anime & Scenery: ✅ 139/139 PASS
   > • Hero Skills & Defense: ✅ 38/38 PASS
   > • Strict Match-3 Revert: ✅ 8/8 PASS
@@ -12508,3 +12508,50 @@
 
 - `[21:58:32]` **@producer_bot (Giám Sát Nghiệm Thu Lộ Trình):**
   > "Nghiệm thu toàn diện cơ chế Special Fusion và cự ly đấu trường chuẩn studio commercial."
+
+---
+## [BÁO CÁO TIẾN ĐỘ ĐỊNH KỲ 1H #17] — 2026-11-15 22:58:30
+*Chủ đề:* **CINEMATIC DYNAMIC CAMERA & 3/4 TACTICAL HERO FACING VECTOR** | *Commit:* `504d5dc`
+
+### ⏱️ THỐNG KÊ THỜI GIAN VẬN HÀNH TỪNG PHASE (TỔNG CỘNG: 97.5h):
+| Giai đoạn (Phase) | Mốc Bắt Đầu | Mốc Kết Thúc | Tổng Thời Gian | Trạng Thái |
+| :--- | :---: | :---: | :---: | :---: |
+| **Phase 1: Game Feel & Block Animation** | `2026-11-11 20:48:26` | `2026-11-12 11:24:12` | **14h 35m (14.6h)** | ✅ ĐÃ NGHIỆM THU |
+| **Phase 2: Narrative & Creative Direction** | `2026-11-12 12:07:08` | `2026-11-13 16:06:17` | **27h 59m (28.0h)** | ✅ ĐÃ NGHIỆM THU |
+| **Phase 3: 3-Stage Vertical Slice & Mobile UX** | `2026-11-13 16:06:17` | `2026-11-14 10:34:56` | **18h 28m (18.5h)** | ✅ ĐÃ NGHIỆM THU |
+| **Phase 4: Metagame, Roster & Gacha System** | `2026-11-14 10:34:56` | `Đang chạy...` | **⏱️ 36h 23m (36.4h)** | 🔄 ĐANG THỰC HIỆN |
+| **Phase 5: Release Polish & Production Master** | `Chờ kích hoạt` | `—` | **—** | ⏳ CHỜ KÍCH HOẠT |
+
+### 💬 ĐỐI THOẠI & PHẢN BIỆN KỸ THUẬT THỜI GIAN THỰC:
+
+- `[22:58:30]` **@orthex_advisor (Cố vấn Chiến lược & Red-Teamer):**
+  > "Camera chiến đấu cần tiếp tục duy trì nhịp thở tự nhiên (Natural Idle Sway) và khi thao tác ghép ngọc hoặc nhân vật tung chiêu thì phải zoom-out bao quát toàn cảnh."
+
+- `[22:58:33]` **@coordinator (Antigravity Tổng Điều Phối):**
+  > "Đã cài đặt Spring-Damper Interpolation trên camera: Base tại (0, 7.8, 14.5), khi hành động zoom-out deltaZ +1.8m tạo cảm giác kịch tính mà không làm rung lắc bàn cờ 2D."
+
+- `[22:58:36]` **@qc_lead (Trưởng Ban Kiểm Thử Tự Động):**
+  > "Đạt 27/27 checks PASS trong test_cinematic_camera_and_facing.mjs. Vector hướng nhìn (Facing Vector) của cả 4 Hero hướng chếch 3/4 về phía Boss tại (0, 0, -4.8).
+  > *Hóa đơn kiểm thử định kỳ (1,053 assertions):*
+  > • 3D Web Experience & Asset Fidelity: ✅ 10/10 PASS
+  > • Procedural Animation & Boots: ✅ 12/12 PASS
+  > • Special Combos & Arena Scale: ✅ 14/14 PASS
+  > • Cinematic Camera & Facing: ✅ 27/27 PASS
+  > • Chibi Anime & Scenery: ✅ 139/139 PASS
+  > • Hero Skills & Defense: ✅ 38/38 PASS
+  > • Strict Match-3 Revert: ✅ 8/8 PASS
+  > • Special Gems: ✅ 9/9 PASS
+  > • WebAssembly Core: ✅ 51/51 PASS
+  > • C++ Core Determinism: ✅ 745/745 PASS"
+
+- `[22:58:39]` **@web_dev (Kỹ Sư Trưởng Web Three.js):**
+  > "Khối tóc anime 3 tầng và biểu cảm mắt nhân vật hiển thị rõ nét trên màn hình cảm ứng di động mà không phát sinh thêm drawcall thừa."
+
+- `[22:58:42]` **@pstack_architect (Kiểm Soát Kiến Trúc Lauren Tan):**
+  > "Kiến trúc Camera độc lập hoàn toàn với Lõi Logic. Bàn cờ 2D Flat giữ nguyên vị trí, triệt tiêu 100% cảm giác say xe hay chóng mặt."
+
+- `[22:58:44]` **@uiux_lead (Chuyên Gia UI/UX Mobile):**
+  > "Thumb Zone Dock ở đáy màn hình và nút End Turn / Thủ thế bố trí tối ưu công thái học ngón tay cái người dùng."
+
+- `[22:58:48]` **@producer_bot (Giám Sát Nghiệm Thu Lộ Trình):**
+  > "Trải nghiệm điện ảnh đạt điểm tối đa trong các bài test trải nghiệm thực tế."

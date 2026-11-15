@@ -331,6 +331,7 @@ export class Diorama3D {
 
         this.cameraShakeTimer = 0;
         this.cameraShakeIntensity = 0.25;
+        this.cameraShakeOffset = new THREE.Vector3(0, 0, 0);
         this.cameraBasePos = new THREE.Vector3(0, 7.8, 14.5);
         if (this.engine && this.engine.camera) {
             this.engine.camera.position.set(0, 7.8, 14.5);
@@ -1519,6 +1520,9 @@ export class Diorama3D {
             this.cameraShakeTimer -= delta;
             shakeX = (Math.random() > 0.5 ? 1 : -1) * (0.12 + Math.random() * 0.06);
             shakeY = (Math.random() > 0.5 ? 1 : -1) * (0.10 + Math.random() * 0.05);
+        }
+        if (this.cameraShakeOffset) {
+            this.cameraShakeOffset.set(shakeX, shakeY, 0);
         }
 
         // Áp dụng tọa độ camera cuối cùng
