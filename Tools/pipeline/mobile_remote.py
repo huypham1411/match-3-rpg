@@ -141,13 +141,24 @@ def get_phase_timelines(now=None):
     ]
     return phases, total_hours_str
 
+_SWARM_LOG_CACHE = {"mtime": 0, "max_cycles": 0, "html": ""}
+
 def render_swarm_log_html(max_cycles=8):
     if not os.path.exists(SWARM_LOG_FILE):
         return '<div style="color:#64748b; text-align:center; padding:20px;">Chưa có dữ liệu thảo luận.</div>'
 
     try:
-        with open(SWARM_LOG_FILE, "r", encoding="utf-8") as f:
-            content = f.read()
+        mtime = os.path.getmtime(SWARM_LOG_FILE)
+        if _SWARM_LOG_CACHE.get("mtime") == mtime and _SWARM_LOG_CACHE.get("max_cycles") == max_cycles:
+            return _SWARM_LOG_CACHE["html"]
+
+        fsize = os.path.getsize(SWARM_LOG_FILE)
+        with open(SWARM_LOG_FILE, "r", encoding="utf-8", errors="ignore") as f:
+            if fsize > 250000:
+                f.seek(fsize - 250000)
+                content = f.read()
+            else:
+                content = f.read()
 
         raw_blocks = re.split(r'\n---\s*\n##\s*', content)
         recent_blocks = raw_blocks[-max_cycles:]
@@ -254,7 +265,11 @@ def render_swarm_log_html(max_cycles=8):
                 </div>
             """)
 
-        return "\n".join(cards_html) if cards_html else '<div style="color:#64748b; text-align:center; padding:20px;">Chưa có dữ liệu thảo luận.</div>'
+        rendered_html = "\n".join(cards_html) if cards_html else '<div style="color:#64748b; text-align:center; padding:20px;">Chưa có dữ liệu thảo luận.</div>'
+        _SWARM_LOG_CACHE["mtime"] = mtime
+        _SWARM_LOG_CACHE["max_cycles"] = max_cycles
+        _SWARM_LOG_CACHE["html"] = rendered_html
+        return rendered_html
     except Exception as e:
         return f'<div style="color:#ef4444; padding:20px;">Lỗi xử lý log: {html.escape(str(e))}</div>'
 
@@ -460,7 +475,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
         }
 
         async function runTests() {
-            showModal('ĐANG CHẠY TEST...', 'Đang biên dịch và kiểm thử 744 assertions C++, 51 WASM và 16 Phase 3 checks...');
+            showModal('ĐANG CHẠY TEST...', 'Đang biên dịch và kiểm thử 745 assertions C++, 51 WASM, 14 Arena Combos, 27 Camera, 139 Chibi và 38 Hero Skills...');
             try {
                 const res = await fetch('/api/run-tests', { method: 'POST' });
                 const data = await res.json();
@@ -745,24 +760,26 @@ class RemoteHandler(BaseHTTPRequestHandler):
 
         elif self.path == "/api/run-tests":
             test_bat = os.path.join(WORKSPACE_ROOT, "Tools", "host_tests", "build_and_run.bat")
-            res_c = subprocess.run([test_bat], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
+            res_arena = subprocess.run(["node", "Web/test_arena_scale_and_combos.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
+            res_cam = subprocess.run(["node", "Web/test_cinematic_camera_and_facing.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
+            res_chibi = subprocess.run(["node", "Web/test_chibi_anime_models_and_scenery.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
+            res_skills = subprocess.run(["node", "Web/test_hero_skills_and_defense.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
             res_strict = subprocess.run(["node", "Web/test_strict_swap.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
             res_specials = subprocess.run(["node", "Web/test_specials.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
-            res_skills = subprocess.run(["node", "Web/test_hero_skills_and_defense.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
-            res_chibi = subprocess.run(["node", "Web/test_chibi_anime_models_and_scenery.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
-            res_cam = subprocess.run(["node", "Web/test_cinematic_camera_and_facing.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
+            res_c = subprocess.run([test_bat], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
             res_wasm = subprocess.run(["node", "Web/smoke_test.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
             res_p3 = subprocess.run(["node", "Web/test_phase3.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
 
             output = (
-                f"=== 1. CINEMATIC CAMERA & HERO FACING (27 CHECKS) ===\n{res_cam.stdout}\n\n"
-                f"=== 2. CHIBI ANIME & SCENERY (139 CHECKS) ===\n{res_chibi.stdout}\n\n"
-                f"=== 3. HERO SKILLS & DEFENSE (38 CHECKS) ===\n{res_skills.stdout}\n\n"
-                f"=== 4. STRICT SWAP & REVERT (8 CHECKS) ===\n{res_strict.stdout}\n\n"
-                f"=== 5. SPECIAL GEMS (9 CHECKS) ===\n{res_specials.stdout}\n\n"
-                f"=== 6. PHASE 3 WEB (16 CHECKS) ===\n{res_p3.stdout}\n\n"
-                f"=== 7. C++ CORE STANDALONE (744 ASSERTIONS) ===\n{res_c.stdout}\n\n"
-                f"=== 8. WASM SMOKE TEST (51 CHECKS) ===\n{res_wasm.stdout}"
+                f"=== 1. ARENA SCALE & SPECIAL COMBOS (14 CHECKS) ===\n{res_arena.stdout}\n\n"
+                f"=== 2. CINEMATIC CAMERA & HERO FACING (27 CHECKS) ===\n{res_cam.stdout}\n\n"
+                f"=== 3. CHIBI ANIME & SCENERY (139 CHECKS) ===\n{res_chibi.stdout}\n\n"
+                f"=== 4. HERO SKILLS & DEFENSE (38 CHECKS) ===\n{res_skills.stdout}\n\n"
+                f"=== 5. STRICT SWAP & REVERT (8 CHECKS) ===\n{res_strict.stdout}\n\n"
+                f"=== 6. SPECIAL GEMS (9 CHECKS) ===\n{res_specials.stdout}\n\n"
+                f"=== 7. C++ CORE STANDALONE (745 ASSERTIONS) ===\n{res_c.stdout}\n\n"
+                f"=== 8. WASM SMOKE TEST (51 CHECKS) ===\n{res_wasm.stdout}\n\n"
+                f"=== 9. PHASE 3 WEB (16 CHECKS) ===\n{res_p3.stdout}"
             )
 
             self.send_compressed_response(json.dumps({"output": output}).encode("utf-8"), "application/json; charset=utf-8")

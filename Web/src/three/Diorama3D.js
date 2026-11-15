@@ -665,13 +665,31 @@ export class Diorama3D {
             torsoMesh.position.y = 0.28;
             bodyGroup.add(torsoMesh);
 
-            // Chân & Giày bốt Chibi
+            // 2 Cánh tay Chibi (Left & Right Arms)
+            const armMat = new THREE.MeshStandardMaterial({ color: cfg.color, roughness: 0.45 });
+            [-0.32, 0.32].forEach((armX, armIdx) => {
+                const armGeo = new THREE.CylinderGeometry(0.07, 0.06, 0.32, 8);
+                const armMesh = new THREE.Mesh(armGeo, armMat);
+                armMesh.position.set(armX, 0.26, 0.04);
+                armMesh.rotation.z = (armIdx === 0 ? 1 : -1) * 0.35;
+                armMesh.rotation.x = -0.2;
+                bodyGroup.add(armMesh);
+            });
+
+            // Chân & Ủng Chunky Boots Chibi
             const bootMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5 });
+            const bootSoleMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
             [-0.14, 0.14].forEach(legX => {
                 const legGeo = new THREE.CylinderGeometry(0.09, 0.11, 0.35, 8);
                 const leg = new THREE.Mesh(legGeo, bootMat);
                 leg.position.set(legX, 0.05, 0);
                 bodyGroup.add(leg);
+
+                // Ủng Chunky Boots đế dày
+                const bootGeo = new THREE.BoxGeometry(0.18, 0.16, 0.24);
+                const bootMesh = new THREE.Mesh(bootGeo, bootSoleMat);
+                bootMesh.position.set(legX, -0.06, 0.04);
+                bodyGroup.add(bootMesh);
             });
 
             // Bóng tròn mờ dưới chân
@@ -1013,67 +1031,42 @@ export class Diorama3D {
     playHeroAttack(heroCtrl, isCounter = false) {
         heroCtrl.state = 'attack';
         heroCtrl.animPhase = 'anticipate';
-        heroCtrl.animTimer = 0.45;
-        heroCtrl.face.material.map = heroCtrl.faceTex.attack;
+        heroCtrl.animTime = 0.0;
+        heroCtrl.isCounter = isCounter;
+        heroCtrl.targetX = isCounter ? 0.0 : heroCtrl.baseX * 0.35;
+        heroCtrl.targetZ = heroCtrl.baseZ - 2.8;
 
-        // Lunge lướt xa tới tiền tuyến Boss (Delta Z <= -2.5m)
-        const targetX = isCounter ? 0.0 : heroCtrl.baseX * 0.35;
-        const targetZ = heroCtrl.baseZ - 2.8;
-
-        heroCtrl.root.position.set(targetX, heroCtrl.baseY + 0.25, targetZ);
+        // Thiết lập vị trí lướt tới targetZ và nén nhẹ lấy đà
+        heroCtrl.root.position.set(heroCtrl.targetX, heroCtrl.baseY + 0.25, heroCtrl.targetZ);
         heroCtrl.body.rotation.x = 0.4;
-        heroCtrl.weapon.rotation.x = -Math.PI / 2.5;
-
-        setTimeout(() => {
-            // Giật lùi về vị trí cũ với độ nảy đàn hồi (Recoil Bounce)
-            heroCtrl.root.position.set(heroCtrl.baseX, heroCtrl.baseY, heroCtrl.baseZ);
-            heroCtrl.body.rotation.x = 0;
-            heroCtrl.weapon.rotation.x = 0;
-            heroCtrl.state = 'idle';
-            heroCtrl.animPhase = 'idle';
-            heroCtrl.face.material.map = heroCtrl.faceTex.normal;
-        }, 320);
+        if (heroCtrl.weapon) heroCtrl.weapon.rotation.x = -Math.PI / 2.5;
+        if (heroCtrl.face && heroCtrl.faceTex) heroCtrl.face.material.map = heroCtrl.faceTex.attack;
     }
 
     /** Diễn hoạt Hero tung chiêu nộ cực đại (Super Attack) */
     playHeroSuperAttack(heroCtrl) {
-        heroCtrl.state = 'attack';
-        heroCtrl.animTimer = 0.7;
-        heroCtrl.face.material.map = heroCtrl.faceTex.attack;
+        heroCtrl.state = 'super_attack';
+        heroCtrl.animPhase = 'super_attack';
+        heroCtrl.animTime = 0.0;
 
         // Nhảy vọt lên không trung
         heroCtrl.root.position.set(heroCtrl.baseX * 0.2, heroCtrl.baseY + 1.6, heroCtrl.baseZ - 1.2);
         heroCtrl.body.rotation.x = 0.6;
-        heroCtrl.weapon.rotation.z = Math.PI * 2;
-
-        setTimeout(() => {
-            heroCtrl.root.position.set(heroCtrl.baseX, heroCtrl.baseY, heroCtrl.baseZ);
-            heroCtrl.body.rotation.x = 0;
-            heroCtrl.weapon.rotation.z = 0;
-            heroCtrl.state = 'idle';
-            heroCtrl.face.material.map = heroCtrl.faceTex.normal;
-        }, 550);
+        if (heroCtrl.weapon) heroCtrl.weapon.rotation.z = Math.PI * 2;
+        if (heroCtrl.face && heroCtrl.faceTex) heroCtrl.face.material.map = heroCtrl.faceTex.attack;
     }
 
     /** Diễn hoạt Hero bị trúng đòn (Hit Reaction) */
     playHeroHit(heroCtrl) {
         if (heroCtrl.isDefeated) return;
         heroCtrl.state = 'hit';
+        heroCtrl.animTime = 0.0;
         heroCtrl.shakeTimer = 0.35;
-        heroCtrl.face.material.map = heroCtrl.faceTex.hit;
 
         // Giật lùi về sau và nghiêng người
         heroCtrl.root.position.z = heroCtrl.baseZ + 0.35;
         heroCtrl.body.rotation.x = -0.35;
-
-        setTimeout(() => {
-            if (!heroCtrl.isDefeated) {
-                heroCtrl.root.position.z = heroCtrl.baseZ;
-                heroCtrl.body.rotation.x = 0;
-                heroCtrl.state = 'idle';
-                heroCtrl.face.material.map = heroCtrl.faceTex.normal;
-            }
-        }, 220);
+        if (heroCtrl.face && heroCtrl.faceTex) heroCtrl.face.material.map = heroCtrl.faceTex.hit;
     }
 
     /** Diễn hoạt Hero tử trận (Die Animation) */
@@ -1180,16 +1173,131 @@ export class Diorama3D {
             }
         }
 
-        // A. DIỄN HOẠT IDLE & RUNG CHẤN CỦA TỪNG HERO (CHIBI BOBBING & TRAUMA SHAKE)
+        // A. DIỄN HOẠT IDLE, ATTACK & RUNG CHẤN CỦA TỪNG HERO (FRAME-BY-FRAME PROCEDURAL ANIMATION)
         this.heroes.forEach(h => {
             if (h.shakeTimer > 0) {
                 h.shakeTimer -= delta;
                 h.root.position.x = h.baseX + (Math.random() - 0.5) * 0.14;
-            } else {
+            } else if (h.state !== 'attack' && h.state !== 'super_attack') {
                 h.root.position.x = h.baseX;
             }
 
-            if (h.state === 'idle' && !h.isDefeated) {
+            if (h.state === 'attack') {
+                h.animTime = (h.animTime || 0) + delta;
+                const t = h.animTime;
+
+                if (t < 0.12) {
+                    // PHA 1: ANTICIPATE (Lấy đà & nén thể tích Squash)
+                    h.animPhase = 'anticipate';
+                    const p = Math.min(1.0, t / 0.12);
+                    const sy = 1.0 - 0.18 * p;
+                    const sxz = 1.0 + 0.10 * p;
+                    h.body.scale.set(sxz, sy, sxz);
+                    h.root.position.set(h.targetX || 0, h.baseY - 0.08 * p, h.targetZ || (h.baseZ - 2.8));
+                    if (h.weapon) {
+                        h.weapon.rotation.x = 0.5 * p;
+                    }
+                } else if (t < 0.36) {
+                    // PHA 2: LUNGE (Lao vút tới tiền tuyến với Stretch thể tích)
+                    h.animPhase = 'lunge';
+                    const p = Math.min(1.0, (t - 0.12) / 0.24);
+                    h.body.scale.set(0.88, 1.25, 0.88);
+                    const curX = h.targetX !== undefined ? h.targetX : 0;
+                    const curZ = h.targetZ || (h.baseZ - 2.8);
+                    const curY = h.baseY + Math.sin(p * Math.PI) * 0.38;
+                    h.root.position.set(curX, curY, curZ);
+                    h.body.rotation.x = 0.35 * p;
+                    if (h.weapon) {
+                        h.weapon.rotation.x = -1.8 * p;
+                        h.weapon.rotation.z = 0.6 * p;
+                    }
+                } else if (t < 0.42) {
+                    // PHA 3: IMPACT & HIT-STOP (Dừng khung hình va chạm)
+                    h.animPhase = 'impact';
+                    h.root.position.set(h.targetX !== undefined ? h.targetX : 0, h.baseY + 0.1, h.targetZ || (h.baseZ - 2.8));
+                    h.body.scale.set(1.05, 0.95, 1.05);
+                    this.hitStopTimer = Math.max(this.hitStopTimer || 0, 0.06);
+                    this.hitStopDuration = 0.06;
+                } else if (t < 0.60) {
+                    // PHA 4: RECOIL (Bật giật lùi về vị trí ban đầu bằng Spring-Damper)
+                    h.animPhase = 'recoil';
+                    const p = Math.min(1.0, (t - 0.42) / 0.18);
+                    const ease = 1.0 - Math.pow(1.0 - p, 2);
+                    const curX = (h.targetX !== undefined ? h.targetX : 0) + (h.baseX - (h.targetX !== undefined ? h.targetX : 0)) * ease;
+                    const curZ = (h.targetZ || (h.baseZ - 2.8)) + (h.baseZ - (h.targetZ || (h.baseZ - 2.8))) * ease;
+                    const curY = h.baseY + (1.0 - p) * 0.1;
+                    h.root.position.set(curX, curY, curZ);
+                    h.body.rotation.x = 0.35 * (1.0 - ease);
+                    if (h.weapon) {
+                        h.weapon.rotation.x = -1.8 * (1.0 - ease);
+                        h.weapon.rotation.z = 0.6 * (1.0 - ease);
+                    }
+                    const bounce = Math.sin(p * Math.PI * 2) * 0.08 * (1.0 - p);
+                    h.body.scale.set(1.0 - bounce, 1.0 + bounce, 1.0 - bounce);
+                } else {
+                    // KẾT THÚC: Trở về Idle
+                    h.root.position.set(h.baseX, h.baseY, h.baseZ);
+                    h.body.rotation.x = 0;
+                    h.body.scale.set(1.0, 1.0, 1.0);
+                    if (h.weapon) {
+                        h.weapon.rotation.x = 0;
+                        h.weapon.rotation.z = 0;
+                    }
+                    h.state = 'idle';
+                    h.animPhase = 'idle';
+                    h.animTime = 0;
+                    if (h.face && h.faceTex) {
+                        h.face.material.map = h.faceTex.normal;
+                    }
+                }
+            } else if (h.state === 'super_attack') {
+                h.animTime = (h.animTime || 0) + delta;
+                const t = h.animTime;
+                if (t < 0.55) {
+                    h.animPhase = 'super_attack';
+                    const p = Math.min(1.0, t / 0.55);
+                    const apexY = h.baseY + Math.sin(p * Math.PI) * 1.75;
+                    const lungeZ = h.baseZ - Math.sin(p * Math.PI) * 2.2;
+                    h.root.position.set(h.baseX * (1.0 - p * 0.5), apexY, lungeZ);
+                    h.body.rotation.x = p * Math.PI * 2;
+                    if (h.weapon) {
+                        h.weapon.rotation.z = p * Math.PI * 4;
+                    }
+                } else {
+                    h.root.position.set(h.baseX, h.baseY, h.baseZ);
+                    h.body.rotation.x = 0;
+                    h.body.scale.set(1.0, 1.0, 1.0);
+                    if (h.weapon) {
+                        h.weapon.rotation.z = 0;
+                    }
+                    h.state = 'idle';
+                    h.animPhase = 'idle';
+                    h.animTime = 0;
+                    if (h.face && h.faceTex) {
+                        h.face.material.map = h.faceTex.normal;
+                    }
+                }
+            } else if (h.state === 'hit') {
+                h.animTime = (h.animTime || 0) + delta;
+                const t = h.animTime;
+                if (t < 0.30) {
+                    const p = Math.min(1.0, t / 0.30);
+                    const flinch = Math.sin(p * Math.PI);
+                    h.root.position.z = h.baseZ + 0.36 * flinch;
+                    h.root.position.y = h.baseY + 0.06 * flinch;
+                    h.body.rotation.x = -0.32 * flinch;
+                    h.body.scale.set(1.08 * flinch + (1 - flinch), 0.92 * flinch + (1 - flinch), 1.08 * flinch + (1 - flinch));
+                } else {
+                    h.root.position.set(h.baseX, h.baseY, h.baseZ);
+                    h.body.rotation.x = 0;
+                    h.body.scale.set(1.0, 1.0, 1.0);
+                    h.state = 'idle';
+                    h.animTime = 0;
+                    if (h.face && h.faceTex) {
+                        h.face.material.map = h.faceTex.normal;
+                    }
+                }
+            } else if (h.state === 'idle' && !h.isDefeated) {
                 // Nhịp thở bập bồng Chibi mềm mại
                 h.body.position.y = Math.sin(elapsed * 3.5 + h.offset) * 0.06;
                 h.body.rotation.z = Math.sin(elapsed * 1.8 + h.offset) * 0.035;

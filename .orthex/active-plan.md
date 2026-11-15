@@ -1,16 +1,21 @@
 # ACTIVE MULTI-AGENT PLAN (PSTACK MICHELIN RIGOR)
-*Cập nhật:* `2026-11-14 21:34:40` | *Chu kỳ thực:* **#1** | *Commit:* `46ff22f`
+*Cập nhật:* `2026-11-15 18:22:42` | *Chu kỳ thực:* **#11** | *Commit:* `bda7b87`
 
-### ⏱️ THỐNG KÊ THỜI GIAN VẬN HÀNH TỪNG PHASE (TỔNG CỘNG: 72.1h):
+### ⏱️ THỐNG KÊ THỜI GIAN VẬN HÀNH TỪNG PHASE (TỔNG CỘNG: 92.9h):
 | Giai đoạn (Phase) | Mốc Bắt Đầu | Mốc Kết Thúc | Tổng Thời Gian | Trạng Thái |
 | :--- | :---: | :---: | :---: | :---: |
 | **Phase 1: Game Feel & Block Animation** | `2026-11-11 20:48:26` | `2026-11-12 11:24:12` | **14h 35m (14.6h)** | ✅ ĐÃ NGHIỆM THU |
 | **Phase 2: Narrative & Creative Direction** | `2026-11-12 12:07:08` | `2026-11-13 16:06:17` | **27h 59m (28.0h)** | ✅ ĐÃ NGHIỆM THU |
 | **Phase 3: 3-Stage Vertical Slice & Mobile UX** | `2026-11-13 16:06:17` | `2026-11-14 10:34:56` | **18h 28m (18.5h)** | ✅ ĐÃ NGHIỆM THU |
-| **Phase 4: Metagame, Roster & Gacha System** | `2026-11-14 10:34:56` | `Đang chạy...` | **⏱️ 10h 59m (11.0h)** | 🔄 ĐANG THỰC HIỆN |
+| **Phase 4: Metagame, Roster & Gacha System** | `2026-11-14 10:34:56` | `Đang chạy...` | **⏱️ 31h 47m (31.8h)** | 🔄 ĐANG THỰC HIỆN |
 | **Phase 5: Release Polish & Production Master** | `Chờ kích hoạt` | `—` | **—** | ⏳ CHỜ KÍCH HOẠT |
 
 ## Bằng Chứng Kiểm Thử Gần Nhất (Receipts):
-- `Web/test_phase3.mjs`: 16 PASS / 0 FAIL
+- `Web/test_arena_scale_and_combos.mjs`: 14 PASS / 0 FAIL
+- `Web/test_cinematic_camera_and_facing.mjs`: 27 PASS / 0 FAIL
+- `Web/test_chibi_anime_models_and_scenery.mjs`: 139 PASS / 0 FAIL
+- `Web/test_hero_skills_and_defense.mjs`: 38 PASS / 0 FAIL
+- `Web/test_strict_swap.mjs`: 8 PASS / 0 FAIL
+- `Web/test_specials.mjs`: 9 PASS / 0 FAIL
 - `Web/smoke_test.mjs`: 51 PASS / 0 FAIL
-- `Tools/host_tests/`: 744 PASS / 0 FAIL
+- `Tools/host_tests/`: 745 PASS / 0 FAIL
