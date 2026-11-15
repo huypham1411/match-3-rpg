@@ -760,6 +760,8 @@ class RemoteHandler(BaseHTTPRequestHandler):
 
         elif self.path == "/api/run-tests":
             test_bat = os.path.join(WORKSPACE_ROOT, "Tools", "host_tests", "build_and_run.bat")
+            res_web3d = subprocess.run(["node", "Web/test_3d_web_experience_and_asset_fidelity.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
+            res_anim = subprocess.run(["node", "Web/test_chibi_animation_and_asset_fidelity.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
             res_arena = subprocess.run(["node", "Web/test_arena_scale_and_combos.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
             res_cam = subprocess.run(["node", "Web/test_cinematic_camera_and_facing.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
             res_chibi = subprocess.run(["node", "Web/test_chibi_anime_models_and_scenery.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
@@ -771,15 +773,17 @@ class RemoteHandler(BaseHTTPRequestHandler):
             res_p3 = subprocess.run(["node", "Web/test_phase3.mjs"], cwd=WORKSPACE_ROOT, capture_output=True, text=True)
 
             output = (
-                f"=== 1. ARENA SCALE & SPECIAL COMBOS (14 CHECKS) ===\n{res_arena.stdout}\n\n"
-                f"=== 2. CINEMATIC CAMERA & HERO FACING (27 CHECKS) ===\n{res_cam.stdout}\n\n"
-                f"=== 3. CHIBI ANIME & SCENERY (139 CHECKS) ===\n{res_chibi.stdout}\n\n"
-                f"=== 4. HERO SKILLS & DEFENSE (38 CHECKS) ===\n{res_skills.stdout}\n\n"
-                f"=== 5. STRICT SWAP & REVERT (8 CHECKS) ===\n{res_strict.stdout}\n\n"
-                f"=== 6. SPECIAL GEMS (9 CHECKS) ===\n{res_specials.stdout}\n\n"
-                f"=== 7. C++ CORE STANDALONE (745 ASSERTIONS) ===\n{res_c.stdout}\n\n"
-                f"=== 8. WASM SMOKE TEST (51 CHECKS) ===\n{res_wasm.stdout}\n\n"
-                f"=== 9. PHASE 3 WEB (16 CHECKS) ===\n{res_p3.stdout}"
+                f"=== 1. 3D WEB EXPERIENCE & ASSET FIDELITY (10 CHECKS) ===\n{res_web3d.stdout}\n\n"
+                f"=== 2. CHIBI ANIMATION & PROCEDURAL ASSET (12 CHECKS) ===\n{res_anim.stdout}\n\n"
+                f"=== 3. ARENA SCALE & SPECIAL COMBOS (14 CHECKS) ===\n{res_arena.stdout}\n\n"
+                f"=== 4. CINEMATIC CAMERA & HERO FACING (27 CHECKS) ===\n{res_cam.stdout}\n\n"
+                f"=== 5. CHIBI ANIME & SCENERY (139 CHECKS) ===\n{res_chibi.stdout}\n\n"
+                f"=== 6. HERO SKILLS & DEFENSE (38 CHECKS) ===\n{res_skills.stdout}\n\n"
+                f"=== 7. STRICT SWAP & REVERT (8 CHECKS) ===\n{res_strict.stdout}\n\n"
+                f"=== 8. SPECIAL GEMS (9 CHECKS) ===\n{res_specials.stdout}\n\n"
+                f"=== 9. C++ CORE STANDALONE (745 ASSERTIONS) ===\n{res_c.stdout}\n\n"
+                f"=== 10. WASM SMOKE TEST (51 CHECKS) ===\n{res_wasm.stdout}\n\n"
+                f"=== 11. PHASE 3 WEB (16 CHECKS) ===\n{res_p3.stdout}"
             )
 
             self.send_compressed_response(json.dumps({"output": output}).encode("utf-8"), "application/json; charset=utf-8")

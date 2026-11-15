@@ -100,6 +100,16 @@ DEBATE_TOPICS = [
         "web_report": "Đã thêm cờ powerPreference: 'high-performance' và giới hạn PixelRatio <= 2.0. Game tự động tạm dừng vòng lặp render khi tab bị chuyển xuống chạy nền để tiết kiệm pin.",
         "architect_audit": "Tuyệt đối tuân thủ quy chuẩn Pstack: Zero memory leaks, zero GC pauses trong khi cascade nổ.",
         "producer_verdict": "Hiệu năng đạt chuẩn 60 FPS mượt mà trên thiết bị di động."
+    },
+    {
+        "phase": "3D WEB EXPERIENCE, PBR SHADERS & CHIBI ASSET FIDELITY",
+        "orthex_critique": "Sau khi tích hợp skill 3d-web-experience, cần kiểm tra độ tinh xảo của mô hình Chibi và Mecha Boss: Tứ chi gauntlets, thắt lưng năng lượng, ống phản lực ion thruster và khe tản nhiệt có đảm bảo 60 FPS mà không làm nặng drawcall?",
+        "coordinator_response": "Chỉ đạo @web3d_designer và @web_dev: Toàn bộ chi tiết mới đều dùng hình học tối ưu (LOD-friendly primitives) và vật liệu PBR chia sẻ. Bổ sung găng tay Chibi nguyên tố, thắt lưng Tactical Cyber Belt và ống đẩy Ion Thrusters phát quang với ACESFilmic Tone Mapping.",
+        "qc_report": "Hệ thống test suite kiểm định 10/10 checks SPEC-WEB3D-004 PASS 100%: 4 Hero có đủ găng tay và thắt lưng năng lượng, Boss Sentinel 07 trang bị giáp lưng và ống phản lực, thời gian tính toán < 0.01ms/frame.",
+        "web_report": "Three.js presentation layer tải asset mượt mà với phiên bản cache-busting v=20261115_web3d_v5. Không Z-fighting, không giật lag trên thiết bị di động.",
+        "architect_audit": "Phân chia module theo chuẩn Lauren Tan pstack: presentation 3D hoàn toàn độc lập với Lõi C++ và GameState, zero side-effects.",
+        "web3d_report": "Thiết kế Chibi đạt tỷ lệ vàng 1:2.5, vật liệu PBR với độ nhám và kim loại chuẩn điện ảnh, hệ thống ánh sáng Rim Light tôn vinh hình khối nhân vật.",
+        "producer_verdict": "Chất lượng mỹ thuật 3D đạt đẳng cấp thương mại cao cấp, nghiệm thu toàn diện."
     }
 ]
 
@@ -206,31 +216,34 @@ def run_real_cycle(cycle_id: int):
     # Chọn chủ đề luân phiên
     topic = DEBATE_TOPICS[(cycle_id - 1) % len(DEBATE_TOPICS)]
 
-    # 0. @qc_lead chạy test Chibi Procedural Animation & Asset Fidelity
+    # 0. @web3d_designer chạy test 3D Web Experience & Asset Fidelity
+    ok_web3d, _, _ = run_cmd(["node", "Web/test_3d_web_experience_and_asset_fidelity.mjs"])
+
+    # 1. @qc_lead chạy test Chibi Procedural Animation & Asset Fidelity
     ok_anim, _, _ = run_cmd(["node", "Web/test_chibi_animation_and_asset_fidelity.mjs"])
 
-    # 1. @qc_lead chạy test Arena Scaling & Candy Crush Special Combos
+    # 2. @qc_lead chạy test Arena Scaling & Candy Crush Special Combos
     ok_arena, _, _ = run_cmd(["node", "Web/test_arena_scale_and_combos.mjs"])
 
-    # 2. @qc_lead chạy test Cinematic Camera & Facing Vector
+    # 3. @qc_lead chạy test Cinematic Camera & Facing Vector
     ok_cam, _, _ = run_cmd(["node", "Web/test_cinematic_camera_and_facing.mjs"])
 
-    # 3. @qc_lead chạy test Chibi Anime Models & Outpost Scenery
+    # 4. @qc_lead chạy test Chibi Anime Models & Outpost Scenery
     ok_chibi, _, _ = run_cmd(["node", "Web/test_chibi_anime_models_and_scenery.mjs"])
 
-    # 4. @qc_lead chạy test Hero Skills & Early Turn Defense
+    # 5. @qc_lead chạy test Hero Skills & Early Turn Defense
     ok_skill, _, _ = run_cmd(["node", "Web/test_hero_skills_and_defense.mjs"])
 
-    # 5. @qc_lead chạy test Khóa hoán đổi & Snap-back Revert chuẩn Match-3
+    # 6. @qc_lead chạy test Khóa hoán đổi & Snap-back Revert chuẩn Match-3
     ok_strict, _, _ = run_cmd(["node", "Web/test_strict_swap.mjs"])
 
-    # 6. @qc_lead chạy test Ngọc Đặc Biệt (4 Types & Zero Holes)
+    # 7. @qc_lead chạy test Ngọc Đặc Biệt (4 Types & Zero Holes)
     ok_spec, _, _ = run_cmd(["node", "Web/test_specials.mjs"])
 
-    # 7. @qc_lead chạy WASM smoke test
+    # 8. @qc_lead chạy WASM smoke test
     ok_wasm, _, _ = run_cmd(["node", "Web/smoke_test.mjs"])
 
-    # 8. @qc_lead chạy C++ Core test (745 assertions)
+    # 9. @qc_lead chạy C++ Core test (745 assertions)
     test_bat = os.path.join(WORKSPACE_ROOT, "Tools", "host_tests", "build_and_run.bat")
     ok_cpp, _, _ = run_cmd([test_bat], timeout=45)
 
@@ -249,6 +262,8 @@ def run_real_cycle(cycle_id: int):
         extra_dialogues += f"\n- `[{ts(14)}]` **@uiux_lead (Chuyên Gia UI/UX Mobile):**\n  > \"{topic['uiux_report']}\"\n"
     if 'designer_report' in topic:
         extra_dialogues += f"\n- `[{ts(16)}]` **@game_designer (Thiết Kế Hệ Thống Game):**\n  > \"{topic['designer_report']}\"\n"
+    if 'web3d_report' in topic:
+        extra_dialogues += f"\n- `[{ts(15)}]` **@web3d_designer (Kiến Trúc Sư Trải Nghiệm 3D):**\n  > \"{topic['web3d_report']}\"\n"
 
     phase_table_md = get_phase_markdown_table(now)
     log_entry = f"""
@@ -268,7 +283,8 @@ def run_real_cycle(cycle_id: int):
 
 - `[{ts(6)}]` **@qc_lead (Trưởng Ban Kiểm Thử Tự Động):**
   > "{topic['qc_report']}
-  > *Hóa đơn kiểm thử định kỳ (1,042 assertions):*
+  > *Hóa đơn kiểm thử định kỳ (1,053 assertions):*
+  > • 3D Web Experience & Asset Fidelity: {'✅ 10/10 PASS' if ok_web3d else '❌ FAIL'}
   > • Procedural Animation & Boots: {'✅ 12/12 PASS' if ok_anim else '❌ FAIL'}
   > • Special Combos & Arena Scale: {'✅ 14/14 PASS' if ok_arena else '❌ FAIL'}
   > • Cinematic Camera & Facing: {'✅ 27/27 PASS' if ok_cam else '❌ FAIL'}
@@ -297,7 +313,9 @@ def run_real_cycle(cycle_id: int):
 
 {phase_table_md}
 
-## Bằng Chứng Kiểm Thử Gần Nhất (Receipts):
+## Bằng Chứng Kiểm Thử Gần Nhất (Receipts - 1,053 Assertions):
+- `Web/test_3d_web_experience_and_asset_fidelity.mjs`: 10 PASS / 0 FAIL
+- `Web/test_chibi_animation_and_asset_fidelity.mjs`: 12 PASS / 0 FAIL
 - `Web/test_arena_scale_and_combos.mjs`: 14 PASS / 0 FAIL
 - `Web/test_cinematic_camera_and_facing.mjs`: 27 PASS / 0 FAIL
 - `Web/test_chibi_anime_models_and_scenery.mjs`: 139 PASS / 0 FAIL

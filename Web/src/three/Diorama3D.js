@@ -665,8 +665,28 @@ export class Diorama3D {
             torsoMesh.position.y = 0.28;
             bodyGroup.add(torsoMesh);
 
-            // 2 Cánh tay Chibi (Left & Right Arms)
+            // Thắt lưng năng lượng Tactical Cyber Belt quanh eo (SPEC-WEB3D-004 / AC-04)
+            const beltGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.07, 16);
+            const beltMat = new THREE.MeshStandardMaterial({
+                color: 0x0f172a,
+                metalness: 0.85,
+                roughness: 0.25
+            });
+            const beltMesh = new THREE.Mesh(beltGeo, beltMat);
+            beltMesh.position.y = 0.17;
+            bodyGroup.add(beltMesh);
+
+            // Khóa thắt lưng Cyber Buckle phát quang
+            const buckleGeo = new THREE.BoxGeometry(0.09, 0.07, 0.05);
+            const buckleMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+            const buckleMesh = new THREE.Mesh(buckleGeo, buckleMat);
+            buckleMesh.position.set(0, 0.17, 0.25);
+            bodyGroup.add(buckleMesh);
+
+            // 2 Cánh tay Chibi (Left & Right Arms) & Bàn tay Găng tay Chibi Gauntlets (SPEC-WEB3D-004 / AC-03)
             const armMat = new THREE.MeshStandardMaterial({ color: cfg.color, roughness: 0.45 });
+            const handMat = new THREE.MeshStandardMaterial({ color: 0xffe8dc, roughness: 0.5 });
+            const cuffMat = new THREE.MeshBasicMaterial({ color: cfg.color });
             [-0.32, 0.32].forEach((armX, armIdx) => {
                 const armGeo = new THREE.CylinderGeometry(0.07, 0.06, 0.32, 8);
                 const armMesh = new THREE.Mesh(armGeo, armMat);
@@ -674,7 +694,40 @@ export class Diorama3D {
                 armMesh.rotation.z = (armIdx === 0 ? 1 : -1) * 0.35;
                 armMesh.rotation.x = -0.2;
                 bodyGroup.add(armMesh);
+
+                // Găng tay / Bàn tay Chibi Gauntlets tròn xinh xắn
+                const handGeo = new THREE.SphereGeometry(0.08, 10, 10);
+                const handMesh = new THREE.Mesh(handGeo, handMat);
+                handMesh.position.set(armX + (armIdx === 0 ? -0.06 : 0.06), 0.12, 0.10);
+                bodyGroup.add(handMesh);
+
+                // Vòng bo cổ tay Neon
+                const cuffGeo = new THREE.TorusGeometry(0.07, 0.02, 6, 12);
+                const cuffMesh = new THREE.Mesh(cuffGeo, cuffMat);
+                cuffMesh.position.set(armX + (armIdx === 0 ? -0.04 : 0.04), 0.15, 0.08);
+                bodyGroup.add(cuffMesh);
             });
+
+            // Giáp vai Cyber Pauldrons cho Hero chuyên trách
+            if (cfg.role === 'Attacker') {
+                // Astra: Giáp vai Samurai Cyber bên vai trái
+                const pldGeo = new THREE.BoxGeometry(0.16, 0.12, 0.20);
+                const pldMat = new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.8, roughness: 0.2 });
+                const pldMesh = new THREE.Mesh(pldGeo, pldMat);
+                pldMesh.position.set(-0.35, 0.38, 0.02);
+                pldMesh.rotation.z = 0.3;
+                bodyGroup.add(pldMesh);
+            } else if (cfg.role === 'Defender') {
+                // Boran: Cặp giáp vai Titan bọc thép hạng nặng 2 bên
+                [-0.38, 0.38].forEach((pX, pI) => {
+                    const pldGeo = new THREE.BoxGeometry(0.22, 0.16, 0.24);
+                    const pldMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, metalness: 0.9, roughness: 0.2 });
+                    const pldMesh = new THREE.Mesh(pldGeo, pldMat);
+                    pldMesh.position.set(pX, 0.38, 0.02);
+                    pldMesh.rotation.z = (pI === 0 ? 1 : -1) * 0.25;
+                    bodyGroup.add(pldMesh);
+                });
+            }
 
             // Chân & Ủng Chunky Boots Chibi
             const bootMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5 });
@@ -705,7 +758,7 @@ export class Diorama3D {
             bodyGroup.add(weaponGroup);
 
             if (cfg.weaponType === 'dual_katanas') {
-                // Song kiếm Katana Lôi Điện phát sáng Emissive Neon
+                // Song kiếm Katana Lôi Điện phát sáng Emissive Neon kèm Tsuba vàng
                 [-0.38, 0.38].forEach((wX, i) => {
                     const bladeGeo = new THREE.BoxGeometry(0.06, 0.95, 0.12);
                     const bladeMat = new THREE.MeshStandardMaterial({
@@ -720,9 +773,17 @@ export class Diorama3D {
                     blade.rotation.z = (i === 0 ? 1 : -1) * 0.45;
                     blade.rotation.x = -0.3;
                     weaponGroup.add(blade);
+
+                    // Chuôi kiếm Tsuba & Cán kiếm Katana
+                    const tsubaGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.03, 8);
+                    const tsubaMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.9 });
+                    const tsuba = new THREE.Mesh(tsubaGeo, tsubaMat);
+                    tsuba.position.set(wX, -0.08, 0.28);
+                    tsuba.rotation.z = (i === 0 ? 1 : -1) * 0.45;
+                    weaponGroup.add(tsuba);
                 });
             } else if (cfg.weaponType === 'void_orbs') {
-                // 3 Quả cầu tinh thể hư vô trôi nổi với Emissive Shaders
+                // 3 Quả cầu tinh thể hư vô trôi nổi với Emissive Shaders & Runic Rings
                 const orbGeo = new THREE.DodecahedronGeometry(0.14, 0);
                 const orbMat = new THREE.MeshStandardMaterial({
                     color: 0xc084fc,
@@ -734,8 +795,18 @@ export class Diorama3D {
                 });
                 for (let o = 0; o < 3; o++) {
                     const orb = new THREE.Mesh(orbGeo, orbMat);
-                    orb.position.set(Math.cos((o * Math.PI * 2) / 3) * 0.52, 0.45, Math.sin((o * Math.PI * 2) / 3) * 0.52);
+                    const orbX = Math.cos((o * Math.PI * 2) / 3) * 0.52;
+                    const orbZ = Math.sin((o * Math.PI * 2) / 3) * 0.52;
+                    orb.position.set(orbX, 0.45, orbZ);
                     weaponGroup.add(orb);
+
+                    // Vòng quỹ đạo năng lượng Runic Ring bao quanh quả cầu
+                    const ringGeo = new THREE.TorusGeometry(0.20, 0.015, 6, 16);
+                    const ringMat = new THREE.MeshBasicMaterial({ color: 0xa855f7 });
+                    const runicRing = new THREE.Mesh(ringGeo, ringMat);
+                    runicRing.position.set(orbX, 0.45, orbZ);
+                    runicRing.rotation.x = Math.PI / 4;
+                    weaponGroup.add(runicRing);
                 }
             } else if (cfg.weaponType === 'nano_staff') {
                 // Quyền trượng Nanite Thánh Nữ
@@ -760,6 +831,15 @@ export class Diorama3D {
                 const tip = new THREE.Mesh(tipGeo, tipMat);
                 tip.position.y = 0.6;
                 staff.add(tip);
+
+                // Vòng hào quang chữa lành
+                const auraGeo = new THREE.TorusGeometry(0.24, 0.02, 6, 16);
+                const auraMat = new THREE.MeshBasicMaterial({ color: 0x34d399 });
+                const auraMesh = new THREE.Mesh(auraGeo, auraMat);
+                auraMesh.position.y = 0.6;
+                auraMesh.rotation.x = Math.PI / 2;
+                staff.add(auraMesh);
+
                 weaponGroup.add(staff);
 
             } else if (cfg.weaponType === 'aegis_shield') {
@@ -777,6 +857,14 @@ export class Diorama3D {
                 const shield = new THREE.Mesh(shieldGeo, shieldMat);
                 shield.position.set(0.48, 0.35, 0.35);
                 shield.rotation.x = Math.PI / 2;
+
+                // Lõi năng lượng trung tâm Đại Khiên
+                const coreGeo = new THREE.SphereGeometry(0.16, 10, 10);
+                const coreMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+                const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+                coreMesh.position.y = 0.05;
+                shield.add(coreMesh);
+
                 weaponGroup.add(shield);
             }
 
@@ -886,6 +974,38 @@ export class Diorama3D {
 
             this.bossGroup.add(droneGroup);
             this.drones.push({ group: droneGroup, baseX: dX, offset: i * Math.PI });
+        });
+
+        // F. 2 ỐNG PHẢN LỰC ĐẨY ION THRUSTERS PHÍA SAU LƯNG (DUAL REAR ION THRUSTERS - SPEC-WEB3D-004 / AC-06)
+        [-0.7, 0.7].forEach((tX) => {
+            const thrusterGeo = new THREE.CylinderGeometry(0.24, 0.36, 0.65, 12);
+            const thrusterMat = new THREE.MeshStandardMaterial({
+                color: 0x1e293b,
+                metalness: 0.9,
+                roughness: 0.2
+            });
+            const thrusterMesh = new THREE.Mesh(thrusterGeo, thrusterMat);
+            thrusterMesh.position.set(tX, 0.3, -1.05);
+            thrusterMesh.rotation.x = -Math.PI / 3;
+            this.bossGroup.add(thrusterMesh);
+
+            // Vòng lửa phản lực Ion Glow phát sáng
+            const nozzleGeo = new THREE.CylinderGeometry(0.18, 0.22, 0.12, 12);
+            const nozzleMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+            const nozzleMesh = new THREE.Mesh(nozzleGeo, nozzleMat);
+            nozzleMesh.position.set(tX, 0.1, -1.3);
+            nozzleMesh.rotation.x = -Math.PI / 3;
+            this.bossGroup.add(nozzleMesh);
+        });
+
+        // G. KHE TẢN NHIỆT CÔNG NGHỆ CAO HAI BÊN SƯỜN (CHEST FLANK HAZARD VENTS - SPEC-WEB3D-004 / AC-07)
+        [-0.95, 0.95].forEach((vX) => {
+            const ventGeo = new THREE.BoxGeometry(0.12, 0.55, 0.18);
+            const ventMat = new THREE.MeshBasicMaterial({ color: 0xff3b30 });
+            const ventMesh = new THREE.Mesh(ventGeo, ventMat);
+            ventMesh.position.set(vX, 0.05, 0.65);
+            ventMesh.rotation.y = (vX > 0 ? -1 : 1) * 0.45;
+            this.bossGroup.add(ventMesh);
         });
 
         // Bóng Boss trên mặt đất
