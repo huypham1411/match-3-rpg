@@ -385,6 +385,162 @@ class GameState {
         return true;
     }
 
+    /** Kích hoạt tổ hợp nổ dung hợp 2 ngọc đặc biệt (Candy Crush Special Fusions) */
+    async triggerSpecialFusion(r1, c1, r2, c2, spec1, spec2) {
+        this.movesLeft--;
+        this.comboChain = 1;
+        events.emit('swap_accept', { from: { r: r1, c: c1 }, to: { r: r2, c: c2 } });
+
+        const isLine = (s) => s === SPECIAL_TYPES.LINE_ROW || s === SPECIAL_TYPES.LINE_COL;
+        const isBomb = (s) => s === SPECIAL_TYPES.BOMB_3X3;
+        const isSwapAll = (s) => s === SPECIAL_TYPES.SWAP_ALL;
+
+        const allShatteredMap = new Map();
+        const addTile = (r, c) => {
+            if (r >= 0 && r < this.height && c >= 0 && c < this.width) {
+                const key = `${r},${c}`;
+                if (!allShatteredMap.has(key)) {
+                    allShatteredMap.set(key, { r, c, color: this.grid[r][c], special: this.specialGrid[r][c] });
+                }
+            }
+        };
+
+        // Luôn bao gồm 2 ô hoán đổi
+        addTile(r1, c1);
+        addTile(r2, c2);
+
+        let damageMult = 2.0;
+
+        // 1. SWAP_ALL + SWAP_ALL (Armageddon Board Cleansing: 64 ô)
+        if (isSwapAll(spec1) && isSwapAll(spec2)) {
+            damageMult = 10.0;
+            for (let r = 0; r < this.height; r++) {
+                for (let c = 0; c < this.width; c++) {
+                    addTile(r, c);
+                }
+            }
+            if (this.boss) {
+                this.boss.stagger = 0;
+                this.boss.isBroken = true;
+                this.boss.breakTimer = 2;
+                events.emit('boss_break', { boss: this.boss });
+            }
+            events.emit('special_triggered', { type: 'ARMAGEDDON_WIPE', count: allShatteredMap.size });
+        }
+        // 2. SWAP_ALL + LINE (Prismatic Rocket Barrage)
+        else if ((isSwapAll(spec1) && isLine(spec2)) || (isSwapAll(spec2) && isLine(spec1))) {
+            damageMult = 5.0;
+            const targetColor = isSwapAll(spec1) ? this.grid[r2][c2] : this.grid[r1][c1];
+            events.emit('special_triggered', { type: 'PRISMATIC_ROCKET', color: targetColor });
+
+            const targetTiles = [];
+            for (let r = 0; r < this.height; r++) {
+                for (let c = 0; c < this.width; c++) {
+                    if (this.grid[r][c] === targetColor || (r === r1 && c === c1) || (r === r2 && c === c2)) {
+                        targetTiles.push({ r, c });
+                    }
+                }
+            }
+            targetTiles.forEach(t => {
+                addTile(t.r, t.c);
+                for (let c = 0; c < this.width; c++) addTile(t.r, c);
+                for (let r = 0; r < this.height; r++) addTile(r, t.c);
+            });
+        }
+        // 3. SWAP_ALL + BOMB (Prismatic Cluster Burst)
+        else if ((isSwapAll(spec1) && isBomb(spec2)) || (isSwapAll(spec2) && isBomb(spec1))) {
+            damageMult = 6.0;
+            const targetColor = isSwapAll(spec1) ? this.grid[r2][c2] : this.grid[r1][c1];
+            events.emit('special_triggered', { type: 'PRISMATIC_BOMB', color: targetColor });
+
+            const targetTiles = [];
+            for (let r = 0; r < this.height; r++) {
+                for (let c = 0; c < this.width; c++) {
+                    if (this.grid[r][c] === targetColor || (r === r1 && c === c1) || (r === r2 && c === c2)) {
+                        targetTiles.push({ r, c });
+                    }
+                }
+            }
+            targetTiles.forEach(t => {
+                for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                        addTile(t.r + dr, t.c + dc);
+                    }
+                }
+            });
+        }
+        // 4. BOMB + LINE (Mega Sweeper: 3 hàng nếu Line Row hoặc 3 cột nếu Line Col)
+        else if ((isBomb(spec1) && isLine(spec2)) || (isBomb(spec2) && isLine(spec1))) {
+            damageMult = 3.5;
+            const lineSpec = isLine(spec1) ? spec1 : spec2;
+            const centerR = r2;
+            const centerC = c2;
+
+            if (lineSpec === SPECIAL_TYPES.LINE_ROW) {
+                events.emit('special_triggered', { type: 'TRIPLE_LINE_ROW', r: centerR, c: centerC });
+                for (let dr = -1; dr <= 1; dr++) {
+                    const row = centerR + dr;
+                    if (row >= 0 && row < this.height) {
+                        for (let col = 0; col < this.width; col++) {
+                            addTile(row, col);
+                        }
+                    }
+                }
+            } else {
+                events.emit('special_triggered', { type: 'TRIPLE_LINE_COL', r: centerR, c: centerC });
+                for (let dc = -1; dc <= 1; dc++) {
+                    const col = centerC + dc;
+                    if (col >= 0 && col < this.width) {
+                        for (let row = 0; row < this.height; row++) {
+                            addTile(row, col);
+                        }
+                    }
+                }
+            }
+        }
+        // 5. BOMB + BOMB (Mega Nova: 5x5)
+        else if (isBomb(spec1) && isBomb(spec2)) {
+            damageMult = 4.0;
+            events.emit('special_triggered', { type: 'BOMB_5X5', r: r2, c: c2 });
+            for (let dr = -2; dr <= 2; dr++) {
+                for (let dc = -2; dc <= 2; dc++) {
+                    addTile(r2 + dr, c2 + dc);
+                }
+            }
+        }
+        // 6. LINE + LINE (Cross Cleave: 1 hàng + 1 cột)
+        else if (isLine(spec1) && isLine(spec2)) {
+            damageMult = 2.0;
+            events.emit('special_triggered', { type: 'CROSS_CLEAVE', r: r2, c: c2 });
+            for (let col = 0; col < this.width; col++) {
+                addTile(r2, col);
+            }
+            for (let row = 0; row < this.height; row++) {
+                addTile(row, c2);
+            }
+        }
+
+        const matches = Array.from(allShatteredMap.values());
+        events.emit('match_shatter', { matches, combo: this.comboChain });
+        this.processCombatMath(matches, damageMult);
+
+        // Xóa khối
+        matches.forEach(m => {
+            this.grid[m.r][m.c] = 0;
+            this.specialGrid[m.r][m.c] = SPECIAL_TYPES.NONE;
+        });
+
+        await new Promise(res => setTimeout(res, 250));
+        const dropDetails = this.applyGravityAndRefill();
+        events.emit('blocks_fall', { drops: dropDetails });
+        await new Promise(res => setTimeout(res, 300));
+
+        await this.resolveCascade();
+        if (this.movesLeft <= 0) await this.endTurn();
+        this.isProcessing = false;
+        return true;
+    }
+
     /** Tạo ngẫu nhiên bàn cờ khởi đầu (không có sẵn match-3) */
     initBoard() {
         for (let r = 0; r < this.height; r++) {
@@ -418,9 +574,17 @@ class GameState {
         this.isProcessing = true;
         events.emit('swap_start', { from: { r: r1, c: c1 }, to: { r: r2, c: c2 } });
 
-        // Kiểm tra kích hoạt ngọc tối thượng SWAP_ALL (Lỗ Đen Sắc Màu)
-        const isSwapAll1 = this.specialGrid[r1][c1] === SPECIAL_TYPES.SWAP_ALL;
-        const isSwapAll2 = this.specialGrid[r2][c2] === SPECIAL_TYPES.SWAP_ALL;
+        const spec1 = this.specialGrid[r1][c1];
+        const spec2 = this.specialGrid[r2][c2];
+
+        // 1. Nếu cả 2 đều là ngọc đặc biệt -> Kích hoạt Dung Hợp Ngọc Đặc Biệt (Candy Crush Fusion)
+        if (this.isSpecialFusion(spec1, spec2)) {
+            return await this.triggerSpecialFusion(r1, c1, r2, c2, spec1, spec2);
+        }
+
+        // 2. Kiểm tra kích hoạt ngọc tối thượng SWAP_ALL đổi với ngọc thường (Lỗ Đen Sắc Màu)
+        const isSwapAll1 = spec1 === SPECIAL_TYPES.SWAP_ALL;
+        const isSwapAll2 = spec2 === SPECIAL_TYPES.SWAP_ALL;
 
         if (isSwapAll1 || isSwapAll2) {
             const targetColor = isSwapAll1 ? this.grid[r2][c2] : this.grid[r1][c1];
@@ -2407,8 +2571,13 @@ class Diorama3D {
 
         this.cameraShakeTimer = 0;
         this.cameraShakeIntensity = 0.25;
-        this.cameraBasePos = new THREE.Vector3().copy(this.engine.camera.position);
-        this.cameraLookAtBase = new THREE.Vector3(0, 1.2, 0);
+        this.cameraBasePos = new THREE.Vector3(0, 7.8, 14.5);
+        if (this.engine && this.engine.camera) {
+            this.engine.camera.position.set(0, 7.8, 14.5);
+        }
+        this.cameraLookAtBase = new THREE.Vector3(0, 1.5, -0.8);
+        this.hitStopTimer = 0;
+        this.isHitStop = false;
 
         // Hệ thống Cinematic Dynamic Camera 3 Tầng (SPEC-CINEMATIC-CAM-001)
         this.cameraState = {
@@ -2430,20 +2599,20 @@ class Diorama3D {
 
     /** 1. XÂY DỰNG QUANG CẢNH SÂN ĐẤU CYBERPUNK (BATTLE SCENERY) */
     initStageEnvironment() {
-        // A. SÀN ĐẤU CÔNG NGHỆ CAO ĐA TẦNG (HEX-GRID ARENA FLOOR)
-        const floorGeo = new THREE.CylinderGeometry(5.4, 5.8, 0.45, 48);
+        // A. SÀN ĐẤU CÔNG NGHỆ CAO ĐA TẦNG (HEX-GRID ARENA FLOOR) - QUY MÔ MỞ RỘNG (SPEC-COMBAT-SCALE-002)
+        const floorGeo = new THREE.CylinderGeometry(9.2, 9.8, 0.6, 48);
         const floorMat = new THREE.MeshStandardMaterial({
             map: createCyberArenaFloorTexture(),
             metalness: 0.85,
             roughness: 0.35
         });
         const floor = new THREE.Mesh(floorGeo, floorMat);
-        floor.position.y = -0.22;
+        floor.position.y = -0.30;
         floor.receiveShadow = true;
         this.stageGroup.add(floor);
 
         // Vành đai Neon bảo vệ sàn đấu (Outer Neon Border Ring)
-        const outerRingGeo = new THREE.TorusGeometry(5.45, 0.08, 16, 64);
+        const outerRingGeo = new THREE.TorusGeometry(9.25, 0.12, 16, 64);
         const outerRingMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
         const outerRing = new THREE.Mesh(outerRingGeo, outerRingMat);
         outerRing.rotation.x = Math.PI / 2;
@@ -2451,19 +2620,19 @@ class Diorama3D {
         this.stageGroup.add(outerRing);
 
         // Vòng năng lượng xoay ngầm bên dưới sàn
-        const underRingGeo = new THREE.RingGeometry(3.0, 3.25, 48);
+        const underRingGeo = new THREE.RingGeometry(5.5, 5.9, 48);
         const underRingMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide });
         this.underRingMesh = new THREE.Mesh(underRingGeo, underRingMat);
         this.underRingMesh.rotation.x = Math.PI / 2;
         this.underRingMesh.position.y = 0.02;
         this.stageGroup.add(this.underRingMesh);
 
-        // B. 4 CỘT THÁP NĂNG LƯỢNG MONOLITHS (QUANG CẢNH MÔI TRƯỜNG CHIẾN TRƯỜNG)
+        // B. 4 CỘT THÁP NĂNG LƯỢNG MONOLITHS (QUANG CẢNH MÔI TRƯỜNG CHIẾN TRƯỜNG MỞ RỘNG >= 7.0m)
         const pillarCoords = [
-            { x: -5.0, z: -2.8 },
-            { x: 5.0, z: -2.8 },
-            { x: -5.6, z: 1.5 },
-            { x: 5.6, z: 1.5 }
+            { x: -7.5, z: -5.2 },
+            { x: 7.5, z: -5.2 },
+            { x: -8.2, z: 3.2 },
+            { x: 8.2, z: 3.2 }
         ];
 
         pillarCoords.forEach((coord, i) => {
@@ -2502,8 +2671,8 @@ class Diorama3D {
         // C. MÀN HÌNH HOLOGRAM TÁC CHIẾN BA CHIỀU (FLOATING TACTICAL HOLO-SCREENS)
         if (typeof document !== 'undefined') {
             const holoCoords = [
-                { x: -2.8, y: 3.2, z: -4.0, rotY: 0.35 },
-                { x: 2.8, y: 3.2, z: -4.0, rotY: -0.35 }
+                { x: -3.8, y: 3.5, z: -5.8, rotY: 0.35 },
+                { x: 3.8, y: 3.5, z: -5.8, rotY: -0.35 }
             ];
 
             holoCoords.forEach(pos => {
@@ -2796,7 +2965,7 @@ class Diorama3D {
                 const staffMat = new THREE.MeshStandardMaterial({
                     color: 0xf8fafc,
                     emissive: 0x10b981,
-                    emissiveIntensity: 0.9,
+                    emissiveIntensity: 1.35,
                     metalness: 0.8
                 });
                 const staff = new THREE.Mesh(staffGeo, staffMat);
@@ -2851,6 +3020,7 @@ class Diorama3D {
                 baseZ: cfg.z,
                 offset: idx * 0.9,
                 state: 'idle',       // 'idle' | 'attack' | 'hit' | 'die' | 'revive'
+                animPhase: 'idle',   // 'idle' | 'anticipate' | 'lunge' | 'impact' | 'recoil'
                 animTimer: 0,
                 shakeTimer: 0,
                 isDefeated: false
@@ -2861,7 +3031,7 @@ class Diorama3D {
     /** 3. DỰNG BOSS CHIBI MECHA TITAN (SENTINEL UNIT 07 / WARDEN AEGIS / NULL SOVEREIGN) */
     buildChibiBoss() {
         this.bossGroup = new THREE.Group();
-        this.bossGroup.position.set(0, 1.45, -1.9);
+        this.bossGroup.position.set(0, 1.45, -4.8);
 
         // A. KHỐI THÂN MECHA CHIBI TRÒN BÉO ĐÁNG YÊU (CHUNKY CHIBI MECHA BODY)
         const coreGeo = new THREE.DodecahedronGeometry(1.35, 1);
@@ -2956,11 +3126,12 @@ class Diorama3D {
             eye: this.bossEyeMesh,
             baseX: 0,
             baseY: 1.45,
-            baseZ: -1.9,
+            baseZ: -4.8,
             state: 'idle',       // 'idle' | 'attack' | 'hit' | 'die'
             animTimer: 0,
             shakeTimer: 0,
-            isBroken: false
+            isBroken: false,
+            isHitStop: false
         };
     }
 
@@ -3078,15 +3249,16 @@ class Diorama3D {
         });
     }
 
-    /** Diễn hoạt Hero Chibi lao tới chém (Attack Animation) */
+    /** Diễn hoạt Hero Chibi lao tới chém (Attack Animation: Anticipation -> Lunge) */
     playHeroAttack(heroCtrl, isCounter = false) {
         heroCtrl.state = 'attack';
+        heroCtrl.animPhase = 'anticipate';
         heroCtrl.animTimer = 0.45;
         heroCtrl.face.material.map = heroCtrl.faceTex.attack;
 
-        // Vút nhanh tới trước mặt Boss
+        // Lunge lướt xa tới tiền tuyến Boss (Delta Z <= -2.5m)
         const targetX = isCounter ? 0.0 : heroCtrl.baseX * 0.35;
-        const targetZ = heroCtrl.baseZ - 1.6;
+        const targetZ = heroCtrl.baseZ - 2.8;
 
         heroCtrl.root.position.set(targetX, heroCtrl.baseY + 0.25, targetZ);
         heroCtrl.body.rotation.x = 0.4;
@@ -3098,6 +3270,7 @@ class Diorama3D {
             heroCtrl.body.rotation.x = 0;
             heroCtrl.weapon.rotation.x = 0;
             heroCtrl.state = 'idle';
+            heroCtrl.animPhase = 'idle';
             heroCtrl.face.material.map = heroCtrl.faceTex.normal;
         }, 320);
     }
@@ -3171,9 +3344,12 @@ class Diorama3D {
         }, 400);
     }
 
-    /** Diễn hoạt Boss bị dính đòn (Boss Hit Reaction) */
+    /** Diễn hoạt Boss bị dính đòn (Boss Hit Reaction with Hit-Stop) */
     playBossHit(shakeIntensity = 0.35) {
         if (!this.boss) return;
+        this.hitStopTimer = 0.06;
+        this.isHitStop = true;
+        this.boss.isHitStop = true;
         this.boss.shakeTimer = shakeIntensity;
         this.bossMat.emissiveIntensity = 2.2; // Nhấp nháy chớp sáng
         this.cameraShakeTimer = Math.max(0.35, shakeIntensity);
@@ -3181,7 +3357,12 @@ class Diorama3D {
         this.triggerActionZoom();
 
         setTimeout(() => {
-            if (this.boss) this.bossMat.emissiveIntensity = 0.5;
+            this.hitStopTimer = 0;
+            this.isHitStop = false;
+            if (this.boss) {
+                this.boss.isHitStop = false;
+                this.bossMat.emissiveIntensity = 0.5;
+            }
         }, 140);
     }
 
@@ -3230,6 +3411,15 @@ class Diorama3D {
 
     /** 5. VÒNG LẶP CẬP NHẬT DIỄN HOẠ MỖI FRAME (UPDATE LOOP) */
     update(delta, elapsed) {
+        if (this.hitStopTimer > 0) {
+            this.hitStopTimer -= delta;
+            if (this.hitStopTimer <= 0) {
+                this.hitStopTimer = 0;
+                this.isHitStop = false;
+                if (this.boss) this.boss.isHitStop = false;
+            }
+        }
+
         // A. DIỄN HOẠT IDLE & RUNG CHẤN CỦA TỪNG HERO (CHIBI BOBBING & TRAUMA SHAKE)
         this.heroes.forEach(h => {
             if (h.shakeTimer > 0) {

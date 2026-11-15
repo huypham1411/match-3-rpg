@@ -300,6 +300,11 @@ static void Test_InvalidSwap()
 	// A non-adjacent swap must be rejected too.
 	const FResolveOutcome Far = Resolver.ResolveSwap(Board, FIntPoint(0, 0), FIntPoint(5, 5), ContentCore::BuildDefaultScales());
 	CHECK(!Far.bMoveAccepted);
+
+	// Swapping two special blocks must always be accepted (Candy Crush special fusion)
+	Board.SetCell(0, 0, FMatchBoardCore::MakeNormalBlock(EBlockColor::Red, ESpecialType::LineRow, 0));
+	Board.SetCell(1, 0, FMatchBoardCore::MakeNormalBlock(EBlockColor::Blue, ESpecialType::LineCol, 0));
+	CHECK(Board.TrySwapAndValidate(FIntPoint(0, 0), FIntPoint(1, 0)));
 }
 
 static void Test_Line4CreatesStripedBlock()

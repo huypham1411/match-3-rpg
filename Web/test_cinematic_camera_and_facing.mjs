@@ -293,7 +293,7 @@ globalThis.THREE = {
 const { Diorama3D } = await import('./src/three/Diorama3D.js');
 
 const mockCamera = {
-    position: new globalThis.THREE.Vector3(0, 5.2, 9.5),
+    position: new globalThis.THREE.Vector3(0, 7.8, 14.5),
     rotation: new globalThis.THREE.Vector3(0, 0, 0),
     fov: 40,
     target: new globalThis.THREE.Vector3(0, 1.2, 0),
@@ -442,7 +442,7 @@ function getHeroFacingAngle(hero) {
 // ============================================================================
 console.log('\n[NHÓM 2: CAMERA TỰ NHIÊN & TIÊU ĐIỂM NGẪU NHIÊN (AC-04 -> AC-06)]');
 
-const baseCamPos = new globalThis.THREE.Vector3(0, 5.2, 9.5);
+const baseCamPos = diorama.cameraBasePos ? diorama.cameraBasePos.clone() : new globalThis.THREE.Vector3(0, 7.8, 14.5);
 
 // AC-04: Idle Handheld Natural Sway (Camera dao động quanh vị trí base trong khoảng <= 0.25m khi idle)
 {

@@ -40,5 +40,22 @@
       "Web/dist/game.bundle.js"
     ],
     "verification": "27/27 AC checks PASS (SPEC-CINEMATIC-CAM-001), 139/139 Scenery checks PASS, 38/38 Skill/Defense checks PASS, 744/744 C++ Core checks PASS"
+  },
+  {
+    "id": 4,
+    "timestamp": "2026-11-15 14:46:54",
+    "command": "Màn đấu quá nhỏ, cần tối ưu lại khoảng cách party vs quái quá gần, model có thể làm đẹp hơn k? Các block đặc biệt đổi chỗ cho nhau k trigger các effect đặc biệt như bom+ tên lửa sẽ kích nổ 3 hàng hoặc 3 cột tùy hướng tên lửa đc tạo ra (như candy crush) animation cũng cần đc tối ưu lại cho đàng hoàng, train lại animator với các skill animation",
+    "status": "COMPLETED",
+    "executed_by": "@coordinator, @game_designer, @qc_lead, @web_dev, @character_animator",
+    "artifacts": [
+      ".agents/skills/chibi-character-animation/SKILL.md",
+      "Docs/Specs/SPEC_ARENA_SCALE_AND_SPECIAL_COMBOS.md",
+      "Web/src/core/GameState.js",
+      "Web/src/three/Diorama3D.js",
+      "Source/MatchRPG/Private/Core/MatchBoardCore.cpp",
+      "Web/test_arena_scale_and_combos.mjs",
+      "Web/dist/game.bundle.js"
+    ],
+    "verification": "14/14 AC checks PASS (SPEC-COMBAT-SCALE-002: 100%), 27/27 Camera checks PASS, 139/139 Scenery checks PASS, 38/38 Skill checks PASS, 8/8 Strict Swap PASS, 9/9 Specials PASS, 51/51 Smoke PASS, 745/745 C++ Core PASS"
   }
 ]

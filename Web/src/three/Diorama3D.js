@@ -331,8 +331,13 @@ export class Diorama3D {
 
         this.cameraShakeTimer = 0;
         this.cameraShakeIntensity = 0.25;
-        this.cameraBasePos = new THREE.Vector3().copy(this.engine.camera.position);
-        this.cameraLookAtBase = new THREE.Vector3(0, 1.2, 0);
+        this.cameraBasePos = new THREE.Vector3(0, 7.8, 14.5);
+        if (this.engine && this.engine.camera) {
+            this.engine.camera.position.set(0, 7.8, 14.5);
+        }
+        this.cameraLookAtBase = new THREE.Vector3(0, 1.5, -0.8);
+        this.hitStopTimer = 0;
+        this.isHitStop = false;
 
         // Hệ thống Cinematic Dynamic Camera 3 Tầng (SPEC-CINEMATIC-CAM-001)
         this.cameraState = {
@@ -354,20 +359,20 @@ export class Diorama3D {
 
     /** 1. XÂY DỰNG QUANG CẢNH SÂN ĐẤU CYBERPUNK (BATTLE SCENERY) */
     initStageEnvironment() {
-        // A. SÀN ĐẤU CÔNG NGHỆ CAO ĐA TẦNG (HEX-GRID ARENA FLOOR)
-        const floorGeo = new THREE.CylinderGeometry(5.4, 5.8, 0.45, 48);
+        // A. SÀN ĐẤU CÔNG NGHỆ CAO ĐA TẦNG (HEX-GRID ARENA FLOOR) - QUY MÔ MỞ RỘNG (SPEC-COMBAT-SCALE-002)
+        const floorGeo = new THREE.CylinderGeometry(9.2, 9.8, 0.6, 48);
         const floorMat = new THREE.MeshStandardMaterial({
             map: createCyberArenaFloorTexture(),
             metalness: 0.85,
             roughness: 0.35
         });
         const floor = new THREE.Mesh(floorGeo, floorMat);
-        floor.position.y = -0.22;
+        floor.position.y = -0.30;
         floor.receiveShadow = true;
         this.stageGroup.add(floor);
 
         // Vành đai Neon bảo vệ sàn đấu (Outer Neon Border Ring)
-        const outerRingGeo = new THREE.TorusGeometry(5.45, 0.08, 16, 64);
+        const outerRingGeo = new THREE.TorusGeometry(9.25, 0.12, 16, 64);
         const outerRingMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
         const outerRing = new THREE.Mesh(outerRingGeo, outerRingMat);
         outerRing.rotation.x = Math.PI / 2;
@@ -375,19 +380,19 @@ export class Diorama3D {
         this.stageGroup.add(outerRing);
 
         // Vòng năng lượng xoay ngầm bên dưới sàn
-        const underRingGeo = new THREE.RingGeometry(3.0, 3.25, 48);
+        const underRingGeo = new THREE.RingGeometry(5.5, 5.9, 48);
         const underRingMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide });
         this.underRingMesh = new THREE.Mesh(underRingGeo, underRingMat);
         this.underRingMesh.rotation.x = Math.PI / 2;
         this.underRingMesh.position.y = 0.02;
         this.stageGroup.add(this.underRingMesh);
 
-        // B. 4 CỘT THÁP NĂNG LƯỢNG MONOLITHS (QUANG CẢNH MÔI TRƯỜNG CHIẾN TRƯỜNG)
+        // B. 4 CỘT THÁP NĂNG LƯỢNG MONOLITHS (QUANG CẢNH MÔI TRƯỜNG CHIẾN TRƯỜNG MỞ RỘNG >= 7.0m)
         const pillarCoords = [
-            { x: -5.0, z: -2.8 },
-            { x: 5.0, z: -2.8 },
-            { x: -5.6, z: 1.5 },
-            { x: 5.6, z: 1.5 }
+            { x: -7.5, z: -5.2 },
+            { x: 7.5, z: -5.2 },
+            { x: -8.2, z: 3.2 },
+            { x: 8.2, z: 3.2 }
         ];
 
         pillarCoords.forEach((coord, i) => {
@@ -426,8 +431,8 @@ export class Diorama3D {
         // C. MÀN HÌNH HOLOGRAM TÁC CHIẾN BA CHIỀU (FLOATING TACTICAL HOLO-SCREENS)
         if (typeof document !== 'undefined') {
             const holoCoords = [
-                { x: -2.8, y: 3.2, z: -4.0, rotY: 0.35 },
-                { x: 2.8, y: 3.2, z: -4.0, rotY: -0.35 }
+                { x: -3.8, y: 3.5, z: -5.8, rotY: 0.35 },
+                { x: 3.8, y: 3.5, z: -5.8, rotY: -0.35 }
             ];
 
             holoCoords.forEach(pos => {
@@ -720,7 +725,7 @@ export class Diorama3D {
                 const staffMat = new THREE.MeshStandardMaterial({
                     color: 0xf8fafc,
                     emissive: 0x10b981,
-                    emissiveIntensity: 0.9,
+                    emissiveIntensity: 1.35,
                     metalness: 0.8
                 });
                 const staff = new THREE.Mesh(staffGeo, staffMat);
@@ -775,6 +780,7 @@ export class Diorama3D {
                 baseZ: cfg.z,
                 offset: idx * 0.9,
                 state: 'idle',       // 'idle' | 'attack' | 'hit' | 'die' | 'revive'
+                animPhase: 'idle',   // 'idle' | 'anticipate' | 'lunge' | 'impact' | 'recoil'
                 animTimer: 0,
                 shakeTimer: 0,
                 isDefeated: false
@@ -785,7 +791,7 @@ export class Diorama3D {
     /** 3. DỰNG BOSS CHIBI MECHA TITAN (SENTINEL UNIT 07 / WARDEN AEGIS / NULL SOVEREIGN) */
     buildChibiBoss() {
         this.bossGroup = new THREE.Group();
-        this.bossGroup.position.set(0, 1.45, -1.9);
+        this.bossGroup.position.set(0, 1.45, -4.8);
 
         // A. KHỐI THÂN MECHA CHIBI TRÒN BÉO ĐÁNG YÊU (CHUNKY CHIBI MECHA BODY)
         const coreGeo = new THREE.DodecahedronGeometry(1.35, 1);
@@ -880,11 +886,12 @@ export class Diorama3D {
             eye: this.bossEyeMesh,
             baseX: 0,
             baseY: 1.45,
-            baseZ: -1.9,
+            baseZ: -4.8,
             state: 'idle',       // 'idle' | 'attack' | 'hit' | 'die'
             animTimer: 0,
             shakeTimer: 0,
-            isBroken: false
+            isBroken: false,
+            isHitStop: false
         };
     }
 
@@ -1002,15 +1009,16 @@ export class Diorama3D {
         });
     }
 
-    /** Diễn hoạt Hero Chibi lao tới chém (Attack Animation) */
+    /** Diễn hoạt Hero Chibi lao tới chém (Attack Animation: Anticipation -> Lunge) */
     playHeroAttack(heroCtrl, isCounter = false) {
         heroCtrl.state = 'attack';
+        heroCtrl.animPhase = 'anticipate';
         heroCtrl.animTimer = 0.45;
         heroCtrl.face.material.map = heroCtrl.faceTex.attack;
 
-        // Vút nhanh tới trước mặt Boss
+        // Lunge lướt xa tới tiền tuyến Boss (Delta Z <= -2.5m)
         const targetX = isCounter ? 0.0 : heroCtrl.baseX * 0.35;
-        const targetZ = heroCtrl.baseZ - 1.6;
+        const targetZ = heroCtrl.baseZ - 2.8;
 
         heroCtrl.root.position.set(targetX, heroCtrl.baseY + 0.25, targetZ);
         heroCtrl.body.rotation.x = 0.4;
@@ -1022,6 +1030,7 @@ export class Diorama3D {
             heroCtrl.body.rotation.x = 0;
             heroCtrl.weapon.rotation.x = 0;
             heroCtrl.state = 'idle';
+            heroCtrl.animPhase = 'idle';
             heroCtrl.face.material.map = heroCtrl.faceTex.normal;
         }, 320);
     }
@@ -1095,9 +1104,12 @@ export class Diorama3D {
         }, 400);
     }
 
-    /** Diễn hoạt Boss bị dính đòn (Boss Hit Reaction) */
+    /** Diễn hoạt Boss bị dính đòn (Boss Hit Reaction with Hit-Stop) */
     playBossHit(shakeIntensity = 0.35) {
         if (!this.boss) return;
+        this.hitStopTimer = 0.06;
+        this.isHitStop = true;
+        this.boss.isHitStop = true;
         this.boss.shakeTimer = shakeIntensity;
         this.bossMat.emissiveIntensity = 2.2; // Nhấp nháy chớp sáng
         this.cameraShakeTimer = Math.max(0.35, shakeIntensity);
@@ -1105,7 +1117,12 @@ export class Diorama3D {
         this.triggerActionZoom();
 
         setTimeout(() => {
-            if (this.boss) this.bossMat.emissiveIntensity = 0.5;
+            this.hitStopTimer = 0;
+            this.isHitStop = false;
+            if (this.boss) {
+                this.boss.isHitStop = false;
+                this.bossMat.emissiveIntensity = 0.5;
+            }
         }, 140);
     }
 
@@ -1154,6 +1171,15 @@ export class Diorama3D {
 
     /** 5. VÒNG LẶP CẬP NHẬT DIỄN HOẠ MỖI FRAME (UPDATE LOOP) */
     update(delta, elapsed) {
+        if (this.hitStopTimer > 0) {
+            this.hitStopTimer -= delta;
+            if (this.hitStopTimer <= 0) {
+                this.hitStopTimer = 0;
+                this.isHitStop = false;
+                if (this.boss) this.boss.isHitStop = false;
+            }
+        }
+
         // A. DIỄN HOẠT IDLE & RUNG CHẤN CỦA TỪNG HERO (CHIBI BOBBING & TRAUMA SHAKE)
         this.heroes.forEach(h => {
             if (h.shakeTimer > 0) {

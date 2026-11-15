@@ -183,6 +183,13 @@ bool FMatchBoardCore::TrySwapAndValidate(const FIntPoint& A, const FIntPoint& B)
 		return true;
 	}
 
+	// Swapping any two special blocks is always a legal move (Candy Crush special fusion).
+	if (AtPoint(A).Special != ESpecialType::None && AtPoint(B).Special != ESpecialType::None)
+	{
+		SwapCells(A, B);
+		return true;
+	}
+
 	SwapCells(A, B);
 	if (WouldMatchAt(A.X, A.Y) || WouldMatchAt(B.X, B.Y)) { return true; }
 
