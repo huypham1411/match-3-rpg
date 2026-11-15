@@ -2406,7 +2406,21 @@ class Diorama3D {
         this.ambientParticles = null;
 
         this.cameraShakeTimer = 0;
+        this.cameraShakeIntensity = 0.25;
         this.cameraBasePos = new THREE.Vector3().copy(this.engine.camera.position);
+        this.cameraLookAtBase = new THREE.Vector3(0, 1.2, 0);
+
+        // Hệ thống Cinematic Dynamic Camera 3 Tầng (SPEC-CINEMATIC-CAM-001)
+        this.cameraState = {
+            isDrifting: false,
+            driftTarget: null,
+            driftTimer: 0,
+            idleTime: 0
+        };
+        this.isDrifting = false;
+
+        this.actionZoomTimer = 0;
+        this.actionZoomOffset = new THREE.Vector3(0, 0, 0);
 
         this.initStageEnvironment();
         this.buildChibiHeroes();
@@ -2556,6 +2570,8 @@ class Diorama3D {
                 color: 0xef4444,
                 hairColor: 0xd946ef,
                 x: -2.3, z: 1.2,
+                rotY: 2.62,
+                headCompAngle: -0.45,
                 weaponType: 'dual_katanas'
             },
             {
@@ -2564,6 +2580,8 @@ class Diorama3D {
                 color: 0x8b5cf6,
                 hairColor: 0xa855f7,
                 x: -0.75, z: 1.5,
+                rotY: 2.88,
+                headCompAngle: -0.35,
                 weaponType: 'void_orbs'
             },
             {
@@ -2572,6 +2590,8 @@ class Diorama3D {
                 color: 0x10b981,
                 hairColor: 0x059669,
                 x: 0.75, z: 1.5,
+                rotY: -2.88,
+                headCompAngle: 0.35,
                 weaponType: 'nano_staff'
             },
             {
@@ -2580,6 +2600,8 @@ class Diorama3D {
                 color: 0x2563eb,
                 hairColor: 0x1e3a8a,
                 x: 2.3, z: 1.2,
+                rotY: -2.62,
+                headCompAngle: 0.45,
                 weaponType: 'aegis_shield'
             }
         ];
@@ -2587,6 +2609,7 @@ class Diorama3D {
         heroConfigs.forEach((cfg, idx) => {
             const rootGroup = new THREE.Group();
             rootGroup.position.set(cfg.x, 0.45, cfg.z);
+            rootGroup.rotation.y = cfg.rotY;
 
             // Cụm lắc lư thân & đầu (Dùng cho diễn hoạt Breathing & Lunge)
             const bodyGroup = new THREE.Group();
@@ -2602,9 +2625,10 @@ class Diorama3D {
             });
             const headMesh = new THREE.Mesh(headGeo, headMat);
             headMesh.position.y = 0.78;
+            headMesh.rotation.y = cfg.headCompAngle;
             bodyGroup.add(headMesh);
 
-            // Mặt Anime Chibi dán đè phía trước đầu (Expressive Face Decal)
+            // Mặt Anime Chibi dán đè phía trước đầu (Expressive Face Decal xoay 3/4 đón góc Camera)
             const faceGeo = new THREE.PlaneGeometry(0.64, 0.64);
             const faceTexNormal = createAnimeFaceTexture(cfg.role, 'normal');
             const faceTexHit = createAnimeFaceTexture(cfg.role, 'hit');
@@ -2618,6 +2642,7 @@ class Diorama3D {
             });
             const faceMesh = new THREE.Mesh(faceGeo, faceMat);
             faceMesh.position.set(0, 0.78, 0.49);
+            faceMesh.rotation.y = cfg.headCompAngle;
             bodyGroup.add(faceMesh);
 
             // B. MÁI TÓC ANIME NHIỀU LỚP (STYLIZED CHIBI ANIME HAIR)
@@ -2728,15 +2753,21 @@ class Diorama3D {
             shadow.position.y = -0.15;
             rootGroup.add(shadow);
 
-            // D. VŨ KHÍ ANIME ĐẶC TRƯNG TỪNG NHÂN VẬT
+            // D. VŨ KHÍ ANIME ĐẶC TRƯNG TỪNG NHÂN VẬT VỚI EMISSIVE NEON SHADERS
             let weaponGroup = new THREE.Group();
             bodyGroup.add(weaponGroup);
 
             if (cfg.weaponType === 'dual_katanas') {
-                // Song kiếm Katana Lôi Điện phát sáng
+                // Song kiếm Katana Lôi Điện phát sáng Emissive Neon
                 [-0.38, 0.38].forEach((wX, i) => {
                     const bladeGeo = new THREE.BoxGeometry(0.06, 0.95, 0.12);
-                    const bladeMat = new THREE.MeshBasicMaterial({ color: 0xff3b30 });
+                    const bladeMat = new THREE.MeshStandardMaterial({
+                        color: 0xff3b30,
+                        emissive: 0xff3b30,
+                        emissiveIntensity: 1.4,
+                        metalness: 0.7,
+                        roughness: 0.2
+                    });
                     const blade = new THREE.Mesh(bladeGeo, bladeMat);
                     blade.position.set(wX, 0.4, 0.28);
                     blade.rotation.z = (i === 0 ? 1 : -1) * 0.45;
@@ -2744,9 +2775,16 @@ class Diorama3D {
                     weaponGroup.add(blade);
                 });
             } else if (cfg.weaponType === 'void_orbs') {
-                // 3 Quả cầu tinh thể hư vô trôi nổi
+                // 3 Quả cầu tinh thể hư vô trôi nổi với Emissive Shaders
                 const orbGeo = new THREE.DodecahedronGeometry(0.14, 0);
-                const orbMat = new THREE.MeshBasicMaterial({ color: 0xc084fc, wireframe: true });
+                const orbMat = new THREE.MeshStandardMaterial({
+                    color: 0xc084fc,
+                    emissive: 0xc084fc,
+                    emissiveIntensity: 1.5,
+                    wireframe: true,
+                    metalness: 0.8,
+                    roughness: 0.1
+                });
                 for (let o = 0; o < 3; o++) {
                     const orb = new THREE.Mesh(orbGeo, orbMat);
                     orb.position.set(Math.cos((o * Math.PI * 2) / 3) * 0.52, 0.45, Math.sin((o * Math.PI * 2) / 3) * 0.52);
@@ -2755,24 +2793,35 @@ class Diorama3D {
             } else if (cfg.weaponType === 'nano_staff') {
                 // Quyền trượng Nanite Thánh Nữ
                 const staffGeo = new THREE.CylinderGeometry(0.04, 0.04, 1.1, 8);
-                const staffMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.8 });
+                const staffMat = new THREE.MeshStandardMaterial({
+                    color: 0xf8fafc,
+                    emissive: 0x10b981,
+                    emissiveIntensity: 0.9,
+                    metalness: 0.8
+                });
                 const staff = new THREE.Mesh(staffGeo, staffMat);
                 staff.position.set(0.42, 0.45, 0.25);
                 staff.rotation.z = -0.25;
 
-                // Tinh thể chữa lành hình hoa ngọc bích trên đỉnh gậy
+                // Tinh thể chữa lành hình hoa ngọc bích phát sáng
                 const tipGeo = new THREE.OctahedronGeometry(0.18, 0);
-                const tipMat = new THREE.MeshBasicMaterial({ color: 0x10b981 });
+                const tipMat = new THREE.MeshStandardMaterial({
+                    color: 0x10b981,
+                    emissive: 0x10b981,
+                    emissiveIntensity: 1.3
+                });
                 const tip = new THREE.Mesh(tipGeo, tipMat);
                 tip.position.y = 0.6;
                 staff.add(tip);
                 weaponGroup.add(staff);
 
             } else if (cfg.weaponType === 'aegis_shield') {
-                // Khiên tháp lục giác hạng nặng (Aegis Shield)
+                // Khiên tháp lục giác hạng nặng (Aegis Shield) phát quang
                 const shieldGeo = new THREE.CylinderGeometry(0.62, 0.62, 0.08, 6);
                 const shieldMat = new THREE.MeshStandardMaterial({
                     color: 0x38bdf8,
+                    emissive: 0x38bdf8,
+                    emissiveIntensity: 1.2,
                     metalness: 0.9,
                     roughness: 0.15,
                     transparent: true,
@@ -2790,7 +2839,9 @@ class Diorama3D {
             this.heroes.push({
                 role: cfg.role,
                 root: rootGroup,
+                rootGroup: rootGroup,
                 body: bodyGroup,
+                head: headMesh,
                 face: faceMesh,
                 faceTex: { normal: faceTexNormal, hit: faceTexHit, die: faceTexDie, attack: faceTexAttack },
                 accessory: accessoryMesh,
@@ -2913,10 +2964,32 @@ class Diorama3D {
         };
     }
 
+    /** Kích hoạt phóng xa toàn cảnh giao tranh (Action Zoom-Out) */
+    triggerActionZoom() {
+        this.actionZoomTimer = 0.35;
+        this.actionZoomOffset.set(0, 0.95, 2.05);
+    }
+
     /** 4. KÍCH HOẠT VÀ ĐIỀU PHỐI ANIMATION THEO SỰ KIỆN GAME (EVENT LISTENERS) */
     initEventListeners() {
+        const cancelFocusDrift = () => {
+            if (this.cameraState) {
+                this.cameraState.isDrifting = false;
+                this.cameraState.idleTime = 0;
+            }
+            this.isDrifting = false;
+        };
+
+        // Ngắt tiêu điểm tức thì khi chạm vào bàn cờ Match-3 (AC-06)
+        events.on('board:pointerdown', cancelFocusDrift);
+        events.on('board:swap', cancelFocusDrift);
+        events.on('hero:attack', () => this.triggerActionZoom());
+        events.on('boss:attack', () => this.triggerActionZoom());
+        events.on('cascade_step', () => this.triggerActionZoom());
+
         // A. HERO TẤN CÔNG (ATTACK ANIMATION)
         events.on('damage_dealt', ({ hero, damage }) => {
+            this.triggerActionZoom();
             const hController = this.heroes[0]; // Astra Attacker
             if (hController && !hController.isDefeated) {
                 this.playHeroAttack(hController);
@@ -3103,6 +3176,9 @@ class Diorama3D {
         if (!this.boss) return;
         this.boss.shakeTimer = shakeIntensity;
         this.bossMat.emissiveIntensity = 2.2; // Nhấp nháy chớp sáng
+        this.cameraShakeTimer = Math.max(0.35, shakeIntensity);
+        this.cameraShakeIntensity = 0.25;
+        this.triggerActionZoom();
 
         setTimeout(() => {
             if (this.boss) this.bossMat.emissiveIntensity = 0.5;
@@ -3222,14 +3298,56 @@ class Diorama3D {
             posAttr.needsUpdate = true;
         }
 
-        // Rung máy ảnh khi có đòn đánh lớn
+        // D. HỆ THỐNG CINEMATIC DYNAMIC CAMERA (SPEC-CINEMATIC-CAM-001)
+        // 1. Quản lý thời gian nhàn rỗi & Focus Drift
+        if (this.cameraState) {
+            this.cameraState.idleTime += delta;
+            if (this.cameraState.idleTime > 4.5) {
+                this.cameraState.isDrifting = true;
+                this.isDrifting = true;
+            } else {
+                this.isDrifting = this.cameraState.isDrifting;
+            }
+        }
+
+        // 2. Tầng 1: Dao động tự nhiên Handheld Idle Sway (<= 0.25m)
+        const time = elapsed || 0;
+        const swayX = 0.035 * Math.sin(0.8 * time) + 0.015 * Math.cos(1.2 * time);
+        const swayY = 0.02 * Math.sin(1.0 * time);
+        const swayZ = 0.015 * Math.cos(0.8 * time);
+
+        // 3. Tầng 3: Action Zoom-Out & Smooth Settle Recovery
+        if (this.actionZoomTimer > 0) {
+            this.actionZoomTimer -= delta;
+            this.actionZoomOffset.y += (0.95 - this.actionZoomOffset.y) * 0.25;
+            this.actionZoomOffset.z += (2.05 - this.actionZoomOffset.z) * 0.25;
+        } else {
+            // Settle mượt mà về 0 (tau_settle damping)
+            this.actionZoomOffset.y += (0 - this.actionZoomOffset.y) * 0.25;
+            this.actionZoomOffset.z += (0 - this.actionZoomOffset.z) * 0.25;
+        }
+
+        // 4. Focus Drift offset (khi nhàn rỗi > 4.5s)
+        let driftX = 0, driftY = 0, driftZ = 0;
+        if (this.isDrifting && this.cameraState && this.cameraState.idleTime > 4.5) {
+            driftX = 0.12 * Math.sin(time * 0.4);
+            driftY = 0.08 * Math.cos(time * 0.5);
+            driftZ = -0.15;
+        }
+
+        // 5. Trauma Screen Shake
+        let shakeX = 0, shakeY = 0;
         if (this.cameraShakeTimer > 0) {
             this.cameraShakeTimer -= delta;
-            this.engine.camera.position.x = this.cameraBasePos.x + (Math.random() - 0.5) * 0.18;
-            this.engine.camera.position.y = this.cameraBasePos.y + (Math.random() - 0.5) * 0.18;
-        } else {
-            this.engine.camera.position.copy(this.cameraBasePos);
+            shakeX = (Math.random() > 0.5 ? 1 : -1) * (0.12 + Math.random() * 0.06);
+            shakeY = (Math.random() > 0.5 ? 1 : -1) * (0.10 + Math.random() * 0.05);
         }
+
+        // Áp dụng tọa độ camera cuối cùng
+        const cam = this.engine.camera;
+        cam.position.x = this.cameraBasePos.x + swayX + driftX + shakeX;
+        cam.position.y = this.cameraBasePos.y + swayY + this.actionZoomOffset.y + driftY + shakeY;
+        cam.position.z = this.cameraBasePos.z + swayZ + this.actionZoomOffset.z + driftZ;
     }
 }
 
