@@ -12555,3 +12555,50 @@
 
 - `[22:58:48]` **@producer_bot (Giám Sát Nghiệm Thu Lộ Trình):**
   > "Trải nghiệm điện ảnh đạt điểm tối đa trong các bài test trải nghiệm thực tế."
+
+---
+## [BÁO CÁO TIẾN ĐỘ ĐỊNH KỲ 1H #18] — 2026-11-15 23:58:44
+*Chủ đề:* **HERO SKILLS, COMBO SYSTEM & STRATEGIC DEFENSE MECHANIC** | *Commit:* `32ec930`
+
+### ⏱️ THỐNG KÊ THỜI GIAN VẬN HÀNH TỪNG PHASE (TỔNG CỘNG: 98.5h):
+| Giai đoạn (Phase) | Mốc Bắt Đầu | Mốc Kết Thúc | Tổng Thời Gian | Trạng Thái |
+| :--- | :---: | :---: | :---: | :---: |
+| **Phase 1: Game Feel & Block Animation** | `2026-11-11 20:48:26` | `2026-11-12 11:24:12` | **14h 35m (14.6h)** | ✅ ĐÃ NGHIỆM THU |
+| **Phase 2: Narrative & Creative Direction** | `2026-11-12 12:07:08` | `2026-11-13 16:06:17` | **27h 59m (28.0h)** | ✅ ĐÃ NGHIỆM THU |
+| **Phase 3: 3-Stage Vertical Slice & Mobile UX** | `2026-11-13 16:06:17` | `2026-11-14 10:34:56` | **18h 28m (18.5h)** | ✅ ĐÃ NGHIỆM THU |
+| **Phase 4: Metagame, Roster & Gacha System** | `2026-11-14 10:34:56` | `Đang chạy...` | **⏱️ 37h 23m (37.4h)** | 🔄 ĐANG THỰC HIỆN |
+| **Phase 5: Release Polish & Production Master** | `Chờ kích hoạt` | `—` | **—** | ⏳ CHỜ KÍCH HOẠT |
+
+### 💬 ĐỐI THOẠI & PHẢN BIỆN KỸ THUẬT THỜI GIAN THỰC:
+
+- `[23:58:44]` **@orthex_advisor (Cố vấn Chiến lược & Red-Teamer):**
+  > "Cơ chế kết thúc lượt sớm (Early Turn End) để thủ thế chống đòn sát thủ của Boss có tỷ lệ giảm sát thương thế nào khi người chơi còn 4/4 nước đi?"
+
+- `[23:58:47]` **@coordinator (Antigravity Tổng Điều Phối):**
+  > "Quy tắc thiết kế hệ số: 4/4 moves còn lại = đỡ 100% sát thương đòn đánh của Boss; giảm tuyến tính (3/4 = 75%, 2/4 = 50%, 1/4 = 25%). Đòn Counter-attack nhân với hệ số combo tích lũy."
+
+- `[23:58:50]` **@qc_lead (Trưởng Ban Kiểm Thử Tự Động):**
+  > "Bộ test test_hero_skills_and_defense.mjs đạt 38/38 checks PASS: Kích hoạt Skill của 4 Hero (Astra, Elysia, Lin, Boran) trừ chính xác nộ, áp dụng đúng hiệu ứng buff/shield/bleed.
+  > *Hóa đơn kiểm thử định kỳ (1,053 assertions):*
+  > • 3D Web Experience & Asset Fidelity: ✅ 10/10 PASS
+  > • Procedural Animation & Boots: ✅ 12/12 PASS
+  > • Special Combos & Arena Scale: ✅ 14/14 PASS
+  > • Cinematic Camera & Facing: ✅ 27/27 PASS
+  > • Chibi Anime & Scenery: ✅ 139/139 PASS
+  > • Hero Skills & Defense: ✅ 38/38 PASS
+  > • Strict Match-3 Revert: ✅ 8/8 PASS
+  > • Special Gems: ✅ 9/9 PASS
+  > • WebAssembly Core: ✅ 51/51 PASS
+  > • C++ Core Determinism: ✅ 745/745 PASS"
+
+- `[23:58:53]` **@web_dev (Kỹ Sư Trưởng Web Three.js):**
+  > "Giao diện thanh Thumb Dock cập nhật vòng tròn năng lượng SVG phát xung khi đủ nộ, nút Thủ thế (Defend) hiển thị % giảm sát thương theo thời gian thực."
+
+- `[23:58:56]` **@pstack_architect (Kiểm Soát Kiến Trúc Lauren Tan):**
+  > "Tính toán công thức phòng thủ và counter nằm trọn vẹn trong CombatMathCore.cpp, đồng bộ hóa tuyệt đối với Web presentation."
+
+- `[23:59:00]` **@game_designer (Thiết Kế Hệ Thống Game):**
+  > "Cơ chế này khuyến khích chiều sâu chiến thuật: Người chơi có thể chủ động giữ lượt để sống sót qua các đòn tất sát của Boss thay vì chỉ biết ghép ngọc mù quáng."
+
+- `[23:59:02]` **@producer_bot (Giám Sát Nghiệm Thu Lộ Trình):**
+  > "Cân bằng gameplay hoàn hảo. Xác nhận đưa vào tài liệu nghiệm thu."
