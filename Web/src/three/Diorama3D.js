@@ -39,29 +39,79 @@ function createAnimeFaceTexture(role, state = 'normal') {
     // Nền trong suốt hoàn toàn (Transparent Decal) - Da mặt kế thừa từ hình cầu 3D headMesh
     ctx.clearRect(0, 0, size, size);
 
-    // Má hồng Chibi siêu dễ thương với vệt sáng lấp lánh (Soft Anime Blushing)
+    // Cấu hình Bảng màu mắt & Phong cách Biểu cảm theo từng Nhân vật (Character Personality Themes)
+    const charThemes = {
+        Attacker: {
+            // Astra: Sát thủ Lôi Hỏa - Tsundere tự tin, mắt mèo sắc sảo (Tsurime), đồng tử rực lửa
+            dark: '#450a0a',
+            mid: '#ef4444',
+            glow: '#fbbf24',
+            accent: '#f97316',
+            brow: '#b91c1c',
+            blush: 'rgba(255, 99, 132, 0.45)',
+            eyeTilt: 0.12, // Góc xếch mắt mèo
+            hasFang: true
+        },
+        Supporter: {
+            // Elysia: Pháp sư Hư Không - Tinh nghịch, bí ẩn, mắt rủ nhẹ (Tareme), đồng tử Ngôi sao 4 cánh
+            dark: '#2e1065',
+            mid: '#7e22ce',
+            glow: '#67e8f9',
+            accent: '#c084fc',
+            brow: '#6b21a8',
+            blush: 'rgba(216, 112, 244, 0.40)',
+            eyeTilt: -0.05, // Góc mắt rủ dịu dàng
+            hasFang: false
+        },
+        Healer: {
+            // Lin: Thánh Nữ Nanite - Dịu dàng, ngây thơ, mắt to tròn long lanh, đồng tử Hoa ngọc bích 4 cánh
+            dark: '#064e3b',
+            mid: '#059669',
+            glow: '#6ee7b7',
+            accent: '#10b981',
+            brow: '#047857',
+            blush: 'rgba(255, 130, 160, 0.48)',
+            eyeTilt: -0.02,
+            hasFang: false
+        },
+        Defender: {
+            // Boran: Hiệp sĩ Mecha Titan - Điềm tĩnh, kiên nghị, mắt chiến binh công nghệ HUD
+            dark: '#082f49',
+            mid: '#0284c7',
+            glow: '#38bdf8',
+            accent: '#00f0ff',
+            brow: '#0369a1',
+            blush: 'rgba(56, 189, 248, 0.25)',
+            eyeTilt: 0.08,
+            hasFang: false
+        }
+    };
+
+    const theme = charThemes[role] || charThemes.Attacker;
+
+    // Má hồng Chibi mềm mại với vệt sáng lấp lánh (Soft Anime Blushing)
     const drawBlush = () => {
         ctx.save();
-        ctx.fillStyle = 'rgba(255, 120, 160, 0.45)';
+        ctx.fillStyle = theme.blush;
         ctx.beginPath();
-        ctx.ellipse(130, 312, 46, 22, 0, 0, Math.PI * 2);
+        ctx.ellipse(126, 310, 48, 22, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
-        ctx.ellipse(382, 312, 46, 22, 0, 0, Math.PI * 2);
+        ctx.ellipse(386, 310, 48, 22, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // 3 vạch e thẹn anime (///) trên má
+        // Vệt sáng lấp lánh (///) hoặc sao nhỏ trên má
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
         ctx.lineWidth = 3.5;
         ctx.lineCap = 'round';
-        [110, 130, 150].forEach(x => {
+        [106, 126, 146].forEach(x => {
             ctx.beginPath();
-            ctx.moveTo(x - 8, 320); ctx.lineTo(x + 8, 304);
+            ctx.moveTo(x - 8, 318); ctx.lineTo(x + 8, 302);
             ctx.stroke();
         });
-        [362, 382, 402].forEach(x => {
+        [366, 386, 406].forEach(x => {
             ctx.beginPath();
-            ctx.moveTo(x - 8, 320); ctx.lineTo(x + 8, 304);
+            ctx.moveTo(x - 8, 318); ctx.lineTo(x + 8, 302);
             ctx.stroke();
         });
         ctx.restore();
@@ -69,19 +119,14 @@ function createAnimeFaceTexture(role, state = 'normal') {
 
     drawBlush();
 
-    // Màu mắt theo nguyên tố của từng Role (Anime Multi-stop Gradients)
-    const eyeColors = {
-        Attacker: { top: '#ef4444', mid: '#f97316', bot: '#fbbf24' },   // Astra: Đỏ Hỏa - Cam - Hổ phách 🔥
-        Supporter: { top: '#8b5cf6', mid: '#a855f7', bot: '#38bdf8' },  // Elysia: Tím Thạch anh - Lam Vũ trụ 🔮
-        Healer: { top: '#059669', mid: '#10b981', bot: '#6ee7b7' },     // Lin: Lục Ngọc bích - Bạc hà 🍃
-        Defender: { top: '#1d4ed8', mid: '#2563eb', bot: '#38bdf8' }    // Boran: Xanh Cobalt - Lam Băng 💧
-    }[role] || { top: '#ef4444', mid: '#f97316', bot: '#fbbf24' };
-
+    // =========================================================================
+    // 1. TRẠNG THÁI TỬ TRẬN / BẤT TỈNH (DIE STATE)
+    // =========================================================================
     if (state === 'die') {
-        // Mắt nhắm tịt dấu X_X đáng yêu khi tử trận
-        ctx.strokeStyle = '#334155';
+        ctx.save();
         ctx.lineWidth = 14;
         ctx.lineCap = 'round';
+        ctx.strokeStyle = '#334155';
 
         // Mắt trái X
         ctx.beginPath();
@@ -98,39 +143,61 @@ function createAnimeFaceTexture(role, state = 'normal') {
         // Giọt mồ hôi anime lo lắng bên trán
         ctx.fillStyle = '#38bdf8';
         ctx.beginPath();
-        ctx.arc(425, 160, 16, 0, Math.PI * 2);
+        ctx.arc(430, 155, 18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(430, 137); ctx.lineTo(444, 155); ctx.lineTo(416, 155);
+        ctx.closePath();
         ctx.fill();
 
-        // Miệng gợn sóng buồn
+        // Miệng gợn sóng buồn bã (Wavy sad mouth)
         ctx.strokeStyle = '#475569';
         ctx.lineWidth = 6;
-        ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.arc(256, 375, 26, Math.PI * 1.15, Math.PI * 1.85);
+        ctx.arc(256, 376, 26, Math.PI * 1.15, Math.PI * 1.85);
         ctx.stroke();
 
+        // Bong bóng linh hồn anime ngất xỉu trôi nổi
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(295, 350, 10, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.restore();
+
+    // =========================================================================
+    // 2. TRẠNG THÁI DÍNH ĐÒN / SỐC (HIT STATE)
+    // =========================================================================
     } else if (state === 'hit') {
-        // Mắt nheo > < khi bị đánh trúng (Anime shock expression)
+        ctx.save();
         ctx.strokeStyle = '#1e293b';
         ctx.lineWidth = 16;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
 
+        // Mắt nheo Anime (> <) chịu lực xung chấn
         // Mắt trái >
         ctx.beginPath();
-        ctx.moveTo(90, 215); ctx.lineTo(155, 245); ctx.lineTo(90, 275);
+        ctx.moveTo(90, 215); ctx.lineTo(160, 245); ctx.lineTo(90, 275);
         ctx.stroke();
 
         // Mắt phải <
         ctx.beginPath();
-        ctx.moveTo(422, 215); ctx.lineTo(357, 245); ctx.lineTo(422, 275);
+        ctx.moveTo(422, 215); ctx.lineTo(352, 245); ctx.lineTo(422, 275);
         ctx.stroke();
 
-        // Giọt lệ anime ở khóe mắt
+        // Giọt nước mắt anime bật ra ở khóe mắt
         ctx.fillStyle = '#00f0ff';
         ctx.beginPath();
-        ctx.arc(165, 275, 12, 0, Math.PI * 2);
-        ctx.arc(347, 275, 12, 0, Math.PI * 2);
+        ctx.arc(172, 275, 12, 0, Math.PI * 2);
+        ctx.arc(340, 275, 12, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Dấu giọt nước mắt văng ra
+        ctx.beginPath();
+        ctx.arc(75, 205, 8, 0, Math.PI * 2);
+        ctx.arc(437, 205, 8, 0, Math.PI * 2);
         ctx.fill();
 
         // Miệng chữ O ngạc nhiên
@@ -138,55 +205,148 @@ function createAnimeFaceTexture(role, state = 'normal') {
         ctx.beginPath();
         ctx.arc(256, 362, 24, 0, Math.PI * 2);
         ctx.fill();
+        ctx.strokeStyle = '#b91c1c';
+        ctx.lineWidth = 4;
+        ctx.stroke();
 
+        ctx.restore();
+
+    // =========================================================================
+    // 3. TRẠNG THÁI BÌNH THƯỜNG (NORMAL) & TẤN CÔNG (ATTACK)
+    // =========================================================================
     } else {
-        // Mắt Anime tròn to long lanh đẳng cấp (Normal & Attack)
+        // Vẽ Mắt Anime Chi Tiết Từng Nhân Vật
         const drawEye = (cx, cy, isRight = false) => {
             const sign = isRight ? 1 : -1;
+            const tilt = sign * theme.eyeTilt;
             ctx.save();
 
-            // Lòng trắng mắt
-            ctx.fillStyle = '#ffffff';
+            // A. LÒNG TRẮNG MẮT (SCLERA) VỚI ĐỔ BÓNG MI TRÊN
             ctx.beginPath();
-            ctx.ellipse(cx, cy, 64, 82, 0, 0, Math.PI * 2);
+            ctx.ellipse(cx, cy, 64, 80, tilt, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
             ctx.fill();
 
-            // Tròng mắt chuyển màu Gradient 3 tầng
-            const grad = ctx.createLinearGradient(cx, cy - 70, cx, cy + 70);
-            grad.addColorStop(0, '#090d16');
-            grad.addColorStop(0.3, eyeColors.top);
-            grad.addColorStop(0.65, eyeColors.mid);
-            grad.addColorStop(1, eyeColors.bot);
+            // Đổ bóng mí mắt trên trong lòng trắng
+            ctx.beginPath();
+            ctx.ellipse(cx, cy - 8, 62, 42, tilt, Math.PI, Math.PI * 2);
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.12)';
+            ctx.fill();
+
+            // B. VIỀN NGOÀI CON NGƯƠI (LIMBAL RING) - TẠO CHIỀU SÂU SỐNG ĐỘNG
+            ctx.beginPath();
+            ctx.ellipse(cx, cy + 4, 52, 68, tilt, 0, Math.PI * 2);
+            ctx.fillStyle = '#050811';
+            ctx.fill();
+
+            // C. TRÒNG MẮT GRADIENT 4 TẦNG NGUYÊN TỐ
+            const grad = ctx.createLinearGradient(cx, cy - 65, cx, cy + 70);
+            grad.addColorStop(0, '#050811');
+            grad.addColorStop(0.28, theme.dark);
+            grad.addColorStop(0.62, theme.mid);
+            grad.addColorStop(0.92, theme.glow);
+            grad.addColorStop(1.0, '#ffffff');
             ctx.fillStyle = grad;
             ctx.beginPath();
-            ctx.ellipse(cx, cy + 6, 52, 70, 0, 0, Math.PI * 2);
+            ctx.ellipse(cx, cy + 4, 48, 64, tilt, 0, Math.PI * 2);
             ctx.fill();
 
-            // Đồng tử đen sâu thẳm
-            ctx.fillStyle = '#060911';
-            ctx.beginPath();
-            ctx.arc(cx, cy + 14, 24, 0, Math.PI * 2);
-            ctx.fill();
+            // D. ĐỒNG TỬ & HOA VĂN ĐẶC TRƯNG TỪNG NHÂN VẬT (SIGNATURE PUPIL MOTIFS)
+            if (role === 'Attacker') {
+                // Astra: Đồng tử mắt mèo thẳng đứng (Vertical Cat Pupil) + Ngọn lửa bừng cháy
+                ctx.fillStyle = '#03050a';
+                ctx.beginPath();
+                ctx.ellipse(cx, cy + 10, 14, 34, tilt, 0, Math.PI * 2);
+                ctx.fill();
 
-            // Vòng cung ánh sáng phản chiếu ở đáy con ngươi (Inner Glow Crescent)
-            ctx.strokeStyle = state === 'attack' ? '#ffffff' : eyeColors.bot;
-            ctx.lineWidth = 6;
-            ctx.beginPath();
-            ctx.arc(cx, cy + 24, 28, 0.2 * Math.PI, 0.8 * Math.PI);
-            ctx.stroke();
+                // Vệt lửa bừng sáng ở đáy đồng tử khi Tấn công
+                ctx.strokeStyle = state === 'attack' ? '#ffffff' : theme.glow;
+                ctx.lineWidth = state === 'attack' ? 7 : 5;
+                ctx.beginPath();
+                ctx.arc(cx, cy + 26, 26, 0.2 * Math.PI, 0.8 * Math.PI);
+                ctx.stroke();
 
-            // Điểm sáng phản quang lấp lánh (Double Catchlights)
+            } else if (role === 'Supporter') {
+                // Elysia: Ngôi sao Hư Không 4 cánh lấp lánh (Cosmic 4-Point Primogem Star)
+                ctx.fillStyle = '#100520';
+                ctx.beginPath();
+                ctx.arc(cx, cy + 10, 20, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Ngôi sao 4 cánh phát quang ở trung tâm
+                ctx.fillStyle = state === 'attack' ? '#ffffff' : '#e9d5ff';
+                const starR1 = state === 'attack' ? 18 : 14;
+                const starR2 = 4;
+                ctx.beginPath();
+                for (let s = 0; s < 8; s++) {
+                    const a = (s * Math.PI) / 4;
+                    const r = s % 2 === 0 ? starR1 : starR2;
+                    const sx = cx + Math.cos(a) * r;
+                    const sy = cy + 10 + Math.sin(a) * r;
+                    if (s === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+                }
+                ctx.closePath();
+                ctx.fill();
+
+            } else if (role === 'Healer') {
+                // Lin: Đồng tử Cỏ 4 lá / Hoa Ngọc Bích (Floral Clover Blossom)
+                ctx.fillStyle = '#064e3b';
+                ctx.beginPath();
+                ctx.arc(cx, cy + 10, 18, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 4 Cánh hoa ngọc phát sáng
+                ctx.fillStyle = state === 'attack' ? '#ffffff' : '#6ee7b7';
+                [[-6, -6], [6, -6], [-6, 6], [6, 6]].forEach(([px, py]) => {
+                    ctx.beginPath();
+                    ctx.arc(cx + px, cy + 10 + py, 5.5, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                // Nhụy hoa phát sáng
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(cx, cy + 10, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+
+            } else {
+                // Boran: Tâm ngắm HUD Radar công nghệ cao (High-Tech Crosshair Aperture)
+                ctx.fillStyle = '#050d1a';
+                ctx.beginPath();
+                ctx.arc(cx, cy + 10, 20, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Vành tròn ngắm bắn LED
+                ctx.strokeStyle = state === 'attack' ? '#ffffff' : '#00f0ff';
+                ctx.lineWidth = 3.5;
+                ctx.beginPath();
+                ctx.arc(cx, cy + 10, 12, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // 4 Vạch chia tâm ngắm
+                ctx.beginPath();
+                ctx.moveTo(cx - 16, cy + 10); ctx.lineTo(cx - 11, cy + 10);
+                ctx.moveTo(cx + 11, cy + 10); ctx.lineTo(cx + 16, cy + 10);
+                ctx.moveTo(cx, cy - 6); ctx.lineTo(cx, cy - 1);
+                ctx.moveTo(cx, cy + 21); ctx.lineTo(cx, cy + 26);
+                ctx.stroke();
+            }
+
+            // E. ĐIỂM SÁNG PHẢN QUANG ĐA TẦNG (TRIPLE CATCHLIGHTS)
             ctx.fillStyle = '#ffffff';
-            // Điểm sáng lớn góc trên trái
+            // Điểm sáng lớn góc trên trái (Primary catchlight)
             ctx.beginPath();
-            ctx.ellipse(cx - 18, cy - 20, 20, 26, -0.3, 0, Math.PI * 2);
+            ctx.ellipse(cx - 18, cy - 18, 18, 24, -0.3, 0, Math.PI * 2);
             ctx.fill();
-            // Điểm sáng nhỏ lấp lánh góc dưới phải
+            // Điểm sáng tròn góc dưới phải (Secondary sparkle)
             ctx.beginPath();
-            ctx.arc(cx + 20, cy + 34, 10, 0, Math.PI * 2);
+            ctx.arc(cx + 20, cy + 32, 9, 0, Math.PI * 2);
+            ctx.fill();
+            // Điểm sáng nhỏ li ti ở giữa (Micro highlight)
+            ctx.beginPath();
+            ctx.arc(cx - 22, cy + 12, 4.5, 0, Math.PI * 2);
             ctx.fill();
 
-            // Hàng lông mi trên cong vút sắc sảo phong cách Anime
+            // F. ĐƯỜNG MI TRÊN DÀY CONG VÚT & ĐUÔI MẮT SẮC SẢO
             ctx.strokeStyle = '#0f172a';
             ctx.lineWidth = 14;
             ctx.lineCap = 'round';
@@ -194,53 +354,130 @@ function createAnimeFaceTexture(role, state = 'normal') {
             ctx.arc(cx, cy - 16, 62, Math.PI * 1.15, Math.PI * 1.85);
             ctx.stroke();
 
-            // Lông mi phụ tạo điểm nhấn hướng ra ngoài thái dương
+            // Đuôi mắt vuốt sắc hướng về phía thái dương
             ctx.lineWidth = 6;
             ctx.beginPath();
             ctx.moveTo(cx + sign * 54, cy - 22);
-            ctx.lineTo(cx + sign * 72, cy - 36);
+            ctx.lineTo(cx + sign * 74, cy - 36);
             ctx.stroke();
 
-            // Chân mày mảnh thanh tú đối xứng
-            ctx.strokeStyle = eyeColors.top;
+            // Nếp gấp mí mắt trên (Anime Double Eyelid Crease)
+            ctx.strokeStyle = 'rgba(15, 23, 42, 0.45)';
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+            ctx.arc(cx, cy - 38, 54, Math.PI * 1.25, Math.PI * 1.75);
+            ctx.stroke();
+
+            // G. CHÂN MÀY THEO TÍNH CÁCH TỪNG NHÂN VẬT (EXPRESSIVE EYEBROWS)
+            ctx.strokeStyle = theme.brow;
             ctx.lineWidth = 8;
             ctx.lineCap = 'round';
             ctx.beginPath();
+
             if (state === 'attack') {
-                // Lông mày xếch quyết tâm hướng tâm
-                ctx.moveTo(cx - sign * 38, cy - 64);
-                ctx.lineTo(cx + sign * 44, cy - 78);
+                // Tấn công: Chân mày xếch mạnh quyết tâm chiến đấu
+                ctx.moveTo(cx - sign * 38, cy - 62);
+                ctx.lineTo(cx + sign * 44, cy - 80);
+            } else if (role === 'Attacker') {
+                // Astra: Chân mày cong sắc sảo tự tin
+                ctx.moveTo(cx - sign * 36, cy - 64);
+                ctx.lineTo(cx + sign * 42, cy - 72);
+            } else if (role === 'Supporter') {
+                // Elysia: Chân mày vòm cao kiêu kỳ
+                ctx.arc(cx, cy - 42, 52, isRight ? Math.PI * 1.25 : Math.PI * 1.35, isRight ? Math.PI * 1.65 : Math.PI * 1.75);
+            } else if (role === 'Healer') {
+                // Lin: Chân mày hiền hòa dịu dàng
+                ctx.arc(cx, cy - 36, 50, isRight ? Math.PI * 1.28 : Math.PI * 1.38, isRight ? Math.PI * 1.62 : Math.PI * 1.72);
             } else {
-                ctx.arc(cx, cy - 40, 52, isRight ? Math.PI * 1.25 : Math.PI * 1.35, isRight ? Math.PI * 1.65 : Math.PI * 1.75);
+                // Boran: Chân mày ngang điềm tĩnh vững chãi
+                ctx.moveTo(cx - sign * 40, cy - 68);
+                ctx.lineTo(cx + sign * 40, cy - 68);
             }
             ctx.stroke();
 
             ctx.restore();
         };
 
+        // Vẽ 2 mắt đối xứng hoàn hảo
         drawEye(130, 245, false);
         drawEye(382, 245, true);
 
-        // Chấm mũi Chibi anime tí hon siêu cute
-        ctx.fillStyle = 'rgba(235, 120, 140, 0.7)';
+        // Chấm mũi Chibi anime tí hon phớt hồng
+        ctx.fillStyle = 'rgba(235, 120, 140, 0.75)';
         ctx.beginPath();
         ctx.arc(256, 318, 4, 0, Math.PI * 2);
         ctx.fill();
 
-        // Miệng cười Chibi đáng yêu
+        // H. NỤ CƯỜI & KHẨU HÌNH MIỆNG THEO TÍNH CÁCH (SIGNATURE ANIME MOUTHS)
+        ctx.save();
         ctx.strokeStyle = '#b91c1c';
         ctx.lineWidth = 7;
         ctx.lineCap = 'round';
-        ctx.beginPath();
+
         if (state === 'attack') {
-            // Cười quyết tâm mở rộng khi tấn công
+            // Tấn công: Hô vang tiếng thét trận hào hùng
+            ctx.beginPath();
             ctx.arc(256, 362, 34, 0.15, Math.PI - 0.15);
             ctx.fillStyle = '#e11d48';
             ctx.fill();
+            ctx.stroke();
+
+            // Chiếc răng nanh nhọn sắc khi tấn công (cho Attacker)
+            if (theme.hasFang) {
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.moveTo(270, 360); ctx.lineTo(276, 372); ctx.lineTo(264, 368);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+        } else if (role === 'Attacker') {
+            // Astra: Cười khẩy tự tin (Confident Smirk) kèm chiếc răng nanh nhỏ Chibi siêu ngầu
+            ctx.beginPath();
+            ctx.arc(260, 365, 22, 0.2, Math.PI * 0.85);
+            ctx.stroke();
+
+            // Chiếc răng khểnh tsundere dễ thương
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.moveTo(270, 366); ctx.lineTo(274, 374); ctx.lineTo(266, 372);
+            ctx.closePath();
+            ctx.fill();
+
+        } else if (role === 'Supporter') {
+            // Elysia: Cười mèo tinh nghịch (:3 / W-smile)
+            ctx.beginPath();
+            ctx.arc(247, 366, 12, 0.15, Math.PI * 0.95);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(265, 366, 12, 0.05, Math.PI * 0.85);
+            ctx.stroke();
+
+        } else if (role === 'Healer') {
+            // Lin: Nụ cười mỉm Chibi tươi tắn, ngọt ngào
+            ctx.beginPath();
+            ctx.arc(256, 364, 20, 0.12, Math.PI - 0.12);
+            ctx.stroke();
+
+            // Điểm bóng môi hồng hào dưới môi
+            ctx.fillStyle = 'rgba(244, 63, 94, 0.4)';
+            ctx.beginPath();
+            ctx.arc(256, 376, 5, 0, Math.PI * 2);
+            ctx.fill();
+
         } else {
-            ctx.arc(256, 366, 20, 0.12, Math.PI - 0.12);
+            // Boran: Nụ cười mỉm điềm đạm, đáng tin cậy
+            ctx.beginPath();
+            if (typeof ctx.quadraticCurveTo === 'function') {
+                ctx.moveTo(242, 366);
+                ctx.quadraticCurveTo(256, 374, 270, 366);
+            } else {
+                ctx.arc(256, 362, 14, 0.2, Math.PI - 0.2);
+            }
+            ctx.stroke();
         }
-        ctx.stroke();
+
+        ctx.restore();
     }
 
     const tex = new THREE.CanvasTexture(canvas);
