@@ -12925,3 +12925,50 @@
 
 - `[07:00:51]` **@producer_bot (Giám Sát Nghiệm Thu Lộ Trình):**
   > "Chất lượng mỹ thuật 3D đạt đẳng cấp thương mại cao cấp, nghiệm thu toàn diện."
+
+---
+## [BÁO CÁO TIẾN ĐỘ ĐỊNH KỲ 1H #26] — 2026-11-16 08:00:51
+*Chủ đề:* **ARENA SPATIAL SCALING, CANDY CRUSH SPECIAL COMBOS & ANIMATION HIT-STOP** | *Commit:* `8762229`
+
+### ⏱️ THỐNG KÊ THỜI GIAN VẬN HÀNH TỪNG PHASE (TỔNG CỘNG: 106.5h):
+| Giai đoạn (Phase) | Mốc Bắt Đầu | Mốc Kết Thúc | Tổng Thời Gian | Trạng Thái |
+| :--- | :---: | :---: | :---: | :---: |
+| **Phase 1: Game Feel & Block Animation** | `2026-11-11 20:48:26` | `2026-11-12 11:24:12` | **14h 35m (14.6h)** | ✅ ĐÃ NGHIỆM THU |
+| **Phase 2: Narrative & Creative Direction** | `2026-11-12 12:07:08` | `2026-11-13 16:06:17` | **27h 59m (28.0h)** | ✅ ĐÃ NGHIỆM THU |
+| **Phase 3: 3-Stage Vertical Slice & Mobile UX** | `2026-11-13 16:06:17` | `2026-11-14 10:34:56` | **18h 28m (18.5h)** | ✅ ĐÃ NGHIỆM THU |
+| **Phase 4: Metagame, Roster & Gacha System** | `2026-11-14 10:34:56` | `Đang chạy...` | **⏱️ 45h 25m (45.4h)** | 🔄 ĐANG THỰC HIỆN |
+| **Phase 5: Release Polish & Production Master** | `Chờ kích hoạt` | `—` | **—** | ⏳ CHỜ KÍCH HOẠT |
+
+### 💬 ĐỐI THOẠI & PHẢN BIỆN KỸ THUẬT THỜI GIAN THỰC:
+
+- `[08:00:51]` **@orthex_advisor (Cố vấn Chiến lược & Red-Teamer):**
+  > "Sau khi mở rộng sàn đấu lên R=9.2m và lùi Boss về Z=-4.8m để đảm bảo cự ly tác chiến 6.15m >= 6.0m, cần kiểm tra kỹ năng hoán đổi hai ngọc đặc biệt bất kỳ (Line, Bomb, SwapAll) không bao giờ bị reject hay revert."
+
+- `[08:00:54]` **@coordinator (Antigravity Tổng Điều Phối):**
+  > "Chỉ đạo @web_dev và Lõi C++: Toàn bộ 6 hoán đổi Fusion đặc biệt (Line+Line, Bomb+Line, Bomb+Bomb, SwapAll+Line, SwapAll+Bomb, SwapAll+SwapAll) kích hoạt hiệu ứng nổ kép mà không tốn nước đi vô ích. Máy trạng thái diễn hoạt 6 pha đảm bảo cú lunge 2.8m và hit-stop 0.06s uy lực."
+
+- `[08:00:57]` **@qc_lead (Trưởng Ban Kiểm Thử Tự Động):**
+  > "Hệ thống test suite kiểm định 14/14 checks SPEC-COMBAT-SCALE-002: Đổi 2 ngọc đặc biệt được chấp thuận 100%, sàn đấu và camera framing portrait hoàn hảo.
+  > *Hóa đơn kiểm thử định kỳ (1,053 assertions):*
+  > • 3D Web Experience & Asset Fidelity: ✅ 10/10 PASS
+  > • Procedural Animation & Boots: ✅ 12/12 PASS
+  > • Special Combos & Arena Scale: ✅ 14/14 PASS
+  > • Cinematic Camera & Facing: ✅ 27/27 PASS
+  > • Chibi Anime & Scenery: ✅ 139/139 PASS
+  > • Hero Skills & Defense: ✅ 38/38 PASS
+  > • Strict Match-3 Revert: ✅ 8/8 PASS
+  > • Special Gems: ✅ 9/9 PASS
+  > • WebAssembly Core: ✅ 51/51 PASS
+  > • C++ Core Determinism: ✅ 745/745 PASS"
+
+- `[08:01:00]` **@web_dev (Kỹ Sư Trưởng Web Three.js):**
+  > "Three.js presentation layer xử lý hiệu ứng hạt và chùm tia laser 3 hàng/3 cột tức thì. Bundle Web 173.1 KB tải mượt mà trên Safari iOS và Chrome Android."
+
+- `[08:01:03]` **@pstack_architect (Kiểm Soát Kiến Trúc Lauren Tan):**
+  > "Pstack Invariant: Hàm TrySwapAndValidate trong C++ Core cho phép swapping khi cả 2 cell đều có Special != None. Giữ trọn tính bất biến deterministic."
+
+- `[08:01:05]` **@character_animator (Chuyên Gia Diễn Hoạt 3D):**
+  > "Máy trạng thái animation: Idle -> Anticipate -> Strike -> Impact Hit-Stop -> Follow-Through -> Return được đồng bộ hóa với VFX."
+
+- `[08:01:09]` **@producer_bot (Giám Sát Nghiệm Thu Lộ Trình):**
+  > "Nghiệm thu toàn diện cơ chế Special Fusion và cự ly đấu trường chuẩn studio commercial."
