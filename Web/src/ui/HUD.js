@@ -54,11 +54,19 @@ export class TacticalHUD {
                         </div>
                     </div>
                     <!-- Nút chủ động phòng thủ / kết thúc lượt sớm -->
-                    <button id="btnEndTurnEarly" class="defense-hud-btn" onclick="window.endTurnEarly()" title="Kết thúc lượt sớm để giảm sát thương Boss tương ứng với số nước đi chưa dùng">
+                    <button id="btnEndTurnEarly" class="defense-hud-btn" onclick="window.endTurnEarly()" title="Kết thúc lượt sớm để giảm sát thương Boss tương ứng với số nước đi chưa dùng (Phím Space)">
                         <span class="defense-icon">🛡️</span>
                         <span class="defense-text" id="btnDefenseText">KẾT THÚC LƯỢT (THỦ 100%)</span>
                     </button>
                 </div>
+            </div>
+
+            <!-- THANH ĐIỀU KHIỂN GÓC QUAY CAMERA 360 & SOI CHI TIẾT MODEL TRÊN ĐẤU TRƯỜNG -->
+            <div class="arena-cam-toolbar">
+                <button class="cam-tool-btn active" id="btnCamCombat" onclick="window.setArenaCamera('combat')" title="Góc máy chiến thuật mặc định">🎥 Chiến Đấu</button>
+                <button class="cam-tool-btn" id="btnCamOrbit" onclick="window.setArenaCamera('orbit')" title="Xoay 360° tự do quanh sân đấu">🔄 Xoay 360°</button>
+                <button class="cam-tool-btn" id="btnCamHero" onclick="window.setArenaCamera('hero')" title="Cận cảnh 4 nhân vật Chibi Anime">🔍 Soi Hero</button>
+                <button class="cam-tool-btn" id="btnCamBoss" onclick="window.setArenaCamera('boss')" title="Cận cảnh Boss Sentinel 07 Mecha">👾 Soi Boss</button>
             </div>
 
             <!-- MODAL CHIẾN THẮNG MÀN CHƠI & CHUYỂN CHƯƠNG -->
@@ -94,13 +102,18 @@ export class TacticalHUD {
             const roleIcons = { Attacker: '⚔️', Supporter: '✨', Healer: '💚', Defender: '🛡️' };
             const isUltReady = hero.energy >= hero.maxEnergy;
             const isSkillOnCd = hero.skillCd > 0;
-            const skillBtnLabel = isSkillOnCd ? `⏳ ${hero.skillCd}T` : `⚡ ${hero.skillName || 'SKILL'}`;
+            const skillBtnLabel = hero.skillName || 'SKILL';
+
+            // Phân tích tên hiển thị chuẩn: CodeName (Astra) + Title (Lôi Kiếm Sĩ)
+            const nameMatch = hero.name.match(/\(([^)]+)\)/);
+            const codeName = nameMatch ? nameMatch[1] : (hero.codeName || hero.name.split(' ')[0]);
+            const title = hero.name.replace(/\s*\([^)]+\)/, '');
 
             return `
                 <div class="hero-tactical-card ${isUltReady ? 'ult-ready' : ''} ${hero.isDefeated ? 'hero-defeated' : ''}" id="heroCard_${idx}">
-                    <div class="hero-avatar-wrap" onclick="window.triggerHeroUlt(${idx})" title="Nhấn để tung Nộ (Ultimate) hoặc nhấn phím NumPad ${idx + 1}">
+                    <!-- Avatar tròn nạp nộ -->
+                    <div class="hero-avatar-wrap" onclick="window.triggerHeroUlt(${idx})" title="Nhấn để tung Nộ (Ultimate) hoặc phím NumPad ${idx + 1}">
                         <div class="hero-role-icon">${roleIcons[hero.role] || '⭐'}</div>
-                        <!-- Vòng tròn năng lượng SVG -->
                         <svg class="energy-ring-svg" viewBox="0 0 44 44">
                             <circle class="energy-ring-bg" cx="22" cy="22" r="18" />
                             <circle class="energy-ring-fill" id="energyFill_${idx}" cx="22" cy="22" r="18" 
@@ -109,19 +122,25 @@ export class TacticalHUD {
                         <span class="ult-label-tag">ULT</span>
                         <span class="ult-kbd-tag">Num${idx + 1}</span>
                     </div>
+
+                    <!-- Thông tin Hero -->
                     <div class="hero-meta">
                         <div class="hero-header-line">
-                            <span class="hero-name">${hero.name.split(' ')[0]}</span>
+                            <span class="hero-codename">${codeName}</span>
                             <span class="hero-role-badge role-${hero.role.toLowerCase()}">${hero.role}</span>
                         </div>
+                        <div class="hero-title-text">${title}</div>
                         <!-- Thanh máu Hero -->
                         <div class="hero-hp-bar">
                             <div class="hero-hp-fill" id="heroHpFill_${idx}" style="width: ${(hero.hp / hero.maxHp) * 100}%"></div>
                         </div>
-                        <div class="hero-hp-text" id="heroHpText_${idx}">${hero.hp}/${hero.maxHp}</div>
+                        <div class="hero-hp-text" id="heroHpText_${idx}">${hero.hp} / ${hero.maxHp}</div>
                     </div>
+
+                    <!-- Nút kích hoạt kỹ năng -->
                     <button class="hero-skill-btn ${isSkillOnCd ? 'on-cd' : ''}" id="heroSkillBtn_${idx}" onclick="window.triggerHeroSkill(${idx})" title="${hero.skillDesc || 'Kỹ năng'} (Phím ${idx + 1})">
                         <span class="skill-name-label">${skillBtnLabel}</span>
+                        <span class="skill-cd-badge" id="skillCdBadge_${idx}">${isSkillOnCd ? `⏳ ${hero.skillCd}T` : '⚡ READY'}</span>
                         <kbd>${idx + 1}</kbd>
                     </button>
                 </div>
@@ -234,15 +253,26 @@ export class TacticalHUD {
                 if (hero.isDefeated) {
                     skillBtn.disabled = true;
                     skillBtn.classList.add('disabled');
-                    skillBtn.innerHTML = `<span>HẠ GỤC</span>`;
+                    skillBtn.innerHTML = `
+                        <span class="skill-name-label">TỬ TRẬN</span>
+                        <span class="skill-cd-badge">KO</span>
+                    `;
                 } else if (hero.skillCd > 0) {
                     skillBtn.disabled = true;
                     skillBtn.classList.add('on-cd');
-                    skillBtn.innerHTML = `<span>⏳ ${hero.skillCd} TURN</span>`;
+                    skillBtn.innerHTML = `
+                        <span class="skill-name-label">${hero.skillName || 'SKILL'}</span>
+                        <span class="skill-cd-badge">⏳ ${hero.skillCd}T</span>
+                        <kbd>${idx + 1}</kbd>
+                    `;
                 } else {
                     skillBtn.disabled = false;
                     skillBtn.classList.remove('on-cd', 'disabled');
-                    skillBtn.innerHTML = `<span>⚡ ${hero.skillName || 'SKILL'}</span><kbd>${idx + 1}</kbd>`;
+                    skillBtn.innerHTML = `
+                        <span class="skill-name-label">${hero.skillName || 'SKILL'}</span>
+                        <span class="skill-cd-badge">⚡ READY</span>
+                        <kbd>${idx + 1}</kbd>
+                    `;
                 }
             }
         });

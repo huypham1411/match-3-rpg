@@ -1242,17 +1242,30 @@ class ArenaEngine {
             this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
             this.controls.enableDamping = true;
             this.controls.dampingFactor = 0.08;
-            this.controls.target.set(0, 1.2, 0);
+            this.controls.target.set(0, 1.2, -1.0);
 
             // BÀN ĐẤU CHIẾN ĐẤU XOAY ĐƯỢC 360 ĐỘ TỰ DO
             this.controls.enableRotate = true;
             this.controls.enableZoom = true;
-            this.controls.enablePan = false;
+            this.controls.enablePan = true;
 
-            this.controls.minDistance = 5.0;
-            this.controls.maxDistance = 16.0;
-            this.controls.minPolarAngle = Math.PI * 0.15; // Giới hạn góc ngẩng
-            this.controls.maxPolarAngle = Math.PI * 0.48; // Không nhìn xuyên dưới sàn
+            this.controls.minDistance = 1.5;
+            this.controls.maxDistance = 30.0;
+            this.controls.minPolarAngle = Math.PI * 0.05; // Cho phép soi từ đỉnh đầu xuống
+            this.controls.maxPolarAngle = Math.PI * 0.49; // Không nhìn xuyên dưới sàn
+
+            this.isUserOrbiting = false;
+            this.controls.addEventListener('start', () => {
+                this.isUserOrbiting = true;
+                if (typeof this.onUserControlStart === 'function') {
+                    this.onUserControlStart();
+                }
+            });
+            this.controls.addEventListener('end', () => {
+                if (typeof this.onUserControlEnd === 'function') {
+                    this.onUserControlEnd();
+                }
+            });
         }
     }
 
@@ -2266,151 +2279,207 @@ class Board3D {
  */
 
 /**
- * Sinh Texture Canvas 2D nét căng cho biểu cảm khuôn mặt Anime Chibi
+ * Sinh Texture Canvas 2D nét căng cho biểu cảm khuôn mặt Anime Chibi (512x512 Ultra-Crisp)
  */
 function createAnimeFaceTexture(role, state = 'normal') {
     if (typeof document === 'undefined') return null;
 
-    const size = 256;
+    const size = 512;
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext('2d');
 
-    // Nền da anime ấm áp
+    // Nền da anime ấm áp, mịn màng
     ctx.fillStyle = '#ffece2';
     ctx.fillRect(0, 0, size, size);
 
-    // Má hồng Chibi siêu dễ thương (Soft Blushing Airbrush)
+    // Má hồng Chibi siêu dễ thương với vệt sáng lấp lánh (Soft Anime Blushing)
     const drawBlush = () => {
         ctx.save();
-        ctx.fillStyle = 'rgba(255, 120, 150, 0.35)';
+        ctx.fillStyle = 'rgba(255, 110, 145, 0.45)';
         ctx.beginPath();
-        ctx.ellipse(55, 160, 24, 14, 0, 0, Math.PI * 2);
+        ctx.ellipse(110, 310, 50, 26, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
-        ctx.ellipse(201, 160, 24, 14, 0, 0, Math.PI * 2);
+        ctx.ellipse(402, 310, 50, 26, 0, 0, Math.PI * 2);
         ctx.fill();
+
+        // 3 vạch e thẹn anime (///) trên má
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        [85, 110, 135].forEach(x => {
+            ctx.beginPath();
+            ctx.moveTo(x - 10, 320); ctx.lineTo(x + 10, 300);
+            ctx.stroke();
+        });
+        [377, 402, 427].forEach(x => {
+            ctx.beginPath();
+            ctx.moveTo(x - 10, 320); ctx.lineTo(x + 10, 300);
+            ctx.stroke();
+        });
         ctx.restore();
     };
 
     drawBlush();
 
-    // Màu mắt theo nguyên tố của từng Role
+    // Màu mắt theo nguyên tố của từng Role (Anime Multi-stop Gradients)
     const eyeColors = {
-        Attacker: { top: '#ef4444', bot: '#f59e0b' },   // Đỏ - Hổ phách 🔥
-        Supporter: { top: '#8b5cf6', bot: '#c084fc' },  // Tím Thạch anh 🔮
-        Healer: { top: '#10b981', bot: '#34d399' },     // Lục Sinh mệnh 🍃
-        Defender: { top: '#2563eb', bot: '#38bdf8' }    // Xanh Băng biển 💧
-    }[role] || { top: '#ef4444', bot: '#f59e0b' };
+        Attacker: { top: '#ef4444', mid: '#f97316', bot: '#fbbf24' },   // Astra: Đỏ Hỏa - Cam - Hổ phách 🔥
+        Supporter: { top: '#8b5cf6', mid: '#a855f7', bot: '#38bdf8' },  // Elysia: Tím Thạch anh - Lam Vũ trụ 🔮
+        Healer: { top: '#059669', mid: '#10b981', bot: '#6ee7b7' },     // Lin: Lục Ngọc bích - Bạc hà 🍃
+        Defender: { top: '#1d4ed8', mid: '#2563eb', bot: '#38bdf8' }    // Boran: Xanh Cobalt - Lam Băng 💧
+    }[role] || { top: '#ef4444', mid: '#f97316', bot: '#fbbf24' };
 
     if (state === 'die') {
-        // Mắt nhắm tịt dấu X_X khi tử trận
-        ctx.strokeStyle = '#475569';
-        ctx.lineWidth = 10;
+        // Mắt nhắm tịt dấu X_X đáng yêu khi tử trận
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 18;
         ctx.lineCap = 'round';
 
         // Mắt trái X
         ctx.beginPath();
-        ctx.moveTo(40, 115); ctx.lineTo(85, 145);
-        ctx.moveTo(85, 115); ctx.lineTo(40, 145);
+        ctx.moveTo(80, 220); ctx.lineTo(170, 280);
+        ctx.moveTo(170, 220); ctx.lineTo(80, 280);
         ctx.stroke();
 
         // Mắt phải X
         ctx.beginPath();
-        ctx.moveTo(171, 115); ctx.lineTo(216, 145);
-        ctx.moveTo(216, 115); ctx.lineTo(171, 145);
+        ctx.moveTo(342, 220); ctx.lineTo(432, 280);
+        ctx.moveTo(432, 220); ctx.lineTo(342, 280);
         ctx.stroke();
+
+        // Giọt mồ hôi anime lo lắng bên trán
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(430, 160, 16, 0, Math.PI * 2);
+        ctx.fill();
 
         // Miệng gợn sóng buồn
         ctx.beginPath();
-        ctx.arc(128, 195, 18, Math.PI * 1.1, Math.PI * 1.9);
+        ctx.arc(256, 380, 32, Math.PI * 1.1, Math.PI * 1.9);
         ctx.stroke();
 
     } else if (state === 'hit') {
-        // Mắt nheo > < khi bị đánh trúng
+        // Mắt nheo > < khi bị đánh trúng (Anime shock expression)
         ctx.strokeStyle = '#1e293b';
-        ctx.lineWidth = 12;
+        ctx.lineWidth = 20;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
 
         // Mắt trái >
         ctx.beginPath();
-        ctx.moveTo(40, 120); ctx.lineTo(75, 135); ctx.lineTo(40, 150);
+        ctx.moveTo(80, 220); ctx.lineTo(150, 250); ctx.lineTo(80, 280);
         ctx.stroke();
 
         // Mắt phải <
         ctx.beginPath();
-        ctx.moveTo(216, 120); ctx.lineTo(181, 135); ctx.lineTo(216, 150);
+        ctx.moveTo(432, 220); ctx.lineTo(362, 250); ctx.lineTo(432, 280);
         ctx.stroke();
+
+        // Giọt lệ anime ở khóe mắt
+        ctx.fillStyle = '#00f0ff';
+        ctx.beginPath();
+        ctx.arc(160, 280, 12, 0, Math.PI * 2);
+        ctx.arc(352, 280, 12, 0, Math.PI * 2);
+        ctx.fill();
 
         // Miệng chữ O ngạc nhiên
         ctx.fillStyle = '#ef4444';
         ctx.beginPath();
-        ctx.arc(128, 185, 14, 0, Math.PI * 2);
+        ctx.arc(256, 365, 26, 0, Math.PI * 2);
         ctx.fill();
 
     } else {
-        // Mắt Anime tròn to long lanh (Normal & Attack)
+        // Mắt Anime tròn to long lanh đẳng cấp (Normal & Attack)
         const drawEye = (cx, cy) => {
             ctx.save();
             // Lòng trắng mắt
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
-            ctx.ellipse(cx, cy, 32, 42, 0, 0, Math.PI * 2);
+            ctx.ellipse(cx, cy, 64, 82, 0, 0, Math.PI * 2);
             ctx.fill();
 
-            // Tròng mắt chuyển màu Gradient
-            const grad = ctx.createLinearGradient(cx, cy - 36, cx, cy + 36);
-            grad.addColorStop(0, '#0f172a');
-            grad.addColorStop(0.35, eyeColors.top);
+            // Tròng mắt chuyển màu Gradient 3 tầng
+            const grad = ctx.createLinearGradient(cx, cy - 70, cx, cy + 70);
+            grad.addColorStop(0, '#090d16');
+            grad.addColorStop(0.3, eyeColors.top);
+            grad.addColorStop(0.65, eyeColors.mid);
             grad.addColorStop(1, eyeColors.bot);
             ctx.fillStyle = grad;
             ctx.beginPath();
-            ctx.ellipse(cx, cy + 4, 26, 36, 0, 0, Math.PI * 2);
+            ctx.ellipse(cx, cy + 6, 52, 70, 0, 0, Math.PI * 2);
             ctx.fill();
 
-            // Đồng tử đen
-            ctx.fillStyle = '#090d16';
+            // Đồng tử đen sâu thẳm
+            ctx.fillStyle = '#060911';
             ctx.beginPath();
-            ctx.arc(cx, cy + 8, 12, 0, Math.PI * 2);
+            ctx.arc(cx, cy + 14, 24, 0, Math.PI * 2);
             ctx.fill();
 
-            // Điểm sáng phản quang lấp lánh (Sparkle Highlights)
+            // Vòng cung ánh sáng phản chiếu ở đáy con ngươi (Inner Glow Crescent)
+            ctx.strokeStyle = state === 'attack' ? '#ffffff' : eyeColors.bot;
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.arc(cx, cy + 24, 28, 0.2 * Math.PI, 0.8 * Math.PI);
+            ctx.stroke();
+
+            // Điểm sáng phản quang lấp lánh (Double Catchlights)
             ctx.fillStyle = '#ffffff';
             // Điểm sáng lớn góc trên trái
             ctx.beginPath();
-            ctx.ellipse(cx - 9, cy - 10, 10, 14, -0.3, 0, Math.PI * 2);
+            ctx.ellipse(cx - 18, cy - 20, 20, 26, -0.3, 0, Math.PI * 2);
             ctx.fill();
-            // Điểm sáng nhỏ góc dưới phải
+            // Điểm sáng nhỏ lấp lánh góc dưới phải
             ctx.beginPath();
-            ctx.arc(cx + 10, cy + 18, 5, 0, Math.PI * 2);
+            ctx.arc(cx + 20, cy + 34, 10, 0, Math.PI * 2);
             ctx.fill();
 
-            // Hàng lông mi trên cong vút sắc sảo
+            // Hàng lông mi trên cong vút sắc sảo phong cách Anime
             ctx.strokeStyle = '#0f172a';
-            ctx.lineWidth = 7;
+            ctx.lineWidth = 14;
             ctx.lineCap = 'round';
             ctx.beginPath();
-            ctx.arc(cx, cy - 8, 32, Math.PI * 1.15, Math.PI * 1.85);
+            ctx.arc(cx, cy - 16, 62, Math.PI * 1.15, Math.PI * 1.85);
             ctx.stroke();
+
+            // Lông mi phụ tạo điểm nhấn ở đuôi mắt
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.moveTo(cx + 56, cy - 24); ctx.lineTo(cx + 72, cy - 36);
+            ctx.stroke();
+
+            // Chân mày mảnh thanh tú
+            ctx.strokeStyle = eyeColors.top;
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            if (state === 'attack') {
+                // Lông mày xếch quyết tâm
+                ctx.moveTo(cx - 40, cy - 76); ctx.lineTo(cx + 46, cy - 64);
+            } else {
+                ctx.moveTo(cx - 40, cy - 68); ctx.lineTo(cx + 40, cy - 70);
+            }
+            ctx.stroke();
+
             ctx.restore();
         };
 
-        drawEye(65, 130);
-        drawEye(191, 130);
+        drawEye(130, 245);
+        drawEye(382, 245);
 
         // Miệng cười Chibi đáng yêu
         ctx.strokeStyle = '#b91c1c';
-        ctx.lineWidth = 5;
+        ctx.lineWidth = 8;
+        ctx.lineCap = 'round';
         ctx.beginPath();
         if (state === 'attack') {
-            // Cười quyết tâm khi tấn công
-            ctx.arc(128, 180, 20, 0.2, Math.PI - 0.2);
+            // Cười quyết tâm mở rộng khi tấn công
+            ctx.arc(256, 360, 36, 0.15, Math.PI - 0.15);
             ctx.fillStyle = '#e11d48';
             ctx.fill();
         } else {
-            ctx.arc(128, 185, 12, 0.1, Math.PI - 0.1);
+            ctx.arc(256, 370, 22, 0.1, Math.PI - 0.1);
         }
         ctx.stroke();
     }
@@ -2421,12 +2490,12 @@ function createAnimeFaceTexture(role, state = 'normal') {
 }
 
 /**
- * Sinh Texture Mắt Quái Boss Mecha Titan (Cyclops LED Core)
+ * Sinh Texture Mắt Quái Boss Mecha Titan (Cyclops LED Core 512x512)
  */
 function createBossEyeTexture(stageId = 1, state = 'normal') {
     if (typeof document === 'undefined') return null;
 
-    const size = 256;
+    const size = 512;
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
@@ -2437,53 +2506,144 @@ function createBossEyeTexture(stageId = 1, state = 'normal') {
     ctx.fillRect(0, 0, size, size);
 
     const themeColors = {
-        1: { core: '#ff0044', ring: '#ff7700', glow: 'rgba(255, 0, 68, 0.8)' },  // Sentinel 07 (Đỏ Lửa)
-        2: { core: '#00f0ff', ring: '#38bdf8', glow: 'rgba(0, 240, 255, 0.8)' },  // Warden Aegis (Băng Tuyết)
-        3: { core: '#a855f7', ring: '#ec4899', glow: 'rgba(168, 85, 247, 0.8)' }  // Null Sovereign (Hư Không)
-    }[stageId] || { core: '#ff0044', ring: '#ff7700', glow: 'rgba(255, 0, 68, 0.8)' };
+        1: { core: '#ff0044', ring: '#ff7700', glow: 'rgba(255, 0, 68, 0.85)', beam: '#ff2200' },
+        2: { core: '#00f0ff', ring: '#38bdf8', glow: 'rgba(0, 240, 255, 0.85)', beam: '#00e1ff' },
+        3: { core: '#a855f7', ring: '#ec4899', glow: 'rgba(168, 85, 247, 0.85)', beam: '#d946ef' }
+    }[stageId] || { core: '#ff0044', ring: '#ff7700', glow: 'rgba(255, 0, 68, 0.85)', beam: '#ff2200' };
 
     if (state === 'broken') {
-        // Boss bị Break Stagger: Mắt xoắn ốc hoa mắt chóng mặt
+        // Boss bị Break Stagger: Mắt xoắn ốc hoa mắt chóng mặt kèm tia lửa tĩnh điện
         ctx.strokeStyle = '#00f0ff';
-        ctx.lineWidth = 7;
+        ctx.lineWidth = 12;
         ctx.beginPath();
         for (let i = 0; i < 720; i += 5) {
             const angle = (i * Math.PI) / 180;
-            const dist = (i / 720) * 85;
+            const dist = (i / 720) * 170;
             const x = half + Math.cos(angle) * dist;
             const y = half + Math.sin(angle) * dist;
             if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         }
         ctx.stroke();
+
+        // Cảnh báo ERROR nhấp nháy
+        ctx.fillStyle = '#ef4444';
+        ctx.font = 'bold 24px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('CRITICAL STAGGER', half, half + 80);
     } else {
-        // Mắt Cyclops Mecha LED rực lửa
-        const radGrad = ctx.createRadialGradient(half, half, 10, half, half, 90);
+        // Mắt Cyclops Mecha LED rực lửa đa tầng
+        const radGrad = ctx.createRadialGradient(half, half, 20, half, half, 180);
         radGrad.addColorStop(0, '#ffffff');
-        radGrad.addColorStop(0.3, themeColors.core);
-        radGrad.addColorStop(0.7, themeColors.ring);
+        radGrad.addColorStop(0.25, themeColors.core);
+        radGrad.addColorStop(0.65, themeColors.ring);
         radGrad.addColorStop(1, '#090d16');
 
         ctx.fillStyle = radGrad;
         ctx.beginPath();
-        ctx.arc(half, half, 88, 0, Math.PI * 2);
+        ctx.arc(half, half, 175, 0, Math.PI * 2);
         ctx.fill();
 
-        // Vòng tâm ngắm công nghệ cao
+        // Vành tâm ngắm công nghệ cao
         ctx.strokeStyle = state === 'attack' ? '#ffffff' : themeColors.ring;
-        ctx.lineWidth = 5;
+        ctx.lineWidth = 10;
         ctx.beginPath();
-        ctx.arc(half, half, 60, 0, Math.PI * 2);
+        ctx.arc(half, half, 120, 0, Math.PI * 2);
         ctx.stroke();
 
-        // 4 Chữ thập ngắm bắn
+        // Vòng chia vạch độ góc (HUD Angle Degree Ticks)
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
         ctx.lineWidth = 4;
+        for (let a = 0; a < 360; a += 30) {
+            const rad = (a * Math.PI) / 180;
+            const r1 = 120;
+            const r2 = 135;
+            ctx.beginPath();
+            ctx.moveTo(half + Math.cos(rad) * r1, half + Math.sin(rad) * r1);
+            ctx.lineTo(half + Math.cos(rad) * r2, half + Math.sin(rad) * r2);
+            ctx.stroke();
+        }
+
+        // 4 Chữ thập ngắm bắn laser
+        ctx.strokeStyle = themeColors.beam;
+        ctx.lineWidth = 8;
         ctx.beginPath();
-        ctx.moveTo(half - 80, half); ctx.lineTo(half - 45, half);
-        ctx.moveTo(half + 45, half); ctx.lineTo(half + 80, half);
-        ctx.moveTo(half, half - 80); ctx.lineTo(half, half - 45);
-        ctx.moveTo(half, half + 45); ctx.lineTo(half, half + 80);
+        ctx.moveTo(half - 160, half); ctx.lineTo(half - 90, half);
+        ctx.moveTo(half + 90, half); ctx.lineTo(half + 160, half);
+        ctx.moveTo(half, half - 160); ctx.lineTo(half, half - 90);
+        ctx.moveTo(half, half + 90); ctx.lineTo(half, half + 160);
         ctx.stroke();
+
+        // Chấm laser ngắm bắn ở trung tâm
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(half, half, 18, 0, Math.PI * 2);
+        ctx.fill();
     }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.generateMipmaps = true;
+    return tex;
+}
+
+/**
+ * Sinh Texture Giáp Thép Công Nghệ Cao cho Boss Mecha Titan (Weathered Mecha Carapace)
+ */
+function createBossArmorTexture(stageId = 1) {
+    if (typeof document === 'undefined') return null;
+
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+
+    // Nền giáp kim loại titan sẫm màu
+    const colors = {
+        1: { base: '#7f1d1d', dark: '#450a0a', line: '#ef4444', accent: '#f59e0b' },
+        2: { base: '#0c4a6e', dark: '#082f49', line: '#38bdf8', accent: '#00f0ff' },
+        3: { base: '#581c87', dark: '#3b0764', line: '#c084fc', accent: '#ec4899' }
+    }[stageId] || { base: '#7f1d1d', dark: '#450a0a', line: '#ef4444', accent: '#f59e0b' };
+
+    ctx.fillStyle = colors.base;
+    ctx.fillRect(0, 0, size, size);
+
+    // Mảng giáp carbon vát góc tương phản
+    ctx.fillStyle = colors.dark;
+    ctx.fillRect(40, 40, size - 80, size - 80);
+
+    // Dải sọc cảnh báo nguy hiểm công nghiệp (Hazard Yellow/Black Stripes) ở góc
+    ctx.fillStyle = '#0a0a0a';
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(120, 0); ctx.lineTo(0, 120);
+    ctx.fill();
+
+    ctx.fillStyle = colors.accent;
+    for (let i = 15; i < 110; i += 25) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0); ctx.lineTo(i + 15, 0); ctx.lineTo(0, i + 15); ctx.lineTo(0, i);
+        ctx.fill();
+    }
+
+    // Các đường rãnh ghép giáp phát quang (Luminous Armor Seams)
+    ctx.strokeStyle = colors.line;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.strokeRect(60, 60, size - 120, size - 120);
+    ctx.moveTo(size / 2, 60); ctx.lineTo(size / 2, size - 60);
+    ctx.moveTo(60, size / 2); ctx.lineTo(size - 60, size / 2);
+    ctx.stroke();
+
+    // Các chốt đinh tán cơ khí (Heavy Steel Rivets)
+    ctx.fillStyle = '#cbd5e1';
+    const rivets = [
+        [75, 75], [size - 75, 75], [75, size - 75], [size - 75, size - 75],
+        [size / 2, 85], [size / 2, size - 85], [85, size / 2], [size - 85, size / 2]
+    ];
+    rivets.forEach(([rx, ry]) => {
+        ctx.beginPath();
+        ctx.arc(rx, ry, 6, 0, Math.PI * 2);
+        ctx.fill();
+    });
 
     const tex = new THREE.CanvasTexture(canvas);
     tex.generateMipmaps = true;
@@ -2591,6 +2751,24 @@ class Diorama3D {
 
         this.actionZoomTimer = 0;
         this.actionZoomOffset = new THREE.Vector3(0, 0, 0);
+
+        this.isOrbitMode = false;
+        this.cameraTransition = null;
+        if (this.engine) {
+            this.engine.onUserControlStart = () => {
+                this.isOrbitMode = true;
+                if (typeof document !== 'undefined') {
+                    const btnOrbit = document.getElementById('btnCamOrbit');
+                    if (btnOrbit) {
+                        ['btnCamCombat', 'btnCamHero', 'btnCamBoss'].forEach(id => {
+                            const b = document.getElementById(id);
+                            if (b) b.classList.remove('active');
+                        });
+                        btnOrbit.classList.add('active');
+                    }
+                }
+            };
+        }
 
         this.initStageEnvironment();
         this.buildChibiHeroes();
@@ -3113,6 +3291,7 @@ class Diorama3D {
 
             // Lưu trữ Controller điều khiển trạng thái (State Machine)
             this.heroes.push({
+                name: cfg.name,
                 role: cfg.role,
                 root: rootGroup,
                 rootGroup: rootGroup,
@@ -3142,12 +3321,14 @@ class Diorama3D {
 
         // A. KHỐI THÂN MECHA CHIBI TRÒN BÉO ĐÁNG YÊU (CHUNKY CHIBI MECHA BODY)
         const coreGeo = new THREE.DodecahedronGeometry(1.35, 1);
+        const armorTex = createBossArmorTexture(this.state.currentStageId);
         this.bossMat = new THREE.MeshStandardMaterial({
-            color: 0x991b1b,
-            emissive: 0x450a0a,
-            emissiveIntensity: 0.5,
-            metalness: 0.85,
-            roughness: 0.25
+            color: 0xaa2222,
+            map: armorTex,
+            emissive: 0x550011,
+            emissiveIntensity: 0.6,
+            metalness: 0.88,
+            roughness: 0.28
         });
         const bossBody = new THREE.Mesh(coreGeo, this.bossMat);
         bossBody.castShadow = true;
@@ -3168,14 +3349,30 @@ class Diorama3D {
         this.bossEyeMesh.position.set(0, 0.1, 1.15);
         this.bossGroup.add(this.bossEyeMesh);
 
+        // B2. MŨ GIÁP MECHA BROW VISOR TRÊN MẮT CYCLOPS (TĂNG ĐỘ HẦM HỐ HI-TECH)
+        const visorGeo = new THREE.BoxGeometry(1.05, 0.20, 0.32);
+        const visorMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9, roughness: 0.2 });
+        const visor = new THREE.Mesh(visorGeo, visorMat);
+        visor.position.set(0, 0.64, 1.12);
+        visor.rotation.x = 0.22;
+        this.bossGroup.add(visor);
+
         // C. 2 ỐNG PHÁO CỐI MINI VAI TRÒN (CHIBI SHOULDER CANNONS)
         [-1.1, 1.1].forEach((cX, i) => {
             const cannonGeo = new THREE.CylinderGeometry(0.24, 0.32, 0.95, 12);
-            const cannonMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9 });
+            const cannonMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9, roughness: 0.25 });
             const cannon = new THREE.Mesh(cannonGeo, cannonMat);
             cannon.position.set(cX, 0.85, 0.1);
             cannon.rotation.x = Math.PI / 3.5;
             this.bossGroup.add(cannon);
+
+            // Nòng nạp năng lượng pháo laser
+            const muzzleGeo = new THREE.CylinderGeometry(0.18, 0.22, 0.12, 10);
+            const muzzleMat = new THREE.MeshBasicMaterial({ color: 0xff0044 });
+            const muzzle = new THREE.Mesh(muzzleGeo, muzzleMat);
+            muzzle.position.set(cX, 1.25, 0.35);
+            muzzle.rotation.x = Math.PI / 3.5;
+            this.bossGroup.add(muzzle);
         });
 
         // D. 2 CÁNH TAY VUỐT ROBOT CHIBI TRÒN
@@ -3237,6 +3434,14 @@ class Diorama3D {
             nozzleMesh.position.set(tX, 0.1, -1.3);
             nozzleMesh.rotation.x = -Math.PI / 3;
             this.bossGroup.add(nozzleMesh);
+
+            // Ngọn lửa plasma ion phụt ra từ ống xả phản lực
+            const flameGeo = new THREE.ConeGeometry(0.14, 0.60, 8);
+            const flameMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+            const flame = new THREE.Mesh(flameGeo, flameMat);
+            flame.position.set(tX, -0.22, -1.55);
+            flame.rotation.x = -Math.PI / 3;
+            this.bossGroup.add(flame);
         });
 
         // G. KHE TẢN NHIỆT CÔNG NGHỆ CAO HAI BÊN SƯỜN (CHEST FLANK HAZARD VENTS - SPEC-WEB3D-004 / AC-07)
@@ -3272,6 +3477,60 @@ class Diorama3D {
             isBroken: false,
             isHitStop: false
         };
+    }
+
+    /** Điều khiển góc quay và tiêu điểm Camera (360 Orbit, Hero Focus, Boss Focus, Combat) */
+    setCameraPreset(preset) {
+        if (!this.engine || !this.engine.camera) return;
+        const cam = this.engine.camera;
+        const controls = this.engine.controls;
+
+        const targetPos = new THREE.Vector3();
+        const targetLookAt = new THREE.Vector3();
+
+        if (preset === 'combat') {
+            this.isOrbitMode = false;
+            if (this.engine) this.engine.isUserOrbiting = false;
+            targetPos.set(0, 7.8, 14.5);
+            targetLookAt.set(0, 1.5, -0.8);
+        } else if (preset === 'orbit') {
+            this.isOrbitMode = true;
+            if (this.engine) this.engine.isUserOrbiting = true;
+            targetPos.set(0, 5.2, 9.5);
+            targetLookAt.set(0, 1.2, -1.0);
+        } else if (preset === 'hero') {
+            this.isOrbitMode = true;
+            if (this.engine) this.engine.isUserOrbiting = true;
+            // Cận cảnh trực diện 4 Hero Chibi
+            targetPos.set(0, 1.15, 3.8);
+            targetLookAt.set(0, 0.8, 1.35);
+        } else if (preset === 'boss') {
+            this.isOrbitMode = true;
+            if (this.engine) this.engine.isUserOrbiting = true;
+            // Cận cảnh trực diện Mecha Boss Titan
+            targetPos.set(0, 2.2, -1.5);
+            targetLookAt.set(0, 1.6, -4.8);
+        }
+
+        const currentTarget = (controls && controls.target) ? controls.target.clone() : new THREE.Vector3(0, 1.2, 0);
+        this.cameraTransition = {
+            startPos: cam.position.clone(),
+            targetPos: targetPos,
+            startTarget: currentTarget,
+            targetTarget: targetLookAt,
+            progress: 0,
+            duration: 0.55
+        };
+
+        if (typeof document !== 'undefined') {
+            ['btnCamCombat', 'btnCamOrbit', 'btnCamHero', 'btnCamBoss'].forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) btn.classList.remove('active');
+            });
+            const activeId = { combat: 'btnCamCombat', orbit: 'btnCamOrbit', hero: 'btnCamHero', boss: 'btnCamBoss' }[preset];
+            const activeBtn = document.getElementById(activeId);
+            if (activeBtn) activeBtn.classList.add('active');
+        }
     }
 
     /** Kích hoạt phóng xa toàn cảnh giao tranh (Action Zoom-Out) */
@@ -3717,8 +3976,40 @@ class Diorama3D {
             posAttr.needsUpdate = true;
         }
 
-        // D. HỆ THỐNG CINEMATIC DYNAMIC CAMERA (SPEC-CINEMATIC-CAM-001)
-        // 1. Quản lý thời gian nhàn rỗi & Focus Drift
+        // D. HỆ THỐNG CINEMATIC DYNAMIC CAMERA & ORBIT 360 (SPEC-CINEMATIC-CAM-001)
+        // 0. Xử lý hoạt ảnh lướt chuyển góc máy (Camera Preset Glide Transition)
+        if (this.cameraTransition) {
+            const t = this.cameraTransition;
+            t.progress += delta / t.duration;
+            const factor = Math.min(1.0, t.progress);
+            const ease = 1 - Math.pow(1 - factor, 3); // Cubic Ease Out
+
+            this.engine.camera.position.lerpVectors(t.startPos, t.targetPos, ease);
+            if (this.engine.controls) {
+                this.engine.controls.target.lerpVectors(t.startTarget, t.targetTarget, ease);
+                this.engine.controls.update();
+            } else if (typeof this.engine.camera.lookAt === 'function') {
+                this.engine.camera.lookAt(t.targetTarget);
+            }
+            if (factor >= 1.0) {
+                this.cameraTransition = null;
+            }
+            return;
+        }
+
+        // 1. Nếu đang ở chế độ xoay 360 độ hoặc người dùng đang kéo chuột xoay sàn đấu
+        const isUserRotating = this.isOrbitMode || 
+            (this.engine && this.engine.isUserOrbiting) || 
+            (this.engine && this.engine.controls && this.engine.controls.state !== -1);
+
+        if (isUserRotating) {
+            if (this.cameraShakeTimer > 0) {
+                this.cameraShakeTimer -= delta;
+            }
+            return;
+        }
+
+        // 2. Quản lý thời gian nhàn rỗi & Focus Drift
         if (this.cameraState) {
             this.cameraState.idleTime += delta;
             if (this.cameraState.idleTime > 4.5) {
@@ -3729,13 +4020,13 @@ class Diorama3D {
             }
         }
 
-        // 2. Tầng 1: Dao động tự nhiên Handheld Idle Sway (<= 0.25m)
+        // 3. Tầng 1: Dao động tự nhiên Handheld Idle Sway (<= 0.25m)
         const time = elapsed || 0;
         const swayX = 0.035 * Math.sin(0.8 * time) + 0.015 * Math.cos(1.2 * time);
         const swayY = 0.02 * Math.sin(1.0 * time);
         const swayZ = 0.015 * Math.cos(0.8 * time);
 
-        // 3. Tầng 3: Action Zoom-Out & Smooth Settle Recovery
+        // 4. Tầng 3: Action Zoom-Out & Smooth Settle Recovery
         if (this.actionZoomTimer > 0) {
             this.actionZoomTimer -= delta;
             this.actionZoomOffset.y += (0.95 - this.actionZoomOffset.y) * 0.25;
@@ -3746,7 +4037,7 @@ class Diorama3D {
             this.actionZoomOffset.z += (0 - this.actionZoomOffset.z) * 0.25;
         }
 
-        // 4. Focus Drift offset (khi nhàn rỗi > 4.5s)
+        // 5. Focus Drift offset (khi nhàn rỗi > 4.5s)
         let driftX = 0, driftY = 0, driftZ = 0;
         if (this.isDrifting && this.cameraState && this.cameraState.idleTime > 4.5) {
             driftX = 0.12 * Math.sin(time * 0.4);
@@ -3754,7 +4045,7 @@ class Diorama3D {
             driftZ = -0.15;
         }
 
-        // 5. Trauma Screen Shake
+        // 6. Trauma Screen Shake
         let shakeX = 0, shakeY = 0;
         if (this.cameraShakeTimer > 0) {
             this.cameraShakeTimer -= delta;
@@ -4043,11 +4334,19 @@ class TacticalHUD {
                         </div>
                     </div>
                     <!-- Nút chủ động phòng thủ / kết thúc lượt sớm -->
-                    <button id="btnEndTurnEarly" class="defense-hud-btn" onclick="window.endTurnEarly()" title="Kết thúc lượt sớm để giảm sát thương Boss tương ứng với số nước đi chưa dùng">
+                    <button id="btnEndTurnEarly" class="defense-hud-btn" onclick="window.endTurnEarly()" title="Kết thúc lượt sớm để giảm sát thương Boss tương ứng với số nước đi chưa dùng (Phím Space)">
                         <span class="defense-icon">🛡️</span>
                         <span class="defense-text" id="btnDefenseText">KẾT THÚC LƯỢT (THỦ 100%)</span>
                     </button>
                 </div>
+            </div>
+
+            <!-- THANH ĐIỀU KHIỂN GÓC QUAY CAMERA 360 & SOI CHI TIẾT MODEL TRÊN ĐẤU TRƯỜNG -->
+            <div class="arena-cam-toolbar">
+                <button class="cam-tool-btn active" id="btnCamCombat" onclick="window.setArenaCamera('combat')" title="Góc máy chiến thuật mặc định">🎥 Chiến Đấu</button>
+                <button class="cam-tool-btn" id="btnCamOrbit" onclick="window.setArenaCamera('orbit')" title="Xoay 360° tự do quanh sân đấu">🔄 Xoay 360°</button>
+                <button class="cam-tool-btn" id="btnCamHero" onclick="window.setArenaCamera('hero')" title="Cận cảnh 4 nhân vật Chibi Anime">🔍 Soi Hero</button>
+                <button class="cam-tool-btn" id="btnCamBoss" onclick="window.setArenaCamera('boss')" title="Cận cảnh Boss Sentinel 07 Mecha">👾 Soi Boss</button>
             </div>
 
             <!-- MODAL CHIẾN THẮNG MÀN CHƠI & CHUYỂN CHƯƠNG -->
@@ -4083,13 +4382,18 @@ class TacticalHUD {
             const roleIcons = { Attacker: '⚔️', Supporter: '✨', Healer: '💚', Defender: '🛡️' };
             const isUltReady = hero.energy >= hero.maxEnergy;
             const isSkillOnCd = hero.skillCd > 0;
-            const skillBtnLabel = isSkillOnCd ? `⏳ ${hero.skillCd}T` : `⚡ ${hero.skillName || 'SKILL'}`;
+            const skillBtnLabel = hero.skillName || 'SKILL';
+
+            // Phân tích tên hiển thị chuẩn: CodeName (Astra) + Title (Lôi Kiếm Sĩ)
+            const nameMatch = hero.name.match(/\(([^)]+)\)/);
+            const codeName = nameMatch ? nameMatch[1] : (hero.codeName || hero.name.split(' ')[0]);
+            const title = hero.name.replace(/\s*\([^)]+\)/, '');
 
             return `
                 <div class="hero-tactical-card ${isUltReady ? 'ult-ready' : ''} ${hero.isDefeated ? 'hero-defeated' : ''}" id="heroCard_${idx}">
-                    <div class="hero-avatar-wrap" onclick="window.triggerHeroUlt(${idx})" title="Nhấn để tung Nộ (Ultimate) hoặc nhấn phím NumPad ${idx + 1}">
+                    <!-- Avatar tròn nạp nộ -->
+                    <div class="hero-avatar-wrap" onclick="window.triggerHeroUlt(${idx})" title="Nhấn để tung Nộ (Ultimate) hoặc phím NumPad ${idx + 1}">
                         <div class="hero-role-icon">${roleIcons[hero.role] || '⭐'}</div>
-                        <!-- Vòng tròn năng lượng SVG -->
                         <svg class="energy-ring-svg" viewBox="0 0 44 44">
                             <circle class="energy-ring-bg" cx="22" cy="22" r="18" />
                             <circle class="energy-ring-fill" id="energyFill_${idx}" cx="22" cy="22" r="18" 
@@ -4098,19 +4402,25 @@ class TacticalHUD {
                         <span class="ult-label-tag">ULT</span>
                         <span class="ult-kbd-tag">Num${idx + 1}</span>
                     </div>
+
+                    <!-- Thông tin Hero -->
                     <div class="hero-meta">
                         <div class="hero-header-line">
-                            <span class="hero-name">${hero.name.split(' ')[0]}</span>
+                            <span class="hero-codename">${codeName}</span>
                             <span class="hero-role-badge role-${hero.role.toLowerCase()}">${hero.role}</span>
                         </div>
+                        <div class="hero-title-text">${title}</div>
                         <!-- Thanh máu Hero -->
                         <div class="hero-hp-bar">
                             <div class="hero-hp-fill" id="heroHpFill_${idx}" style="width: ${(hero.hp / hero.maxHp) * 100}%"></div>
                         </div>
-                        <div class="hero-hp-text" id="heroHpText_${idx}">${hero.hp}/${hero.maxHp}</div>
+                        <div class="hero-hp-text" id="heroHpText_${idx}">${hero.hp} / ${hero.maxHp}</div>
                     </div>
+
+                    <!-- Nút kích hoạt kỹ năng -->
                     <button class="hero-skill-btn ${isSkillOnCd ? 'on-cd' : ''}" id="heroSkillBtn_${idx}" onclick="window.triggerHeroSkill(${idx})" title="${hero.skillDesc || 'Kỹ năng'} (Phím ${idx + 1})">
                         <span class="skill-name-label">${skillBtnLabel}</span>
+                        <span class="skill-cd-badge" id="skillCdBadge_${idx}">${isSkillOnCd ? `⏳ ${hero.skillCd}T` : '⚡ READY'}</span>
                         <kbd>${idx + 1}</kbd>
                     </button>
                 </div>
@@ -4223,15 +4533,26 @@ class TacticalHUD {
                 if (hero.isDefeated) {
                     skillBtn.disabled = true;
                     skillBtn.classList.add('disabled');
-                    skillBtn.innerHTML = `<span>HẠ GỤC</span>`;
+                    skillBtn.innerHTML = `
+                        <span class="skill-name-label">TỬ TRẬN</span>
+                        <span class="skill-cd-badge">KO</span>
+                    `;
                 } else if (hero.skillCd > 0) {
                     skillBtn.disabled = true;
                     skillBtn.classList.add('on-cd');
-                    skillBtn.innerHTML = `<span>⏳ ${hero.skillCd} TURN</span>`;
+                    skillBtn.innerHTML = `
+                        <span class="skill-name-label">${hero.skillName || 'SKILL'}</span>
+                        <span class="skill-cd-badge">⏳ ${hero.skillCd}T</span>
+                        <kbd>${idx + 1}</kbd>
+                    `;
                 } else {
                     skillBtn.disabled = false;
                     skillBtn.classList.remove('on-cd', 'disabled');
-                    skillBtn.innerHTML = `<span>⚡ ${hero.skillName || 'SKILL'}</span><kbd>${idx + 1}</kbd>`;
+                    skillBtn.innerHTML = `
+                        <span class="skill-name-label">${hero.skillName || 'SKILL'}</span>
+                        <span class="skill-cd-badge">⚡ READY</span>
+                        <kbd>${idx + 1}</kbd>
+                    `;
                 }
             }
         });
@@ -4399,16 +4720,17 @@ class DebugInspector {
         this.startStatsMonitor();
     }
 
-    /** Tạo giao diện bảng điều khiển nổi trên màn hình */
+    /** Tạo giao diện bảng điều khiển nổi trên màn hình (Mặc định thu gọn tinh gọn) */
     createDebugUI() {
         const panel = document.createElement('div');
         panel.id = 'debugInspectorPanel';
+        panel.className = 'debug-panel-compact';
         panel.innerHTML = `
             <div class="debug-header">
-                <span class="debug-title">🐞 THREE.JS DEBUG & LEARNING INSPECTOR</span>
-                <button id="btnToggleDebug" class="debug-btn-min">Thu gọn</button>
+                <span class="debug-title">🐞 3D DEBUG & STATS</span>
+                <button id="btnToggleDebug" class="debug-btn-min">Mở rộng</button>
             </div>
-            <div class="debug-body" id="debugBody">
+            <div class="debug-body" id="debugBody" style="display: none;">
                 <div class="debug-stat-row">
                     <span>⚡ FPS: <b id="statFps" style="color:#10b981">60</b></span>
                     <span>📐 Triangles: <b id="statTriangles">0</b></span>
@@ -4445,19 +4767,21 @@ class DebugInspector {
     initButtons() {
         const body = document.getElementById('debugBody');
         const btnToggle = document.getElementById('btnToggleDebug');
-        // Tự động thu gọn trên màn hình điện thoại để không che khuất không gian chơi
-        if (window.innerWidth < 768) {
-            body.style.display = 'none';
-            btnToggle.textContent = 'Mở rộng';
-        }
+        const panel = document.getElementById('debugInspectorPanel');
+        
+        // Mặc định luôn thu gọn trên mọi màn hình để không che khuất đấu trường 3D
+        body.style.display = 'none';
+        btnToggle.textContent = 'Mở rộng';
 
         btnToggle.addEventListener('click', () => {
             if (body.style.display === 'none') {
                 body.style.display = 'block';
                 btnToggle.textContent = 'Thu gọn';
+                if (panel) panel.classList.remove('debug-panel-compact');
             } else {
                 body.style.display = 'none';
                 btnToggle.textContent = 'Mở rộng';
+                if (panel) panel.classList.add('debug-panel-compact');
             }
         });
 
@@ -4646,6 +4970,13 @@ function initMatchRPG() {
         const debug = new DebugInspector(arenaEngine, boardEngine, board3D, diorama3D, gameState);
 
         // Lưu vào window để phục vụ kiểm tra
+        // Cung cấp API toàn cục để Toolbar điều khiển góc quay 360 độ và cận cảnh
+        window.setArenaCamera = (mode) => {
+            if (diorama3D && typeof diorama3D.setCameraPreset === 'function') {
+                diorama3D.setCameraPreset(mode);
+            }
+        };
+
         window.MatchGame = {
             gameState,
             arenaEngine,

@@ -77,6 +77,13 @@ function initMatchRPG() {
         const debug = new DebugInspector(arenaEngine, boardEngine, board3D, diorama3D, gameState);
 
         // Lưu vào window để phục vụ kiểm tra
+        // Cung cấp API toàn cục để Toolbar điều khiển góc quay 360 độ và cận cảnh
+        window.setArenaCamera = (mode) => {
+            if (diorama3D && typeof diorama3D.setCameraPreset === 'function') {
+                diorama3D.setCameraPreset(mode);
+            }
+        };
+
         window.MatchGame = {
             gameState,
             arenaEngine,

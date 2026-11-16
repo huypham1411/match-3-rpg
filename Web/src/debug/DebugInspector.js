@@ -31,16 +31,17 @@ export class DebugInspector {
         this.startStatsMonitor();
     }
 
-    /** Tạo giao diện bảng điều khiển nổi trên màn hình */
+    /** Tạo giao diện bảng điều khiển nổi trên màn hình (Mặc định thu gọn tinh gọn) */
     createDebugUI() {
         const panel = document.createElement('div');
         panel.id = 'debugInspectorPanel';
+        panel.className = 'debug-panel-compact';
         panel.innerHTML = `
             <div class="debug-header">
-                <span class="debug-title">🐞 THREE.JS DEBUG & LEARNING INSPECTOR</span>
-                <button id="btnToggleDebug" class="debug-btn-min">Thu gọn</button>
+                <span class="debug-title">🐞 3D DEBUG & STATS</span>
+                <button id="btnToggleDebug" class="debug-btn-min">Mở rộng</button>
             </div>
-            <div class="debug-body" id="debugBody">
+            <div class="debug-body" id="debugBody" style="display: none;">
                 <div class="debug-stat-row">
                     <span>⚡ FPS: <b id="statFps" style="color:#10b981">60</b></span>
                     <span>📐 Triangles: <b id="statTriangles">0</b></span>
@@ -77,19 +78,21 @@ export class DebugInspector {
     initButtons() {
         const body = document.getElementById('debugBody');
         const btnToggle = document.getElementById('btnToggleDebug');
-        // Tự động thu gọn trên màn hình điện thoại để không che khuất không gian chơi
-        if (window.innerWidth < 768) {
-            body.style.display = 'none';
-            btnToggle.textContent = 'Mở rộng';
-        }
+        const panel = document.getElementById('debugInspectorPanel');
+        
+        // Mặc định luôn thu gọn trên mọi màn hình để không che khuất đấu trường 3D
+        body.style.display = 'none';
+        btnToggle.textContent = 'Mở rộng';
 
         btnToggle.addEventListener('click', () => {
             if (body.style.display === 'none') {
                 body.style.display = 'block';
                 btnToggle.textContent = 'Thu gọn';
+                if (panel) panel.classList.remove('debug-panel-compact');
             } else {
                 body.style.display = 'none';
                 btnToggle.textContent = 'Mở rộng';
+                if (panel) panel.classList.add('debug-panel-compact');
             }
         });
 

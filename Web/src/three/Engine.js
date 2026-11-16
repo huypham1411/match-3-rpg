@@ -79,17 +79,30 @@ export class ArenaEngine {
             this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
             this.controls.enableDamping = true;
             this.controls.dampingFactor = 0.08;
-            this.controls.target.set(0, 1.2, 0);
+            this.controls.target.set(0, 1.2, -1.0);
 
             // BÀN ĐẤU CHIẾN ĐẤU XOAY ĐƯỢC 360 ĐỘ TỰ DO
             this.controls.enableRotate = true;
             this.controls.enableZoom = true;
-            this.controls.enablePan = false;
+            this.controls.enablePan = true;
 
-            this.controls.minDistance = 5.0;
-            this.controls.maxDistance = 16.0;
-            this.controls.minPolarAngle = Math.PI * 0.15; // Giới hạn góc ngẩng
-            this.controls.maxPolarAngle = Math.PI * 0.48; // Không nhìn xuyên dưới sàn
+            this.controls.minDistance = 1.5;
+            this.controls.maxDistance = 30.0;
+            this.controls.minPolarAngle = Math.PI * 0.05; // Cho phép soi từ đỉnh đầu xuống
+            this.controls.maxPolarAngle = Math.PI * 0.49; // Không nhìn xuyên dưới sàn
+
+            this.isUserOrbiting = false;
+            this.controls.addEventListener('start', () => {
+                this.isUserOrbiting = true;
+                if (typeof this.onUserControlStart === 'function') {
+                    this.onUserControlStart();
+                }
+            });
+            this.controls.addEventListener('end', () => {
+                if (typeof this.onUserControlEnd === 'function') {
+                    this.onUserControlEnd();
+                }
+            });
         }
     }
 
