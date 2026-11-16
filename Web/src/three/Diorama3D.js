@@ -980,11 +980,11 @@ export class Diorama3D {
                 metalness: 0.15
             });
 
-            // Khối tóc 3D bao phủ đỉnh đầu và gáy (3D Hair Volume Cap - Không còn đầu trọc)
+            // Khối tóc 3D bao phủ đỉnh đầu và gáy (3D Hair Volume Cap - Lùi về sau để không xén vào mặt)
             const hairCapGeo = new THREE.SphereGeometry(0.512, 20, 16);
             hairCapGeo.scale(1.02, 0.96, 1.01);
             const hairCapMesh = new THREE.Mesh(hairCapGeo, hairMat);
-            hairCapMesh.position.set(0, 0.02, -0.05);
+            hairCapMesh.position.set(0, 0.04, -0.10);
             headMesh.add(hairCapMesh);
 
             // Mặt Anime Chibi dán đè phía trước đầu (Expressive Face Decal gắn trực tiếp vào Head Mesh)
@@ -998,14 +998,12 @@ export class Diorama3D {
                 map: faceTexNormal,
                 transparent: true,
                 depthWrite: false,
-                polygonOffset: true,
-                polygonOffsetFactor: -2.0,
-                polygonOffsetUnits: -4.0,
+                depthTest: false,
                 side: THREE.FrontSide
             });
             const faceMesh = new THREE.Mesh(faceGeo, faceMat);
             faceMesh.position.set(0, 0, 0.49);
-            faceMesh.renderOrder = 10;
+            faceMesh.renderOrder = 999;
             headMesh.add(faceMesh);
 
             // Tóc mái trước trán - 5 cụm nón mượt mà uốn theo vòm trán Chibi
@@ -1113,7 +1111,7 @@ export class Diorama3D {
                 const helmetGeo = new THREE.SphereGeometry(0.53, 16, 16);
                 const helmetMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, metalness: 0.8, roughness: 0.25 });
                 const helmet = new THREE.Mesh(helmetGeo, helmetMat);
-                helmet.position.set(0, 0.85, -0.05);
+                helmet.position.set(0, 0.85, -0.12);
                 bodyGroup.add(helmet);
 
                 // 2 Tai antenna robot
