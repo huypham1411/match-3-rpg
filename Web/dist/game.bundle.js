@@ -2989,6 +2989,20 @@ class Diorama3D {
             headMesh.rotation.y = cfg.headCompAngle;
             bodyGroup.add(headMesh);
 
+            // B. MÁI TÓC ANIME NHIỀU LỚP (STYLIZED CHIBI ANIME HAIR)
+            const hairMat = new THREE.MeshStandardMaterial({
+                color: cfg.hairColor,
+                roughness: 0.35,
+                metalness: 0.15
+            });
+
+            // Khối tóc 3D bao phủ đỉnh đầu và gáy (3D Hair Volume Cap - Không còn đầu trọc)
+            const hairCapGeo = new THREE.SphereGeometry(0.512, 20, 16);
+            hairCapGeo.scale(1.02, 0.96, 1.01);
+            const hairCapMesh = new THREE.Mesh(hairCapGeo, hairMat);
+            hairCapMesh.position.set(0, 0.02, -0.05);
+            headMesh.add(hairCapMesh);
+
             // Mặt Anime Chibi dán đè phía trước đầu (Expressive Face Decal gắn trực tiếp vào Head Mesh)
             const faceGeo = new THREE.PlaneGeometry(0.64, 0.64);
             const faceTexNormal = createAnimeFaceTexture(cfg.role, 'normal');
@@ -3010,13 +3024,6 @@ class Diorama3D {
             faceMesh.renderOrder = 10;
             headMesh.add(faceMesh);
 
-            // B. MÁI TÓC ANIME NHIỀU LỚP (STYLIZED CHIBI ANIME HAIR)
-            const hairMat = new THREE.MeshStandardMaterial({
-                color: cfg.hairColor,
-                roughness: 0.35,
-                metalness: 0.1
-            });
-
             // Tóc mái trước trán - 5 cụm nón mượt mà uốn theo vòm trán Chibi
             const bangGeo = new THREE.ConeGeometry(0.12, 0.35, 12);
             for (let b = -2; b <= 2; b++) {
@@ -3033,15 +3040,33 @@ class Diorama3D {
                 bodyGroup.add(bang);
             }
 
-            // Tóc đặc trưng từng Role
+            // 2 Lọn tóc mai ôm lấy hai bên má (Anime Framing Side Locks)
+            [-0.34, 0.34].forEach((sideX, sIdx) => {
+                const lockGeo = new THREE.ConeGeometry(0.08, 0.46, 8);
+                const lock = new THREE.Mesh(lockGeo, hairMat);
+                lock.position.set(sideX, 0.70, 0.30);
+                lock.rotation.z = (sIdx === 0 ? 1 : -1) * 0.16;
+                lock.rotation.x = 0.22;
+                bodyGroup.add(lock);
+            });
+
+            // Tóc & Phụ kiện đặc trưng từng Role
             let accessoryMesh = null;
             if (cfg.role === 'Attacker') {
-                // Astra: Đuôi ngựa cao nhọn vút phía sau + Ribbon vàng
+                // Astra: Đuôi ngựa cao nhọn vút phía sau + Vòng kim loại giữ tóc + Kính Cyber Visor
                 const ponyGeo = new THREE.ConeGeometry(0.28, 0.85, 8);
                 const pony = new THREE.Mesh(ponyGeo, hairMat);
                 pony.position.set(0, 1.25, -0.45);
                 pony.rotation.x = -1.1;
                 bodyGroup.add(pony);
+
+                // Khuyên giữ đuôi tóc màu vàng kim
+                const tieGeo = new THREE.TorusGeometry(0.14, 0.03, 6, 12);
+                const tieMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.9, roughness: 0.2 });
+                const tie = new THREE.Mesh(tieGeo, tieMat);
+                tie.position.set(0, 1.18, -0.38);
+                tie.rotation.x = 0.5;
+                bodyGroup.add(tie);
 
                 // Kính đo Cyber Visor tai trái
                 const visorGeo = new THREE.BoxGeometry(0.12, 0.14, 0.28);
@@ -3051,22 +3076,44 @@ class Diorama3D {
                 bodyGroup.add(visor);
 
             } else if (cfg.role === 'Supporter') {
-                // Elysia: 2 Bím tóc dài 2 bên (Twintails)
-                [-0.45, 0.45].forEach(side => {
+                // Elysia: 2 Bím tóc dài 2 bên (Twintails) + Vòng nơ vàng + Vòng hào quang Runic sau lưng
+                [-0.45, 0.45].forEach((side, sI) => {
                     const tailGeo = new THREE.CylinderGeometry(0.1, 0.04, 0.75, 8);
                     const tail = new THREE.Mesh(tailGeo, hairMat);
                     tail.position.set(side, 0.65, -0.2);
                     tail.rotation.z = side > 0 ? -0.4 : 0.4;
                     bodyGroup.add(tail);
+
+                    // Nơ tóc vàng
+                    const ribbonGeo = new THREE.TorusGeometry(0.08, 0.02, 6, 12);
+                    const ribbonMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.8 });
+                    const ribbon = new THREE.Mesh(ribbonGeo, ribbonMat);
+                    ribbon.position.set(side, 0.95, -0.15);
+                    bodyGroup.add(ribbon);
                 });
 
+                // Vòng cổ thuật Runic Circle sau lưng
+                const haloBackGeo = new THREE.RingGeometry(0.36, 0.42, 24);
+                const haloBackMat = new THREE.MeshBasicMaterial({ color: 0xa855f7, side: THREE.DoubleSide });
+                const haloBack = new THREE.Mesh(haloBackGeo, haloBackMat);
+                haloBack.position.set(0, 0.55, -0.28);
+                bodyGroup.add(haloBack);
+
             } else if (cfg.role === 'Healer') {
-                // Lin: 2 Búi tóc tròn Odango + Vòng Halo Thiên Thần Nanite
+                // Lin: 2 Búi tóc tròn Odango + Vòng khuyên ngọc + Vòng Halo Thiên Thần Nanite
                 [-0.42, 0.42].forEach(side => {
                     const bunGeo = new THREE.SphereGeometry(0.2, 12, 12);
                     const bun = new THREE.Mesh(bunGeo, hairMat);
                     bun.position.set(side, 1.22, 0);
                     bodyGroup.add(bun);
+
+                    // Vòng khuyên ngọc bao quanh búi tóc
+                    const ringGeo = new THREE.TorusGeometry(0.15, 0.025, 6, 16);
+                    const ringMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.9 });
+                    const ring = new THREE.Mesh(ringGeo, ringMat);
+                    ring.position.set(side, 1.22, 0);
+                    ring.rotation.x = Math.PI / 2;
+                    bodyGroup.add(ring);
                 });
 
                 // Vòng Halo phát sáng trên đầu
@@ -3078,7 +3125,7 @@ class Diorama3D {
                 bodyGroup.add(accessoryMesh);
 
             } else if (cfg.role === 'Defender') {
-                // Boran: Nón giáp Mecha Chibi với 2 tai thỏ Antenna Radar
+                // Boran: Nón giáp Mecha Chibi với 2 tai thỏ Antenna Radar + Khe kính Visor LED
                 const helmetGeo = new THREE.SphereGeometry(0.53, 16, 16);
                 const helmetMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, metalness: 0.8, roughness: 0.25 });
                 const helmet = new THREE.Mesh(helmetGeo, helmetMat);
@@ -3094,13 +3141,20 @@ class Diorama3D {
                     ear.rotation.z = side > 0 ? -0.3 : 0.3;
                     bodyGroup.add(ear);
                 });
+
+                // Khe kính Visor LED phát sáng trên nón giáp
+                const visorSlitGeo = new THREE.BoxGeometry(0.36, 0.08, 0.05);
+                const visorSlitMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+                const visorSlit = new THREE.Mesh(visorSlitGeo, visorSlitMat);
+                visorSlit.position.set(0, 0.94, 0.44);
+                bodyGroup.add(visorSlit);
             }
 
             // C. THÂN NHỎ NHẮN VÁY ÁO CYBER ANIME (CHIBI TORSO & SKIRT)
             const coatMat = new THREE.MeshStandardMaterial({
                 color: cfg.color,
-                metalness: 0.4,
-                roughness: 0.4
+                metalness: 0.45,
+                roughness: 0.35
             });
             const torsoGeo = new THREE.CylinderGeometry(0.22, 0.28, 0.45, 16);
             const torsoMesh = new THREE.Mesh(torsoGeo, coatMat);
@@ -3114,6 +3168,29 @@ class Diorama3D {
             collarMesh.rotation.x = Math.PI / 2;
             collarMesh.position.y = 0.50;
             bodyGroup.add(collarMesh);
+
+            // Tấm ốp ngực / Huy hiệu chiến thuật Cyber Crest phát quang
+            const crestGeo = new THREE.BoxGeometry(0.14, 0.11, 0.04);
+            const crestMat = new THREE.MeshStandardMaterial({
+                color: cfg.color,
+                emissive: cfg.color,
+                emissiveIntensity: 0.85,
+                metalness: 0.8
+            });
+            const crestMesh = new THREE.Mesh(crestGeo, crestMat);
+            crestMesh.position.set(0, 0.35, 0.24);
+            bodyGroup.add(crestMesh);
+
+            // Tà áo / Váy chiến đấu Chibi xòe A-line (Flared Anime Skirt)
+            const skirtGeo = new THREE.CylinderGeometry(0.25, 0.36, 0.18, 16);
+            const skirtMat = new THREE.MeshStandardMaterial({
+                color: cfg.color,
+                roughness: 0.4,
+                metalness: 0.35
+            });
+            const skirtMesh = new THREE.Mesh(skirtGeo, skirtMat);
+            skirtMesh.position.y = 0.08;
+            bodyGroup.add(skirtMesh);
 
             // Thắt lưng năng lượng Tactical Cyber Belt quanh eo (SPEC-WEB3D-004 / AC-04)
             const beltGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.07, 16);
@@ -3132,6 +3209,15 @@ class Diorama3D {
             const buckleMesh = new THREE.Mesh(buckleGeo, buckleMat);
             buckleMesh.position.set(0, 0.17, 0.25);
             bodyGroup.add(buckleMesh);
+
+            // Cặp túi tiện ích Tactical Cyber Pouches 2 bên hông
+            [-0.26, 0.26].forEach(pX => {
+                const pouchGeo = new THREE.BoxGeometry(0.06, 0.08, 0.08);
+                const pouchMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 });
+                const pouch = new THREE.Mesh(pouchGeo, pouchMat);
+                pouch.position.set(pX, 0.17, 0.08);
+                bodyGroup.add(pouch);
+            });
 
             // 2 Cánh tay Chibi (Left & Right Arms) & Bàn tay Găng tay Chibi Gauntlets (SPEC-WEB3D-004 / AC-03)
             const armMat = new THREE.MeshStandardMaterial({ color: cfg.color, roughness: 0.45 });
@@ -3187,6 +3273,14 @@ class Diorama3D {
                 const leg = new THREE.Mesh(legGeo, bootMat);
                 leg.position.set(legX, 0.05, 0);
                 bodyGroup.add(leg);
+
+                // Vòng bo cổ chân
+                const ankleGeo = new THREE.TorusGeometry(0.10, 0.02, 6, 12);
+                const ankleMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 });
+                const ankle = new THREE.Mesh(ankleGeo, ankleMat);
+                ankle.rotation.x = Math.PI / 2;
+                ankle.position.set(legX, 0.02, 0);
+                bodyGroup.add(ankle);
 
                 // Ủng Chunky Boots đế dày
                 const bootGeo = new THREE.BoxGeometry(0.18, 0.16, 0.24);
