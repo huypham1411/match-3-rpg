@@ -2290,33 +2290,32 @@ function createAnimeFaceTexture(role, state = 'normal') {
     canvas.height = size;
     const ctx = canvas.getContext('2d');
 
-    // Nền da anime ấm áp, mịn màng
-    ctx.fillStyle = '#ffece2';
-    ctx.fillRect(0, 0, size, size);
+    // Nền trong suốt hoàn toàn (Transparent Decal) - Da mặt kế thừa từ hình cầu 3D headMesh
+    ctx.clearRect(0, 0, size, size);
 
     // Má hồng Chibi siêu dễ thương với vệt sáng lấp lánh (Soft Anime Blushing)
     const drawBlush = () => {
         ctx.save();
-        ctx.fillStyle = 'rgba(255, 110, 145, 0.45)';
+        ctx.fillStyle = 'rgba(255, 120, 160, 0.45)';
         ctx.beginPath();
-        ctx.ellipse(110, 310, 50, 26, 0, 0, Math.PI * 2);
+        ctx.ellipse(130, 312, 46, 22, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
-        ctx.ellipse(402, 310, 50, 26, 0, 0, Math.PI * 2);
+        ctx.ellipse(382, 312, 46, 22, 0, 0, Math.PI * 2);
         ctx.fill();
 
         // 3 vạch e thẹn anime (///) trên má
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-        ctx.lineWidth = 4;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.lineWidth = 3.5;
         ctx.lineCap = 'round';
-        [85, 110, 135].forEach(x => {
+        [110, 130, 150].forEach(x => {
             ctx.beginPath();
-            ctx.moveTo(x - 10, 320); ctx.lineTo(x + 10, 300);
+            ctx.moveTo(x - 8, 320); ctx.lineTo(x + 8, 304);
             ctx.stroke();
         });
-        [377, 402, 427].forEach(x => {
+        [362, 382, 402].forEach(x => {
             ctx.beginPath();
-            ctx.moveTo(x - 10, 320); ctx.lineTo(x + 10, 300);
+            ctx.moveTo(x - 8, 320); ctx.lineTo(x + 8, 304);
             ctx.stroke();
         });
         ctx.restore();
@@ -2335,66 +2334,71 @@ function createAnimeFaceTexture(role, state = 'normal') {
     if (state === 'die') {
         // Mắt nhắm tịt dấu X_X đáng yêu khi tử trận
         ctx.strokeStyle = '#334155';
-        ctx.lineWidth = 18;
+        ctx.lineWidth = 14;
         ctx.lineCap = 'round';
 
         // Mắt trái X
         ctx.beginPath();
-        ctx.moveTo(80, 220); ctx.lineTo(170, 280);
-        ctx.moveTo(170, 220); ctx.lineTo(80, 280);
+        ctx.moveTo(90, 215); ctx.lineTo(170, 275);
+        ctx.moveTo(170, 215); ctx.lineTo(90, 275);
         ctx.stroke();
 
         // Mắt phải X
         ctx.beginPath();
-        ctx.moveTo(342, 220); ctx.lineTo(432, 280);
-        ctx.moveTo(432, 220); ctx.lineTo(342, 280);
+        ctx.moveTo(342, 215); ctx.lineTo(422, 275);
+        ctx.moveTo(422, 215); ctx.lineTo(342, 275);
         ctx.stroke();
 
         // Giọt mồ hôi anime lo lắng bên trán
         ctx.fillStyle = '#38bdf8';
         ctx.beginPath();
-        ctx.arc(430, 160, 16, 0, Math.PI * 2);
+        ctx.arc(425, 160, 16, 0, Math.PI * 2);
         ctx.fill();
 
         // Miệng gợn sóng buồn
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 6;
+        ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.arc(256, 380, 32, Math.PI * 1.1, Math.PI * 1.9);
+        ctx.arc(256, 375, 26, Math.PI * 1.15, Math.PI * 1.85);
         ctx.stroke();
 
     } else if (state === 'hit') {
         // Mắt nheo > < khi bị đánh trúng (Anime shock expression)
         ctx.strokeStyle = '#1e293b';
-        ctx.lineWidth = 20;
+        ctx.lineWidth = 16;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
 
         // Mắt trái >
         ctx.beginPath();
-        ctx.moveTo(80, 220); ctx.lineTo(150, 250); ctx.lineTo(80, 280);
+        ctx.moveTo(90, 215); ctx.lineTo(155, 245); ctx.lineTo(90, 275);
         ctx.stroke();
 
         // Mắt phải <
         ctx.beginPath();
-        ctx.moveTo(432, 220); ctx.lineTo(362, 250); ctx.lineTo(432, 280);
+        ctx.moveTo(422, 215); ctx.lineTo(357, 245); ctx.lineTo(422, 275);
         ctx.stroke();
 
         // Giọt lệ anime ở khóe mắt
         ctx.fillStyle = '#00f0ff';
         ctx.beginPath();
-        ctx.arc(160, 280, 12, 0, Math.PI * 2);
-        ctx.arc(352, 280, 12, 0, Math.PI * 2);
+        ctx.arc(165, 275, 12, 0, Math.PI * 2);
+        ctx.arc(347, 275, 12, 0, Math.PI * 2);
         ctx.fill();
 
         // Miệng chữ O ngạc nhiên
         ctx.fillStyle = '#ef4444';
         ctx.beginPath();
-        ctx.arc(256, 365, 26, 0, Math.PI * 2);
+        ctx.arc(256, 362, 24, 0, Math.PI * 2);
         ctx.fill();
 
     } else {
         // Mắt Anime tròn to long lanh đẳng cấp (Normal & Attack)
-        const drawEye = (cx, cy) => {
+        const drawEye = (cx, cy, isRight = false) => {
+            const sign = isRight ? 1 : -1;
             ctx.save();
+
             // Lòng trắng mắt
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
@@ -2444,42 +2448,51 @@ function createAnimeFaceTexture(role, state = 'normal') {
             ctx.arc(cx, cy - 16, 62, Math.PI * 1.15, Math.PI * 1.85);
             ctx.stroke();
 
-            // Lông mi phụ tạo điểm nhấn ở đuôi mắt
+            // Lông mi phụ tạo điểm nhấn hướng ra ngoài thái dương
             ctx.lineWidth = 6;
             ctx.beginPath();
-            ctx.moveTo(cx + 56, cy - 24); ctx.lineTo(cx + 72, cy - 36);
+            ctx.moveTo(cx + sign * 54, cy - 22);
+            ctx.lineTo(cx + sign * 72, cy - 36);
             ctx.stroke();
 
-            // Chân mày mảnh thanh tú
+            // Chân mày mảnh thanh tú đối xứng
             ctx.strokeStyle = eyeColors.top;
             ctx.lineWidth = 8;
+            ctx.lineCap = 'round';
             ctx.beginPath();
             if (state === 'attack') {
-                // Lông mày xếch quyết tâm
-                ctx.moveTo(cx - 40, cy - 76); ctx.lineTo(cx + 46, cy - 64);
+                // Lông mày xếch quyết tâm hướng tâm
+                ctx.moveTo(cx - sign * 38, cy - 64);
+                ctx.lineTo(cx + sign * 44, cy - 78);
             } else {
-                ctx.moveTo(cx - 40, cy - 68); ctx.lineTo(cx + 40, cy - 70);
+                ctx.arc(cx, cy - 40, 52, isRight ? Math.PI * 1.25 : Math.PI * 1.35, isRight ? Math.PI * 1.65 : Math.PI * 1.75);
             }
             ctx.stroke();
 
             ctx.restore();
         };
 
-        drawEye(130, 245);
-        drawEye(382, 245);
+        drawEye(130, 245, false);
+        drawEye(382, 245, true);
+
+        // Chấm mũi Chibi anime tí hon siêu cute
+        ctx.fillStyle = 'rgba(235, 120, 140, 0.7)';
+        ctx.beginPath();
+        ctx.arc(256, 318, 4, 0, Math.PI * 2);
+        ctx.fill();
 
         // Miệng cười Chibi đáng yêu
         ctx.strokeStyle = '#b91c1c';
-        ctx.lineWidth = 8;
+        ctx.lineWidth = 7;
         ctx.lineCap = 'round';
         ctx.beginPath();
         if (state === 'attack') {
             // Cười quyết tâm mở rộng khi tấn công
-            ctx.arc(256, 360, 36, 0.15, Math.PI - 0.15);
+            ctx.arc(256, 362, 34, 0.15, Math.PI - 0.15);
             ctx.fillStyle = '#e11d48';
             ctx.fill();
         } else {
-            ctx.arc(256, 370, 22, 0.1, Math.PI - 0.1);
+            ctx.arc(256, 366, 20, 0.12, Math.PI - 0.12);
         }
         ctx.stroke();
     }
@@ -2976,7 +2989,7 @@ class Diorama3D {
             headMesh.rotation.y = cfg.headCompAngle;
             bodyGroup.add(headMesh);
 
-            // Mặt Anime Chibi dán đè phía trước đầu (Expressive Face Decal xoay 3/4 đón góc Camera)
+            // Mặt Anime Chibi dán đè phía trước đầu (Expressive Face Decal gắn trực tiếp vào Head Mesh)
             const faceGeo = new THREE.PlaneGeometry(0.64, 0.64);
             const faceTexNormal = createAnimeFaceTexture(cfg.role, 'normal');
             const faceTexHit = createAnimeFaceTexture(cfg.role, 'hit');
@@ -2986,12 +2999,16 @@ class Diorama3D {
             const faceMat = new THREE.MeshBasicMaterial({
                 map: faceTexNormal,
                 transparent: true,
+                depthWrite: false,
+                polygonOffset: true,
+                polygonOffsetFactor: -2.0,
+                polygonOffsetUnits: -4.0,
                 side: THREE.FrontSide
             });
             const faceMesh = new THREE.Mesh(faceGeo, faceMat);
-            faceMesh.position.set(0, 0.78, 0.49);
-            faceMesh.rotation.y = cfg.headCompAngle;
-            bodyGroup.add(faceMesh);
+            faceMesh.position.set(0, 0, 0.49);
+            faceMesh.renderOrder = 10;
+            headMesh.add(faceMesh);
 
             // B. MÁI TÓC ANIME NHIỀU LỚP (STYLIZED CHIBI ANIME HAIR)
             const hairMat = new THREE.MeshStandardMaterial({
@@ -3000,13 +3017,19 @@ class Diorama3D {
                 metalness: 0.1
             });
 
-            // Tóc mái trước trán
-            const bangGeo = new THREE.ConeGeometry(0.18, 0.35, 4);
+            // Tóc mái trước trán - 5 cụm nón mượt mà uốn theo vòm trán Chibi
+            const bangGeo = new THREE.ConeGeometry(0.12, 0.35, 12);
             for (let b = -2; b <= 2; b++) {
                 const bang = new THREE.Mesh(bangGeo, hairMat);
-                bang.position.set(b * 0.14, 1.14, 0.42);
-                bang.rotation.z = b * -0.15;
-                bang.rotation.x = 0.35;
+                const u = b * 0.11;
+                const cosA = Math.cos(cfg.headCompAngle);
+                const sinA = Math.sin(cfg.headCompAngle);
+                const bX = u * cosA + 0.42 * sinA;
+                const bZ = -u * sinA + 0.42 * cosA;
+                bang.position.set(bX, 1.12, bZ);
+                bang.rotation.y = cfg.headCompAngle;
+                bang.rotation.z = -u * 0.75;
+                bang.rotation.x = 0.48;
                 bodyGroup.add(bang);
             }
 
@@ -3079,10 +3102,18 @@ class Diorama3D {
                 metalness: 0.4,
                 roughness: 0.4
             });
-            const torsoGeo = new THREE.CylinderGeometry(0.22, 0.28, 0.45, 12);
+            const torsoGeo = new THREE.CylinderGeometry(0.22, 0.28, 0.45, 16);
             const torsoMesh = new THREE.Mesh(torsoGeo, coatMat);
             torsoMesh.position.y = 0.28;
             bodyGroup.add(torsoMesh);
+
+            // Cổ áo Cyber Collar cách điệu
+            const collarGeo = new THREE.TorusGeometry(0.23, 0.03, 8, 16);
+            const collarMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8, roughness: 0.3 });
+            const collarMesh = new THREE.Mesh(collarGeo, collarMat);
+            collarMesh.rotation.x = Math.PI / 2;
+            collarMesh.position.y = 0.50;
+            bodyGroup.add(collarMesh);
 
             // Thắt lưng năng lượng Tactical Cyber Belt quanh eo (SPEC-WEB3D-004 / AC-04)
             const beltGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.07, 16);
